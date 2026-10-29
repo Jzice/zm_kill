@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>掌门杀 · 修真门派</title>
+<script type="module" src="/main.ts"></script>
+</head>
+<body data-mode="night" data-theme="gold">
+<script>
+/* 首帧主题兜底（同步执行于任何渲染之前）：整页重载（退出重开等）时，
+   模块 JS 解析完成前 body 已带正确主题属性，避免闪现「纯文字无主题」状态 */
+(function () {
+  try {
+    var p = JSON.parse(localStorage.getItem('xuetangsha_profile_v1') || '{}');
+    var m = ['day', 'night', 'dusk'].indexOf(p.themeMode) >= 0 ? p.themeMode : 'night';
+    var s = ['gold', 'teal', 'red', 'purple', 'green', 'blue'].indexOf(p.themeStyle) >= 0 ? p.themeStyle : 'gold';
+    if (document.body) { document.body.setAttribute('data-mode', m); document.body.setAttribute('data-theme', s); }
+  } catch (e) { /* 解析失败保持 HTML 默认主题 */ }
+})();
+</script>
+
+<!-- 统一固定顶栏：品牌 / 图标与主功能 / 个人信息（最右侧，仅头像+昵称）
+     窄屏两行模式由 .tb-row 承载：第一行 品牌+等级积分，第二行 按钮组+个人信息；
+     宽屏下 .tb-row 为 display:contents（包装层透明，子元素直接参与单行 flex） -->
+<div id="topBar">
+  <div class="tb-row tb-row-top">
+    <div class="tb-brand">
+      <span class="tb-logo">🎓</span>
+      <span class="tb-brand-text">
+        <span class="tb-title">掌门杀<span class="tb-ver" id="tbVersion" title="当前版本"></span></span>
+        <span class="tb-sub">修真门派 · 势力争锋</span>
+      </span>
+    </div>
+    <span class="tb-stats">
+      <span class="tb-stat" title="段位等级"><span class="tb-stat-ic">🏅</span><span id="tbLevel">蒙童</span></span>
+      <span class="tb-stat" title="积分">
+        <span class="tb-stat-ic">⭐</span><span id="tbScore">0 分</span>
+        <span class="tb-progress"><span class="tb-progress-bar" id="tbProgress"></span></span>
+      </span>
+    </span>
+  </div>
+  <div class="tb-row tb-row-main">
+    <div class="tb-right">
+      <span class="tb-actions">
+        <button class="tb-icon" id="soundToggle" onclick="toggleSound()" title="音效开关">🔊</button>
+        <button class="tb-icon" onclick="openThemePanel()" title="主题设置">🎨</button>
+        <button class="tb-icon" onclick="openLlmSettings()" title="大模型接管 AI 设置">🤖</button>
+      </span>
+      <span class="tb-actions">
+        <button class="tb-icon" onclick="openPackMenu()" title="自定义扩展包">🧩</button>
+        <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
+        <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">🚪</button>
+        <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
+      </span>
+    </div>
+    <button class="tb-user-chip" onclick="openProfileMenu()" title="查看我的档案">
+      <span class="tb-avatar" id="tbAvatar">🧑‍🎓</span>
+      <span class="tb-user-meta">
+        <span class="tb-uname" id="tbName">玩家</span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- 顶栏消息通知下拉（🔔：用户聊天 / 系统提示 / 联机事件） -->
+<div id="notifyPanel">
+  <div class="notify-head">🔔 消息通知</div>
+  <div class="notify-list" id="notifyList"></div>
+</div>
+
+<!-- 主题设置（居中弹窗：光线模式 × 内置配色风格） -->
+<div id="themePanel">
+  <div class="theme-head">🎨 主题设置 <span style="font-size:9px;color:var(--muted)">点击切换</span><button class="theme-close" onclick="closeThemePanel()" title="关闭">✕</button></div>
+  <div class="theme-sec-label">光线模式</div>
+  <div class="theme-modes">
+    <button class="opt-btn theme-mode" data-mode="day" onclick="setThemeMode('day')">☀️ 白天</button>
+    <button class="opt-btn theme-mode" data-mode="night" onclick="setThemeMode('night')">🌙 夜晚</button>
+    <button class="opt-btn theme-mode" data-mode="dusk" onclick="setThemeMode('dusk')">🌇 黄昏</button>
+  </div>
+  <div class="theme-sec-label">内置配色风格</div>
+  <div class="theme-styles">
+    <button class="opt-btn theme-style" data-style="gold" onclick="setThemeStyle('gold')"><i class="sw" style="--sw:#f5c542"></i>鎏金</button>
+    <button class="opt-btn theme-style" data-style="teal" onclick="setThemeStyle('teal')"><i class="sw" style="--sw:#2bbfa8"></i>墨青</button>
+    <button class="opt-btn theme-style" data-style="red" onclick="setThemeStyle('red')"><i class="sw" style="--sw:#ff6b4a"></i>赤焰</button>
+    <button class="opt-btn theme-style" data-style="purple" onclick="setThemeStyle('purple')"><i class="sw" style="--sw:#b07cff"></i>紫宸</button>
+    <button class="opt-btn theme-style" data-style="green" onclick="setThemeStyle('green')"><i class="sw" style="--sw:#5fd07a"></i>雪松</button>
+    <button class="opt-btn theme-style" data-style="blue" onclick="setThemeStyle('blue')"><i class="sw" style="--sw:#4aa8ff"></i>黛蓝</button>
+  </div>
+</div>
+
+<!-- 首页：个人成就 + 模式选择 -->
+<div id="screenLobby" class="screen active">
+  <div class="panel">
+    <h3>◈ 个人成就 ◈ <span class="ach-summary" id="achSummary"></span></h3>
+    <div class="ach-grid" id="achGrid"></div>
+  </div>
+  <div class="panel">
+    <h3>◈ 选择游戏模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（选择后进入对局设置）</span></h3>
+    <div class="mode-cards" id="modePicker">
+      <button class="mode-card" data-mode="single">
+        <span class="mc-icon">🎮</span>
+        <span class="mc-title">单机对局</span>
+        <span class="mc-desc">与 AI 同学同场竞技</span>
+      </button>
+      <button class="mode-card" data-mode="net">
+        <span class="mc-icon">🌐</span>
+        <span class="mc-title">联机对战</span>
+        <span class="mc-desc">创建房间或加入房间（下一步选择联机方式）</span>
+      </button>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- 子界面：对局设置（选定模式后进入） -->
+<div id="screenSetup" class="screen">
+  <div class="setup-top">
+    <button class="btn btn-sm" onclick="backToLobby()">‹ 返回主界面</button>
+    <span class="setup-title" id="setupTitle">对局设置</span>
+  </div>
+
+  <!-- 联机：建立服务器 / 加入服务器（二选一） -->
+  <div class="panel" id="netModePanel" style="display:none">
+    <h3>◈ 联机方式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（建立服务器可配置完整对局，加入服务器只需选择阵营与角色）</span></h3>
+    <div class="opt-row" id="netModePicker">
+      <button class="opt-btn active" data-net="host" onclick="setNetMode('host')">建立服务器<small>我当房主</small></button>
+      <button class="opt-btn" data-net="join" onclick="setNetMode('join')">加入服务器<small>输入房间号</small></button>
+    </div>
+  </div>
+
+  <div id="hostConfig">
+  <div class="panel">
+    <h3>◈ 选择扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定可选角色的范围）</span></h3>
+    <div class="opt-row" id="packetPicker"></div>
+    <div id="packMeter"></div>
+    <div class="scope-hint" id="packetHint"></div>
+  </div>
+    <div class="panel">
+      <h3>◈ 牌库扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（在基础 125 张之上追加扩展卡牌，可多选；房主勾选后随房间同步）</span></h3>
+      <div class="opt-row" id="cardPackPicker"></div>
+      <div class="scope-hint" id="cardPackHint"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 回合限时 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（开启后每次决策单独计时，超时自动按默认处理）</span></h3>
+      <div class="opt-row" id="timerPicker"></div>
+      <div class="scope-hint" id="timerHint"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 玩家总数 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（拖动滑块选择 2–8 人）</span></h3>
+      <div class="slider-row">
+        <span class="slider-end">2</span>
+        <input type="range" id="countSlider" min="2" max="8" step="1" value="5">
+        <span class="slider-end">8</span>
+        <span class="slider-value" id="countValue">5 人</span>
+      </div>
+      <div id="aiCountHint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;"></div>
+    </div>
+    <div class="panel" id="llmSetupPanel"></div>
+    <div class="panel" id="roomConfig" style="display:none;">
+      <h3>◈ 联机配置 ◈</h3>
+      <!-- 房间信息与操作按钮同一行：未建房时（无 has-room）内容居中，roomInfo 空态不占位，
+           创建房间按钮居中显示；建房后 updateHostRoomInfo 加 has-room，房间号信息在左（flex:1），
+           分享 / 复制 / 关闭房间靠右，createRoomBtn 隐藏。行数恒定不变。
+           注意：按钮必须是 #roomInfo 的兄弟节点——其内容由 updateHostRoomInfo 整体 innerHTML 重写 -->
+      <div id="roomInfoRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <div id="roomInfo" style="min-width:130px;font-size:12px;color:var(--gold);"></div>
+        <button class="btn btn-accent btn-cta btn-cta-inline" onclick="createRoom()" id="createRoomBtn">📡 创建房间</button>
+        <div id="inviteBox" style="display:none">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-accent" onclick="nativeShare()" id="shareBtn">📤 分享</button>
+            <button class="btn" onclick="copyInviteLink()" id="copyInviteBtn">📋 复制</button>
+          </div>
+        </div>
+        <button class="btn" onclick="closeRoom()" id="closeRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 关闭房间</button>
+      </div>
+      <div id="hostSeatList" class="seat-panel"></div>
+      <div id="hostMemberList" class="room-member-list" style="display:none"></div>
+      <button class="btn btn-accent btn-cta" style="margin-top:8px;display:none" onclick="hostStartGame()" id="hostStartBtn">▶ 开始游戏（AI 补齐空位）</button>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的身份 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（不选则随机）</span></h3>
+      <div class="role-grid" id="rolePicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的科目阵营 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（未选则随机）</span></h3>
+      <div class="faction-grid" id="factionPicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的角色 ◈ <span id="charPoolHint" style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;"></span></h3>
+      <div class="char-grid" id="charGrid"></div>
+      <div class="char-preview" id="charPreview"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 局前配装 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（仅可用已解锁装备，最多 2 件 / 道具 3 个，不进牌堆）</span></h3>
+      <div id="loadoutBar"></div>
+    </div>
+    <div class="lobby-btns">
+      <button class="btn btn-accent btn-cta" id="startBtn" onclick="startSingle()">开始单机对局</button>
+    </div>
+  </div>
+  <div id="joinConfig" style="display:none;">
+    <div class="panel" id="extraPackPanel"></div>
+    <div class="panel">
+      <h3>◈ 选择你的科目阵营 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（会同步给房主）</span></h3>
+      <div class="faction-grid" id="joinFactionPicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的角色 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（白框为你的可选角色）</span></h3>
+      <div class="char-grid" id="joinCharGrid"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 加入房间 ◈</h3>
+      <div class="input-row"><input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric"></div>
+      <div class="lobby-btns" style="justify-content:flex-start;margin-top:0">
+        <button class="btn btn-accent" onclick="joinRoom()" id="joinRoomBtn">🔌 加入房间</button>
+        <button class="btn" onclick="leaveRoom()" id="leaveRoomBtn" style="display:none;border-color:#e74c3c;color:#e74c3c">✕ 退出房间</button>
+      </div>
+      <div id="joinStatus" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+      <div id="guestSeatList" class="seat-panel"></div>
+      <div id="guestMemberList" class="room-member-list" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 游戏界面 -->
+<div id="screenGame" class="screen">
+  <div class="game-status-bar" id="gameStatusBar">
+    <span id="gsTurn">回合：—</span>
+    <span id="gsRole"></span>
+    <span id="gsConn"></span>
+    <button class="gs-exit" onclick="exitGame()" title="退出重开">🚪 退出重开</button>
+  </div>
+  <div class="game-main">
+    <div class="table-area" id="tableArea">
+      <div class="seat-ring" id="seatRing"></div>
+      <div class="table-center">
+        <div class="pile">
+          <div class="pile-label">牌堆</div>
+          <div class="pile-stack"><div class="card-back-pile"></div><div class="card-back-pile"></div><div class="card-back-pile"></div></div>
+          <div class="pile-count" id="deckCount">0</div>
+        </div>
+        <div class="play-zone" id="playZoneCards">
+          <div class="play-zone-label">出 牌 区</div>
+          <span class="play-zone-empty">— 牌桌中央 —</span>
+        </div>
+        <div class="pile">
+          <div class="pile-label">弃牌</div>
+          <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>
+          <div class="pile-count" id="discardCount">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="play-log-panel" id="playLogPanel">
+        <div class="panel-title">
+          <span>战 报 <span class="badge" id="playLogBadge">0</span></span>
+          <button class="panel-toggle" onclick="togglePanel('playLogPanel')">▾</button>
+        </div>
+        <div class="play-log-list" id="playLogList"></div>
+      </div>
+      <div class="chat-panel" id="chatPanel" style="display:none;">
+        <div class="panel-title">
+          <span>聊 天 室 <span class="badge">💬</span></span>
+          <button class="panel-toggle" onclick="togglePanel('chatPanel')">▾</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-list" id="chatList"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="center-area" id="centerArea">
+    <div class="action-hint" id="actionHint"></div>
+    <div class="action-btns" id="actionBtns"></div>
+    <div class="item-bar" id="itemBar"></div>
+    <span class="timer-chip" id="timerChip"></span>
+  </div>
+  <div class="hand-row" id="handRow"></div>
+</div>
+
+<!-- 小屏联机聊天面板（固定底部，可折叠：展开=列表+输入框，折叠=最新一行+未读数；顶部可拖动调高） -->
+<div id="netChatPanel">
+  <div class="nchat-resize" id="netChatResize" title="拖动调整聊天区高度"></div>
+  <div class="nchat-head" onclick="toggleNetChat()">
+    <span class="nchat-title">💬 聊天</span>
+    <span class="nchat-latest" id="netChatLatest"></span>
+    <span class="nchat-badge" id="netChatBadge">0</span>
+    <span class="nchat-toggle" id="netChatToggle">▾</span>
+  </div>
+  <div class="nchat-body">
+    <div class="chat-list" id="netChatList"></div>
+    <div class="chat-input-row">
+      <input id="netChatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendNetChat()">
+      <button onclick="sendNetChat()">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- 标记弹窗 -->
+<div id="markModal">
+  <div class="mark-box">
+    <div class="mark-title">标记 <span id="markTargetName"></span> 的身份</div>
+    <div class="mark-options" id="markOptions"></div>
+    <button class="btn btn-sm" onclick="closeMarkMenu()" style="width:100%">取消</button>
+  </div>
+</div>
+
+<!-- 开局亮将确认（随机模式，v1.8.3） -->
+<div id="revealModal" class="rules-modal">
+  <div class="rules-box reveal-box">
+    <div class="shop-head">
+      <span class="shop-title">🎲 随机派将</span>
+    </div>
+    <div id="revealBody"></div>
+  </div>
+</div>
+
+<!-- 档案 / 成就弹窗（二级菜单） -->
+<div id="profileModal" class="rules-modal">
+  <div class="rules-box" style="max-width:540px">
+    <div class="rules-header"><span id="profileModalTitle">我的档案</span><button onclick="closeProfileModal()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="profileModalBody"></div>
+  </div>
+</div>
+
+<!-- 一局结束结算 -->
+<div id="settleModal" class="rules-modal">
+  <div class="rules-box" style="max-width:620px">
+    <div class="rules-header"><span>本局结算</span><button onclick="closeSettle()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="settleBody"></div>
+  </div>
+</div>
+
+<!-- 自定义扩展包管理（二级菜单） -->
+<div id="packModal" class="rules-modal">
+  <div class="rules-box" style="max-width:600px">
+    <div class="rules-header"><span>🧩 自定义扩展包</span><button onclick="closePackMenu()" class="rules-close">✕</button></div>
+    <div class="rules-content">
+      <div class="bank-info">自定义扩展包「仅单机 / 房主」可用：联机加入方由房主统一携带，自己无需安装。</div>
+      <div id="packList" class="pack-list"></div>
+      <div class="input-row" style="margin:8px 0 6px">
+        <input type="text" id="packUrlInput" placeholder="扩展包 URL（.json）">
+      </div>
+      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
+        <button class="btn" style="flex:1" onclick="loadPackFromUrl()">🌐 从 URL 加载</button>
+        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('packFileInput').click()">📂 导入本地文件</button>
+        <button class="btn" style="flex:0 0 auto" onclick="editPackFromMenu()">🧩 新建 / 编辑器</button>
+        <button class="btn" style="flex:0 0 auto" onclick="clearAllPacksConfirm()">🗑️ 清空全部</button>
+      </div>
+      <input type="file" id="packFileInput" class="file-input" accept=".json" onchange="importPackFile(event)">
+    </div>
+    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closePackMenu()">完成</button></div>
+  </div>
+</div>
+
+<!-- 自定义扩展包 Web 表单编辑器 -->
+<div id="packEditorModal" class="rules-modal">
+  <div class="rules-box" style="max-width:680px">
+    <div class="rules-header"><span>🧩 扩展包编辑器</span><button onclick="closePackEditor()" class="rules-close">✕</button></div>
+    <div class="rules-content"><div id="packEditorBody"></div></div>
+  </div>
+</div>
+
+
+
+<!-- 大模型接管设置弹窗 -->
+<div id="llmSettingsModal" class="rules-modal">
+  <div class="rules-box" style="max-width:560px">
+    <div class="rules-header"><span>🤖 大模型接管 AI 设置</span><button onclick="closeLlmSettings()" class="rules-close">✕</button></div>
+    <div class="rules-content" id="llmSettingsBody"></div>
+  </div>
+</div>
+
+<!-- 规则弹窗 -->
+<div id="rulesModal" class="rules-modal">
+  <div class="rules-box">
+    <div class="rules-header"><span>📖 掌门杀规则说明</span><button onclick="closeRules()" class="rules-close">✕</button></div>
+    <div class="rules-tabs">
+      <button class="rule-tab active" data-tab="basic" onclick="switchRulesTab('basic')">基本规则</button>
+      <button class="rule-tab" data-tab="factions" onclick="switchRulesTab('factions')">修真势力</button>
+      <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌说明</button>
+      <button class="rule-tab" data-tab="chars" onclick="switchRulesTab('chars')">角色技能</button>
+      <button class="rule-tab" data-tab="ach" onclick="switchRulesTab('ach')">成就</button>
+      <button class="rule-tab" data-tab="packs" onclick="switchRulesTab('packs')">扩展包</button>
+    </div>
+    <div class="rules-content" id="rulesContent"></div>
+  </div>
+</div>
+
+<div class="fx-layer" id="fxLayer"></div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "name": "zhangmensha",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "掌门杀 · 修真门派 —— 基于《修真门派掌门路》的修真主题身份竞技卡牌游戏。复用学堂杀（三国杀式身份局 + 卡牌 + 技能引擎）框架，首版去除答题/年级/科目体系，回归纯卡牌博弈，并预留修为/本命/法器/灵石等修真机制扩展点。支持单机（含 AI）与房主权威联机，构建为自包含单文件 HTML。",
+  "scripts": {
+    "dev": "node scripts/dev.mjs cdn",
+    "dev:bundled": "node scripts/dev.mjs bundled",
+    "build": "npm run build:cdn && npm run build:bundled",
+    "build:cdn": "node scripts/build.mjs cdn",
+    "build:bundled": "node scripts/build.mjs bundled",
+    "build:pages": "node scripts/build-pages.mjs",
+    "stage:release": "node scripts/stage-release.mjs",
+    "audit:expansion": "node scripts/build-expansion.mjs",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:skills": "node scripts/smoke-skills.mjs",
+    "smoke:net": "node scripts/smoke-net.mjs",
+    "smoke:net:settle": "node scripts/smoke-net-settle.mjs",
+    "smoke:cards": "node scripts/smoke-cards.mjs",
+    "smoke:tiesuo": "node scripts/smoke-tiesuo.mjs",
+    "ai:eval": "node scripts/ai-eval.mjs",
+    "ai:eval-prompt": "node scripts/ai-eval-prompt.mjs",
+    "ai:tune": "node scripts/tune-ai.mjs",
+    "balance": "node scripts/balance.mjs",
+    "repro:net": "node scripts/repro-net.mjs",
+    "repro:senior50": "node scripts/repro-senior50.mjs",
+    "verify:dist": "node scripts/verify-dist.mjs",
+    "verify:senior50": "node scripts/verify-senior50.mjs",
+    "verify:file": "node scripts/verify-file.mjs",
+    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "peerjs": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.8",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}
