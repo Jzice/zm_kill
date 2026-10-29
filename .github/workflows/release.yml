@@ -126,7 +126,7 @@ jobs:
           fi
           RID=$(curl -sf -X POST "${API}/releases?access_token=${GITEE_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"tag_name\":\"${TAG}\",\"name\":\"掌门杀 ${TAG}\",\"target_commitish\":\"master\",\"prerelease\":false,\"body\":\"自动同步自 GitHub Actions\"}" \
+            -d "{\"tag_name\":\"${TAG}\",\"name\":\"掌门杀 ${TAG}\",\"target_commitish\":\"main\",\"prerelease\":false,\"body\":\"自动同步自 GitHub Actions\"}" \
             | jq -r '.id')
           echo "Gitee release id = ${RID}"
           for f in zhangmensha.html zhangmensha.bundled.html; do

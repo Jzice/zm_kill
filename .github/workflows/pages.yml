@@ -4,8 +4,9 @@
 name: Pages
 
 on:
+  # 主分支为 main（原 master 配置不会触发，已修正）
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
