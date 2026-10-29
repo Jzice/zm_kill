@@ -20,11 +20,12 @@ export interface Packet {
   desc: string;
 }
 
-export const PACKETS: Packet[] = [
-  { id: 'all', name: '全部', icon: '🎓', desc: '包含所有角色' },
-  { id: 'junior', name: '初中扩展包', icon: '📗', desc: '初中角色全部' },
-  { id: 'senior', name: '高中扩展包', icon: '📘', desc: '高中角色全部' },
-];
+/**
+ * 已移除学堂杀的年级扩展包（初中 / 高中）：
+ * 角色池只有一套原著 48 人，选角改为按「九大门派」筛选（#factionPicker）。
+ * 保留 `all` 单项与 PacketId 类型，仅为兼容联机协议与存档字段，不再有分桶语义。
+ */
+export const PACKETS: Packet[] = [{ id: 'all', name: '全部角色', icon: '📖', desc: '掌门路原著 48 人' }];
 
 /** 扩展包取池阶序（计费 / 合并取最高阶，首版未启用学分） */
 export function packetRank(id: PacketId): number {

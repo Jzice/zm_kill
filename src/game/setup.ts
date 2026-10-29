@@ -115,8 +115,8 @@ function applyLoadoutTo(p: Player, loadout: Loadout | undefined, unlockedEquips:
 }
 
 function setupPlayers(playerCount: number, localChar: Character, localName: string): void {
-  // 掌门路模式：角色池切换到原著角色池；若当前自选角色不在池中则随机换将
-  if (isZml(SELECTED_RULE_MODE)) {
+  // 角色池已统一为原著 48 人：旧存档里的名人 charId（鲁迅 / 诸葛亮 …）一律兜底随机换将
+  {
     const pool = zmlCharPool();
     if (!pool.some((c) => c.id === localChar.id)) {
       localChar = pool[Math.floor(Math.random() * pool.length)];

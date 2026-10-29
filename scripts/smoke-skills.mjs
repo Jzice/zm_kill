@@ -76,22 +76,22 @@ page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
 
-// 1. 登记表自检：81 角色、技能 id 唯一、无缺失定义、诸葛亮三技能
+// 1. 登记表自检：48 名原著角色、技能 id 唯一、无缺失定义、齐休三技能
 const audit = await page.evaluate(() => window.xtsSkillAudit());
-check('81 名角色全部加载', audit.chars === 81, `${audit.chars}`);
-check('技能定义数量充足（≥191）', audit.total >= 191, `${audit.total} 个`);
+check('48 名原著角色全部加载', audit.chars === 48, `${audit.chars}`);
+check('技能定义数量充足（≥250）', audit.total >= 250, `${audit.total} 个`);
 check('所有角色 / 主公技均有定义', audit.missing.length === 0, audit.missing.join(','));
 check('技能 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
 
-// 2. 诸葛亮三技能（唯一三技能角色）+ 观星 / 空城 / 出师表齐备
-check('诸葛亮为三技能角色（观星 / 空城 / 出师表）',
-  audit.zhuge.length === 3 && audit.zhuge.includes('zgl_gx') && audit.zhuge.includes('zgl_kc') && audit.zhuge.includes('zgl_csb'),
-  audit.zhuge.join(','));
-check('诸葛亮是全表唯一三技能角色', audit.multi.length === 1 && audit.multi[0] === 'zhugeliang', audit.multi.join(','));
+// 2. 齐休三技能（明己心 / 不在算中 / 命演术）为基准，核心 12 人各 3 技能
+check('齐休为三技能角色（明己心 / 不在算中 / 命演术）',
+  audit.qixiu.length === 3 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_buzai') && audit.qixiu.includes('zml_qixiu_mingyan'),
+  audit.qixiu.join(','));
+check('核心 12 人为三技能角色', audit.multi.length === 12, `${audit.multi.length} 名：${audit.multi.join(',')}`);
 
-// 2.1 角色池（首版不限年级 / 科目）
+// 2.1 角色池（掌门路原著 48 人，不再有年级 / 学科分桶）
 const pool = await page.evaluate(() => window.xtsSeniorPool());
-check('角色池全量加载', pool.count === 81, `${pool.count} 名`);
+check('角色池全量加载', pool.count === 48, `${pool.count} 名`);
 const factionNames = Object.keys(pool.byFaction || {});
 check('角色按势力分布', factionNames.length >= 9, `${factionNames.length} 个势力`);
 check('角色均为 1~3 技能', pool.chars.every((c) => c.skills.length >= 1 && c.skills.length <= 3), '');

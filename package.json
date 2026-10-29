@@ -1,7 +1,7 @@
 {
   "name": "zhangmensha",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "掌门杀 · 修真门派 —— 基于《修真门派掌门路》的修真主题身份竞技卡牌游戏。复用学堂杀（三国杀式身份局 + 卡牌 + 技能引擎）框架，首版去除答题/年级/科目体系，回归纯卡牌博弈，并预留修为/本命/法器/灵石等修真机制扩展点。支持单机（含 AI）与房主权威联机，构建为自包含单文件 HTML。",
   "scripts": {
@@ -12,7 +12,6 @@
     "build:bundled": "node scripts/build.mjs bundled",
     "build:pages": "node scripts/build-pages.mjs",
     "stage:release": "node scripts/stage-release.mjs",
-    "audit:expansion": "node scripts/build-expansion.mjs",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "smoke:skills": "node scripts/smoke-skills.mjs",
@@ -26,9 +25,7 @@
     "ai:tune": "node scripts/tune-ai.mjs",
     "balance": "node scripts/balance.mjs",
     "repro:net": "node scripts/repro-net.mjs",
-    "repro:senior50": "node scripts/repro-senior50.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
-    "verify:senior50": "node scripts/verify-senior50.mjs",
     "verify:file": "node scripts/verify-file.mjs",
     "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
   },

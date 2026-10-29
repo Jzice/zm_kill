@@ -7,7 +7,6 @@ import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS } from '../data/characters';
 import { PACKETS, charPoolForPacket, packetName, packTollOf, isExpansion } from '../data/packets';
 import type { PacketId } from '../data/packets';
-import { EXPANSION_CHARS } from '../data/expansion';
 import { canEnablePacket, packFreeRemaining, packUsePreview } from '../profile/packMeter';
 import { charCardHtml } from './reveal';
 import { NET } from '../net/network';
@@ -377,24 +376,18 @@ export function selectChar(id: string): void {
     SELECTED_MODE === 'join'
       ? effectiveCharPool(REMOTE_BASE_GRADE, REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS)
       : mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
-  SELECTED_CHAR =
-    searchPool.find((c) => c.id === id) ||
-    CHARACTERS.find((c) => c.id === id) ||
-    EXPANSION_CHARS.find((c) => c.id === id) ||
-    null;
+  SELECTED_CHAR = searchPool.find((c) => c.id === id) || CHARACTERS.find((c) => c.id === id) || null;
   renderCharPicker();
   pushGuestPref();
 }
 
-/** 选角池 = 基础角色 + 扩展包角色 + 自定义扩展包角色（首版不再按年级/学分筛选） */
+/** 选角池 = 原著角色池 + 自定义扩展包角色（已移除学堂杀年级包与 108 名生成角色） */
 export function mergedCharPool(grade: string, packet: PacketId): Character[] {
   const base = charPoolForPacket(grade, packet);
   const ids = new Set(base.map((c) => c.id));
-  const extra = EXPANSION_CHARS.filter((c) => !ids.has(c.id));
-  const extraIds = new Set(extra.map((c) => c.id));
   // 自定义扩展包角色：追加式并入，受「仅单机/房主」限制（联机加入方返回空）
-  const custom = customCharsFor(grade, packet).filter((c) => !ids.has(c.id) && !extraIds.has(c.id));
-  return [...base, ...extra, ...custom];
+  const custom = customCharsFor(grade, packet).filter((c) => !ids.has(c.id));
+  return [...base, ...custom];
 }
 
 /**

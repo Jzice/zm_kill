@@ -294,9 +294,10 @@ window.xtsSkillAudit = () => {
   }
   const ids = Object.keys(SKILL_DEFS);
   const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
-  const zhuge = CHARACTERS.find((c) => c.id === 'zhugeliang')?.skills.map((s) => s.id) || [];
+  // 掌门路：以主角齐休作为「三技能基准角色」（诸葛亮等名人角色已移除）
+  const qixiu = CHARACTERS.find((c) => c.id === 'zml_qixiu')?.skills.map((s) => s.id) || [];
   const multi = CHARACTERS.filter((c) => c.skills.length >= 3).map((c) => c.id);
-  return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, zhuge, multi };
+  return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, qixiu, multi };
 };
 
 /**

@@ -177,7 +177,7 @@ declare global {
       winner: string;
       players: { name: string; char: string; role: string; alive: boolean; hp: number }[];
     };
-    xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; zhuge: string[]; multi: string[] };
+    xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; qixiu: string[]; multi: string[] };
     xtsSeniorPool: () => {
       count: number;
       byFaction: Record<string, number>;
