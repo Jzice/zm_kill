@@ -153,6 +153,31 @@ check('出牌区宽度正常（未被灵地盘挤压）', layout.zoneW >= 100, `
 check('灵地盘已脱离中央横排（不再占出牌区宽度）', layout.inCenter === false, layout.inCenter ? '仍在 .table-center 内' : '已独立定位');
 check('中央出牌区高度未被撑高', layout.zoneH <= 160, `${layout.zoneH}px 高`);
 
+// 7.2 遮挡回归：灵地盘的可见像素不得被座位卡覆盖（曾出现底部中央被座位压住）。
+// 用 elementFromPoint 判定真实遮挡，避免 overflow:hidden 裁剪导致的矩形假阳性。
+const occluded = await page.evaluate(() => {
+  const g = document.getElementById('zmlGroundBoard');
+  if (!g) return -1;
+  const cells = [...g.querySelectorAll('.gb-cell')];
+  if (!cells.length) return -1;
+  let hit = 0;
+  for (const c of cells) {
+    const r = c.getBoundingClientRect();
+    const pts = [
+      [r.left + 3, (r.top + r.bottom) / 2],
+      [(r.left + r.right) / 2, (r.top + r.bottom) / 2],
+      [r.right - 3, (r.top + r.bottom) / 2],
+    ];
+    for (const [x, y] of pts) {
+      const el = document.elementFromPoint(x, y);
+      // 命中座位（.seat 或其子元素）即视为被遮挡；pointer-events:none 的自身会被穿透到下方
+      if (el && el.closest && el.closest('.seat')) hit++;
+    }
+  }
+  return hit;
+});
+check('灵地盘不被座位卡遮挡', occluded === 0, `${occluded} 个采样点被遮挡`);
+
 // 8. 推进若干回合（点结束出牌，交给 AI）
 const gameTextOf = async () => {
   try {

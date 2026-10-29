@@ -319,12 +319,14 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .pile-count{font-size:10.5px;color:var(--gold);font-weight:600}
 /* min-width 保护：出牌区被相邻元素挤压时不再塌成竖条（历史 bug：提示文案逐字竖排） */
 .play-zone{flex:1;min-width:110px;height:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;padding:4px;position:relative}
-/* 掌门路 · 灵地盘：牌桌底部中央独立定位，脱离 .table-center 横排。
-   采用单行紧凑布局（高 ≈18px）+ bottom:6px，避让下方座位卡（座位 z-index:3）。
-   注意：绝不可移回 .table-center 内部，否则会挤压出牌区导致提示文案逐字竖排。 */
-.ground-board{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:none;align-items:center;justify-content:center;gap:4px;z-index:2;max-width:72%;flex-wrap:wrap;pointer-events:none}
-.ground-board .gb-cell{display:flex;flex-direction:row;align-items:center;gap:3px;padding:0 5px;border:1px solid #8a8070;border-radius:5px;background:rgba(0,0,0,.3);font-size:8px;line-height:15px;white-space:nowrap}
-.ground-board .gb-title{display:none}
+/* 掌门路 · 灵地盘：牌桌**左上角内沿**独立定位。
+   两条历史教训（勿回退）：
+     1) 不可放回 .table-center 内部 —— 会挤压出牌区，提示文案逐字竖排；
+     2) 不可放底部中央 —— 与居中的下方座位卡重叠、被遮挡。
+   左上角是牌桌上唯一零遮挡的空白区（座位按 8 等分环绕，左上内沿无座位）。 */
+.ground-board{display:none;width:fit-content;max-width:94%;margin:0 auto 4px;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;pointer-events:none}
+.ground-board .gb-cell{display:flex;flex-direction:row;align-items:center;gap:3px;padding:0 5px;border:1px solid #8a8070;border-radius:5px;background:rgba(0,0,0,.42);font-size:8px;line-height:15px;white-space:nowrap}
+.ground-board .gb-title{display:inline;font-size:8px;opacity:.62;letter-spacing:1px;white-space:nowrap}
 .ground-board .gb-name{font-weight:600;color:#e8dcc0}
 .ground-board .gb-tier{opacity:.65}
 .ground-board .gb-owner{font-weight:600}
@@ -769,8 +771,9 @@ sub{bottom:-.16em}
   .play-card .pcnum{font-size:5px}
   .play-card .pcowner{font-size:5px}
   .play-zone{gap:3px;height:90px;padding:5px 4px}
-  /* 窄屏：中央改为纵向堆叠，灵地盘回到文档流，避免绝对定位压住牌堆 */
-  .ground-board{position:static;left:auto;bottom:auto;transform:none;max-width:100%;margin:2px auto 0}
+  /* 窄屏：灵地盘已在文档流中，仅收紧间距 */
+  .ground-board{margin:2px 0 3px}
+  .ground-board .gb-cell{font-size:7.5px;line-height:14px;padding:0 4px}
   /* 战报独立成块，置于出牌区下方（高度可由底部拖动条调整，默认 110px；
      覆盖 ≤900px 的 max-height:160px，拖动上限与 JS 一致为 50vh） */
   .table-area > .play-log-panel{flex:none;width:100%;height:110px;max-height:50vh;box-shadow:none}

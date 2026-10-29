@@ -256,10 +256,6 @@
           <div class="pile-count" id="discardCount">0</div>
         </div>
       </div>
-      <!-- 掌门路：灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石）。
-           独立定位在牌桌底部中央，**不参与 .table-center 的横排**，
-           否则会挤压出牌区宽度导致提示文案逐字竖排（v0.0.2 回归问题）。 -->
-      <div class="ground-board" id="zmlGroundBoard" style="display:none;"></div>
     </div>
     <div class="side-panel">
       <div class="play-log-panel" id="playLogPanel">
@@ -284,6 +280,9 @@
       </div>
     </div>
   </div>
+  <!-- 掌门路：灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石）。
+       放在牌桌正下方的一行（文档流），既不挤压出牌区宽度，也不会被环形座位遮挡。 -->
+  <div class="ground-board" id="zmlGroundBoard" style="display:none;"></div>
   <div class="center-area" id="centerArea">
     <div class="action-hint" id="actionHint"></div>
     <div class="action-btns" id="actionBtns"></div>
