@@ -133,6 +133,26 @@ const groundVisible = await page.isVisible('#zmlGroundBoard');
 const groundCells = await page.locator('#zmlGroundBoard div[title]').count();
 check('灵地盘渲染（含灵地格）', groundVisible && groundCells > 0, `${groundCells} 块`);
 
+// 7.1 布局回归：出牌区不得被灵地盘挤压（历史 bug：提示文案逐字竖排、中央竖向过长）
+const layout = await page.evaluate(() => {
+  const z = document.getElementById('playZoneCards');
+  const g = document.getElementById('zmlGroundBoard');
+  const c = document.querySelector('.table-center');
+  const zr = z?.getBoundingClientRect();
+  const gr = g?.getBoundingClientRect();
+  const cr = c?.getBoundingClientRect();
+  return {
+    zoneW: zr ? Math.round(zr.width) : 0,
+    zoneH: zr ? Math.round(zr.height) : 0,
+    groundBottom: gr ? Math.round(gr.bottom) : 0,
+    centerBottom: cr ? Math.round(cr.bottom) : 0,
+    inCenter: !!(g && c && c.contains(g)),
+  };
+});
+check('出牌区宽度正常（未被灵地盘挤压）', layout.zoneW >= 100, `${layout.zoneW}px 宽`);
+check('灵地盘已脱离中央横排（不再占出牌区宽度）', layout.inCenter === false, layout.inCenter ? '仍在 .table-center 内' : '已独立定位');
+check('中央出牌区高度未被撑高', layout.zoneH <= 160, `${layout.zoneH}px 高`);
+
 // 8. 推进若干回合（点结束出牌，交给 AI）
 const gameTextOf = async () => {
   try {

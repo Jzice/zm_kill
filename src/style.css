@@ -317,11 +317,21 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .pile-stack .card-back-pile:nth-child(2){left:2px;top:2px}
 .pile-stack .card-back-pile:nth-child(3){left:4px;top:4px}
 .pile-count{font-size:10.5px;color:var(--gold);font-weight:600}
-.play-zone{flex:1;height:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;padding:4px;position:relative}
+/* min-width 保护：出牌区被相邻元素挤压时不再塌成竖条（历史 bug：提示文案逐字竖排） */
+.play-zone{flex:1;min-width:110px;height:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;padding:4px;position:relative}
+/* 掌门路 · 灵地盘：牌桌底部中央独立定位，脱离 .table-center 横排。
+   采用单行紧凑布局（高 ≈18px）+ bottom:6px，避让下方座位卡（座位 z-index:3）。
+   注意：绝不可移回 .table-center 内部，否则会挤压出牌区导致提示文案逐字竖排。 */
+.ground-board{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:none;align-items:center;justify-content:center;gap:4px;z-index:2;max-width:72%;flex-wrap:wrap;pointer-events:none}
+.ground-board .gb-cell{display:flex;flex-direction:row;align-items:center;gap:3px;padding:0 5px;border:1px solid #8a8070;border-radius:5px;background:rgba(0,0,0,.3);font-size:8px;line-height:15px;white-space:nowrap}
+.ground-board .gb-title{display:none}
+.ground-board .gb-name{font-weight:600;color:#e8dcc0}
+.ground-board .gb-tier{opacity:.65}
+.ground-board .gb-owner{font-weight:600}
 .play-zone-label{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:2px;color:var(--gold-dim);background:rgba(15,26,12,.8);padding:0 6px;border-radius:3px}
 .play-zone-empty{font-size:9px;color:#5a5a40;letter-spacing:1px;font-style:italic}
 /* 技能 / 锦囊使用时在出牌区内浮现的内容提示（自动淡出） */
-.play-hint{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;background:linear-gradient(180deg,rgba(74,34,24,.94),rgba(26,10,6,.94));border:1px solid var(--gold-dim);border-radius:6px;padding:4px 8px;font-size:11px;line-height:1.5;color:#e8dcc0;pointer-events:none;animation:hintIn .3s ease-out}
+.play-hint{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;min-width:96px;max-height:56px;overflow:hidden;background:linear-gradient(180deg,rgba(74,34,24,.94),rgba(26,10,6,.94));border:1px solid var(--gold-dim);border-radius:6px;padding:4px 8px;font-size:11px;line-height:1.5;color:#e8dcc0;pointer-events:none;animation:hintIn .3s ease-out;word-break:break-word}
 @keyframes hintIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .play-hint .ph-title{color:var(--gold);font-weight:700;margin-right:6px}
 .play-hint.fade-out{opacity:0;transition:opacity .5s}
@@ -759,6 +769,8 @@ sub{bottom:-.16em}
   .play-card .pcnum{font-size:5px}
   .play-card .pcowner{font-size:5px}
   .play-zone{gap:3px;height:90px;padding:5px 4px}
+  /* 窄屏：中央改为纵向堆叠，灵地盘回到文档流，避免绝对定位压住牌堆 */
+  .ground-board{position:static;left:auto;bottom:auto;transform:none;max-width:100%;margin:2px auto 0}
   /* 战报独立成块，置于出牌区下方（高度可由底部拖动条调整，默认 110px；
      覆盖 ≤900px 的 max-height:160px，拖动上限与 JS 一致为 50vh） */
   .table-area > .play-log-panel{flex:none;width:100%;height:110px;max-height:50vh;box-shadow:none}

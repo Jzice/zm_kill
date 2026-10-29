@@ -139,15 +139,15 @@ function renderGroundBoard(): void {
   }
   box.style.display = 'flex';
   box.innerHTML =
-    '<div style="font-size:9px;opacity:.75;width:100%;text-align:center;">⛰️灵地</div>' +
+    '<div class="gb-title">⛰️ 灵 地</div>' +
     G.grounds
       .map((g) => {
         const own = g.owner != null ? G.players[g.owner] : null;
         const color = own ? FACTIONS[own.faction].color : '#8a8070';
-        return `<div title="${g.name}（${g.tier} 阶）｜${own ? own.name : '无主'}" style="border:1px solid ${color};border-radius:6px;padding:2px 5px;font-size:9px;display:flex;flex-direction:column;align-items:center;min-width:46px;background:rgba(0,0,0,.18);">
-          <span style="font-weight:600;">${g.name}</span>
-          <span style="opacity:.7;">${g.tier} 阶</span>
-          <span style="color:${color};">${own ? own.name.slice(0, 4) : '无主'}</span>
+        return `<div class="gb-cell" style="border-color:${color};" title="${g.name}（${g.tier} 阶）｜${own ? own.name : '无主'}">
+          <span class="gb-name">${g.name}</span>
+          <span class="gb-tier">${g.tier} 阶</span>
+          <span class="gb-owner" style="color:${color};">${own ? own.name.slice(0, 4) : '无主'}</span>
         </div>`;
       })
       .join('');

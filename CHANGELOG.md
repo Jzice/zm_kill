@@ -31,9 +31,13 @@
 - `EQUIP_SHORT` 补全掌门路兵器 / 护身 / 载具 / 宝物短名（卡面槽位单字显示）
 - `AGENTS.md`、`docs/掌门路规则设计.md` 同步角色池与主公技设计
 
+### 修复
+- **出牌区竖向过长**：灵地盘原插入固定宽 260px 的 `.table-center` 横排，把 `.play-zone` 挤到十几像素宽，导致提示文案逐字竖排并把中央区域竖向撑高。现改为牌桌底部中央单行独立定位（脱离横排），并为 `.play-zone` 加 `min-width:110px`、`.play-hint` 加 `min-width / max-height / overflow` 防护
+- `smoke:zml` 新增 3 项布局回归断言：出牌区宽度 ≥100px、灵地盘脱离 `.table-center`、中央高度 ≤160px
+
 ### 测试
 - `smoke:skills` 12/12（48 角色 / ≥250 技能 / 12 名三技能）
-- `smoke` 30/30、`smoke:cards` 20/20、`smoke:zml` 12/12、`verify:dist` 通过
+- `smoke` 30/30、`smoke:cards` 20/20、`smoke:zml` 15/15、`verify:dist` 通过
 
 ## [0.0.2] - 2026-10-30
 

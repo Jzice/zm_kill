@@ -250,14 +250,16 @@
           <div class="play-zone-label">出 牌 区</div>
           <span class="play-zone-empty">— 牌桌中央 —</span>
         </div>
-        <!-- 掌门路：灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石） -->
-        <div class="ground-board" id="zmlGroundBoard" style="display:none;"></div>
         <div class="pile">
           <div class="pile-label">弃牌</div>
           <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>
           <div class="pile-count" id="discardCount">0</div>
         </div>
       </div>
+      <!-- 掌门路：灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石）。
+           独立定位在牌桌底部中央，**不参与 .table-center 的横排**，
+           否则会挤压出牌区宽度导致提示文案逐字竖排（v0.0.2 回归问题）。 -->
+      <div class="ground-board" id="zmlGroundBoard" style="display:none;"></div>
     </div>
     <div class="side-panel">
       <div class="play-log-panel" id="playLogPanel">
