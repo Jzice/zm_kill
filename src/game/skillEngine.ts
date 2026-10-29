@@ -1339,6 +1339,8 @@ export function canBeTarget(
 ): boolean {
   const p = G.players[tgtIdx];
   if (!p) return true;
+  // 掌门路【通明身识】：本回合内不可被锦囊牌指定（融伪装、防御、隐匿为一体）
+  if (scope === 'trick' && p.skillUse?.['zml_tongshi']) return false;
   for (const d of defsOf(p)) {
     for (const e of d.effects) {
       if (e.kind === 'immune') {

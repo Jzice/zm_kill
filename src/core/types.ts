@@ -389,13 +389,55 @@ export interface Character {
   skills: Skill[];
   /** 预留修真机制扩展点（首版不实现，仅占位） */
   cultivation?: '练气' | '筑基' | '金丹' | '元婴' | '化神';
-  benming?: string;
+  /** 本命之物（可多个：本命越多灵根越杂，修炼越慢但天赋更强） */
+  benming?: string[];
   fagi?: string[];
   lingqi?: number;
 }
 
 /** 伤害属性：普通 / 火 / 雷（属性伤害可被【藤甲】放大，并触发【铁索连环】传导） */
 export type DamageType = 'normal' | 'fire' | 'thunder';
+
+/* ---------------- 掌门路（修真规则层） ----------------
+ * 仅在「掌门路模式」下生效；经典模式所有字段均为空，结构与序列化完全不变。
+ * 出处：docs/md/设定/修行体系.md、本命.md、灵石.md；docs/md/物事/ 各词表。
+ */
+
+/** 对局模式：classic=经典（原版三国杀，零改动）；zml=掌门路身份局；war=开辟战争 */
+export type GameMode = 'classic' | 'zml' | 'war';
+
+/** 修真境界：练气 → 筑基 → 金丹 → 元婴 → 化神 */
+export type Realm = 'lianqi' | 'zhuji' | 'jindan' | 'yuanying' | 'huashen';
+
+/** 灵地：开局布置在场上，可开辟 / 攻夺，按阶产灵石 */
+export interface SpiritGround {
+  id: string;
+  /** 真实山门地名（楚秦山 / 黑河峰 / 思过坊 …） */
+  name: string;
+  /** 阶位：一 / 二 / 三 / 五阶（进阶筑基须一阶、结丹三阶、结婴五阶） */
+  tier: 1 | 2 | 3 | 5;
+  /** 占领者座位号；null = 无主 */
+  owner: number | null;
+}
+
+/** 修真资源与身份状态（挂载在 Player.cult） */
+export interface CultivationState {
+  /** 当前境界 */
+  realm: Realm;
+  /** 修为（造成伤害 / 击杀 / 救人 / 占地积累） */
+  exp: number;
+  /** 灵石：一般等价物，上限 8 */
+  lingShi: number;
+  /** 本命之物（对他人隐藏，被【全知天眼】探查或阵亡后公开） */
+  benming: string[];
+  benmingShown: boolean;
+  /** 家族（秦 / 楚 / 展 / 罗 …） */
+  family?: string;
+  /** 本局已突破次数（≤2） */
+  breakthroughs: number;
+  /** 是否已使用过「夺舍」（黑手专属，每局限 1 次） */
+  duosheUsed?: boolean;
+}
 
 export interface Card {
   id: number;
@@ -410,6 +452,10 @@ export interface Card {
   judgeType?: 'lebu' | 'shandian' | 'bingliang';
   /** 该牌造成的伤害属性（火杀/雷杀/火攻/闪电），缺省按普通伤害处理 */
   damageType?: DamageType;
+  /** 掌门路模式：卡面副题（修真设定，如 火杀＝「碧磷斩」）；经典模式为空 */
+  subtitle?: string;
+  /** 掌门路模式：法器器灵层数（兵器法宝累积战果成长） */
+  qiling?: number;
 }
 
 /** 出牌区展示用的轻量卡牌视图（允许 num 为 '?' 等占位） */
@@ -499,6 +545,8 @@ export interface Player {
   marks?: Record<string, number>;
   /** 本回合已使用过的牌花色集合（门捷列夫·元素「三花色收集」判据），回合初清空 */
   turnSuits?: string[];
+  /** 掌门路模式：修真资源与身份状态（境界 / 修为 / 灵石 / 本命 / 家族）；经典模式为 undefined */
+  cult?: CultivationState;
 }
 
 export interface ChoiceOption {
@@ -540,6 +588,10 @@ export interface GameState {
   llmEnabled?: boolean;
   /** 房主的大模型接管范围：是否接管全部 AI 座位（客人端只读展示） */
   llmTakeoverAll?: boolean;
+  /** 掌门路模式：对局模式（classic 时该字段为 undefined，经典局零改动） */
+  mode?: GameMode;
+  /** 掌门路模式：场上灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石） */
+  grounds?: SpiritGround[];
 }
 
 export interface LogEntry {

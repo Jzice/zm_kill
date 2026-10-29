@@ -5,6 +5,7 @@
 import type {
   Card,
   ChoiceOption,
+  GameMode,
   LogEntry,
   PendingType,
   Player,
@@ -12,6 +13,7 @@ import type {
   PublicProfile,
   RoomMember,
   SeatSlot,
+  SpiritGround,
 } from '../core/types';
 
 export interface RoomStateMsg {
@@ -71,6 +73,10 @@ export type NetMessage =
       llmTakeoverAll?: boolean;
       /** 大模型「思考中」座位（客人端据此显示呼吸式思考指示） */
       thinkingSeat?: number | null;
+      /** 掌门路：对局模式（classic 不下发，客人端据此渲染修真界面） */
+      mode?: GameMode;
+      /** 掌门路：场上灵地盘（占领者 / 阶位，房主权威结算） */
+      grounds?: SpiritGround[];
     }
   | {
       /** 仅同步回合限时字段：房主自己出牌（pendingOptions 属房主，不得下发）时广播倒计时用 */

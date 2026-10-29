@@ -1,8 +1,9 @@
 /* ==================== 卡牌 ==================== */
-import type { Card, CardType } from '../core/types';
+import type { Card, CardType, GameMode } from '../core/types';
 import { allTrickDefs } from './knowledgeTricks';
 import { CARD_CATALOG } from './cardCatalog';
 import type { CardPackId } from './cardPacks';
+import { ZML_ALL } from './zml/cards.zml';
 
 export const SUITS: string[] = ['♠', '♥', '♣', '♦'];
 let cid = 0;
@@ -30,7 +31,9 @@ export const SHA_SUBS: string[] = ['sha', 'huo', 'lei'];
  * 扩展卡为**追加式**入池：在基础牌之后 push，不改写基础配比，
  * 因此不启用扩展包时牌堆构成完全不变。
  */
-export function buildDeck(opts?: { packs?: CardPackId[] }): Card[] {
+export function buildDeck(opts?: { packs?: CardPackId[]; mode?: GameMode }): Card[] {
+  // 掌门路 / 开辟战争：走独立修真牌堆；经典模式的 125 张基线路径逐字不动
+  if (opts?.mode && opts.mode !== 'classic') return buildZmlDeck();
   const d: Card[] = [];
   // 基本牌：杀共 30（普通杀 20 + 火杀 5 + 雷杀 5，与原版总数一致），闪 15 / 桃 8 / 酒 5
   for (let i = 0; i < 20; i++)
@@ -99,6 +102,32 @@ export function buildDeck(opts?: { packs?: CardPackId[] }): Card[] {
   for (let i = d.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+/**
+ * 掌门路修真牌堆（144 张）：按 src/data/zml/cards.zml.ts 的定义投放。
+ * 所有 sub 复用现有引擎 key，因此结算 / 判定 / AI 分支无需任何改动；
+ * 仅 name（修真卡名）与 subtitle（卡面副题）不同。
+ */
+export function buildZmlDeck(): Card[] {
+  const d: Card[] = [];
+  let i = 0;
+  for (const def of ZML_ALL) {
+    for (let k = 0; k < def.count; k++) {
+      d.push(
+        C(def.name, def.type, def.sub, SUITS[i % 4], (i % 13) + 1, {
+          ...(def.extra || {}),
+          subtitle: def.subtitle,
+        }),
+      );
+      i++;
+    }
+  }
+  for (let j = d.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [d[j], d[k]] = [d[k], d[j]];
   }
   return d;
 }

@@ -18,6 +18,8 @@ async function saveWillingness(i: number, idx: number): Promise<boolean> {
   return aiShouldSave(i, idx) > 0;
 }
 import { canConvertAs, fire, markConvertUse, reduceDamageOf, tryRevive } from './skillEngine';
+import { isZml } from '../core/mode';
+import { onDamageGain, onKillGain, spendLingShi } from './zml/economy';
 import { render } from '../ui/render';
 import { waitChoice } from './choice';
 import { maybeSettle } from '../profile/profile';
@@ -35,6 +37,8 @@ export async function dealDamage(
   // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
   if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
   const dealt = await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor);
+  // 掌门路：造成伤害积累修为
+  if (dealt && srcIdx >= 0) onDamageGain(srcIdx, amount);
   render();
   checkWin();
   return dealt;
@@ -84,8 +88,20 @@ async function applyDamage(
       dmg = Math.max(1, dmg - 1);
       addLog(`【明光铠】${tgt.name} 受到的伤害 -1`, 'heal');
     }
+    // 掌门路【玄水归土阵】：雷属性伤害无效（水土护持，楚秦山护山大阵）
+    if (armor === 'xuanshui' && type === 'thunder') {
+      addLog(`【玄水归土阵】${tgt.name} 免疫雷属性伤害`, 'hl');
+      dmg = 0;
+    }
   } else if (armor) {
     addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
+  }
+  // 掌门路【红玉阵盘】：可支付 1 灵石令本次伤害 -1（十方风火归元大阵主控阵盘）
+  if (isZml(G.mode) && tgt.equip.treasure?.skill === 'hongyu' && dmg > 1) {
+    if (spendLingShi(tgtIdx, 1)) {
+      dmg = Math.max(1, dmg - 1);
+      addLog(`【红玉阵盘】${tgt.name} 付 1 灵石，伤害 -1`, 'heal');
+    }
   }
   // 局前护甲：减少受到的伤害（由配装注入，整局有效，每次伤害事件生效一次）
   if (tgt.flags.dmgReduce && dmg > 0) {
@@ -227,6 +243,8 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         const kt = killerText(srcIdx, idx);
         revealDeadRole(p, kt);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
+        // 掌门路：击杀获得 2 灵石与 2 修为（战利与封赏）
+        onKillGain(srcIdx);
         Sound.play('death');
         await FX.death(idx, ROLES[p.role].name, kt);
         break;
@@ -250,6 +268,8 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         const kt = killerText(srcIdx, idx);
         revealDeadRole(p, kt);
         if (srcIdx === G.myPlayerIdx) G.myKills++;
+        // 掌门路：击杀获得 2 灵石与 2 修为（战利与封赏）
+        onKillGain(srcIdx);
         Sound.play('death');
         await FX.death(idx, ROLES[p.role].name, kt);
         break;

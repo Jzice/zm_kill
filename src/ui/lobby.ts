@@ -1,5 +1,6 @@
 /* ==================== 大厅 UI / 选角 / 扩展包管理 / 房间成员 ==================== */
-import type { Character, FactionId, Gender, PublicProfile, Role } from '../core/types';
+import type { Character, FactionId, GameMode, Gender, PublicProfile, Role } from '../core/types';
+import { MODE_DESC, MODE_LABEL, isZml } from '../core/mode';
 import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
@@ -61,6 +62,35 @@ export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
  * 由本模块独占持有（其他模块只读 / 通过 toggleCardPack 修改），不对外赋值。
  */
 export let SELECTED_CARD_PACKS: CardPackId[] = [];
+
+/**
+ * 对局模式（规则层）：classic=经典（原版三国杀，零改动）/ zml=掌门路 / war=开辟战争。
+ * 注意与上方的 SELECTED_MODE（single / host / join 联机模式）区分：两者互不影响。
+ * 由本模块独占持有，其他模块只读；通过 setRuleMode 修改。
+ */
+export let SELECTED_RULE_MODE: GameMode = 'classic';
+
+/** 切换对局模式（大厅设置；联机时以房主选择为准） */
+export function setRuleMode(m: GameMode): void {
+  SELECTED_RULE_MODE = m;
+  Sound.play('click');
+  saveSetupPrefs();
+  renderRuleModePicker();
+  renderCardPackPicker();
+}
+
+/** 对局模式选择器：经典 / 掌门路 / 开辟战争 */
+export function renderRuleModePicker(): void {
+  const box = document.getElementById('ruleModePicker');
+  if (!box) return;
+  const ids: GameMode[] = ['classic', 'zml', 'war'];
+  box.innerHTML = ids
+    .map(
+      (m) =>
+        `<button class="opt-btn ${SELECTED_RULE_MODE === m ? 'active' : ''}" onclick="setRuleMode('${m}')">${MODE_LABEL[m]}<small>${MODE_DESC[m]}</small></button>`,
+    )
+    .join('');
+}
 
 /** 开局选择本地记忆：玩家总数 / 回合限时（开关与秒数），写入 localStorage 记住上一次选择 */
 const SETUP_PREFS_KEY = 'xuetangsha_setup_v1';

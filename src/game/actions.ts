@@ -281,7 +281,8 @@ export async function useSha(
   showPlayCard({ name: cname, suit, num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
   // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
-  const ignoreArmor = a.equip.weapon?.skill === 'qinggang' && !wVoid;
+  // 掌门路【通天令】宝物：你使用的【杀】同样无视目标护身法器
+  const ignoreArmor = (a.equip.weapon?.skill === 'qinggang' || a.equip.treasure?.skill === 'tongtian') && !wVoid;
   const armor = ignoreArmor || aVoid ? undefined : t.equip.armor?.skill;
   const black = suit === '♠' || suit === '♣';
   if (armor === 'renwang' && black) {
@@ -486,6 +487,8 @@ export async function useTrick(
   const COUNTERABLE = [
     'wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan',
     'jiedao', 'wugu', 'tiesuo', 'huogong',
+    // 掌门路原著机制卡（可被【不在算中】抵消）
+    'guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi',
     // 扩展包锦囊（应变篇 / 国战）；延时类 lebu / shandian / bingliang 不在此列，与既有口径一致
     ...COUNTERABLE_EXTRA_TRICKS,
   ];
@@ -934,6 +937,62 @@ export async function useTrick(
     case 'wuxieguo': {
       // 【无懈可击·国】为响应牌，不应被主动使用；主动打出时哑火并记录
       addLog('【无懈可击·国】只能在他人使用锦囊时响应', 'dmg');
+      break;
+    }
+    /* ---- 掌门路原著机制卡 ---- */
+    case 'guidai': {
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '诡代之法', card.suit)) {
+        const t = G.players[targetIdx];
+        const sk = t.skills.find((s) => s.type === 'active');
+        if (sk && !a.skills.some((x) => x.id === sk.id)) {
+          a.skills.push({ ...sk });
+          addLog(`【诡代之法】${a.name} 以假代真，暂得【${sk.name}】`, 'hl');
+        } else {
+          addLog(`【诡代之法】${t.name} 无可复制的天赋`, 'dmg');
+        }
+      }
+      break;
+    }
+    case 'daizheng': {
+      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '本命代征', card.suit)) {
+        const t = G.players[targetIdx];
+        const sk = t.skills[0];
+        if (sk && !a.skills.some((x) => x.id === sk.id)) {
+          a.skills.push({ ...sk });
+          addLog(`【本命代征】${a.name} 去象显真，暂得【${sk.name}】`, 'hl');
+        }
+      }
+      break;
+    }
+    case 'mingyan': {
+      const top: Card[] = [];
+      for (let i = 0; i < 3 && G.deck.length; i++) {
+        const c = G.deck.pop();
+        if (c) top.push(c);
+      }
+      if (top.length) {
+        const pick = top[0];
+        a.hand.push(pick);
+        for (let i = top.length - 1; i >= 1; i--) G.deck.push(top[i]);
+        addLog(`【命演术】${a.name} 推演天机，将【${pick.name}】纳入手中`, 'hl');
+      }
+      break;
+    }
+    case 'tongshi': {
+      a.skillUse = a.skillUse || {};
+      a.skillUse['zml_tongshi'] = 1;
+      addLog(`【通明身识】${a.name} 融于虚幻，本回合不可被锦囊指定`, 'hl');
+      break;
+    }
+    case 'quanzhi': {
+      if (targetIdx != null) {
+        const t = G.players[targetIdx];
+        if (t.cult) t.cult.benmingShown = true;
+        addLog(
+          `【全知天眼】${a.name} 窥破 ${t.name} 的本命：${t.cult?.benming?.join('、') || '未载'}（探听本命即结怨）`,
+          'hl',
+        );
+      }
       break;
     }
     default: {

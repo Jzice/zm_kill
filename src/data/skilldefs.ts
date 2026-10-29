@@ -11,6 +11,7 @@
  * - 「+1 学识」仅保留居里夫人【镭元素】一处学识经济技
  */
 import type { Skill, SkillDef, SkillE, SkillTiming, SkillType } from '../core/types';
+import { ZML_SKILL_LIST } from './zml/skilldefs.zml';
 
 /** 展示类型 → 出牌阶段是否作为「主动技按钮」出现 */
 export function skillTypeOf(d: SkillDef): SkillType {
@@ -2584,6 +2585,8 @@ export const SKILL_DEFS: Record<string, SkillDef> = Object.fromEntries(
     SUB_YICHUAN,
     SUB_GUANGHE,
     SUB_QUWEI,
+    // 掌门路原著角色技能（48 人，词条全部取自 docs/）
+    ...ZML_SKILL_LIST,
   ].map((d) => [d.id, d]),
 );
 

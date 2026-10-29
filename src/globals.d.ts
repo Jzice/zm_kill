@@ -71,6 +71,10 @@ declare global {
     toggleCardPack: (id: CardPackId) => void;
     /** 冒烟测试专用：按卡包合成牌堆并返回 sub → 张数统计 */
     __xtsDeckStats: (packs?: string[]) => Record<string, number>;
+    /** 对局模式切换：classic（经典）/ zml（掌门路）/ war（开辟战争） */
+    setRuleMode: (m: string) => void;
+    /** 冒烟测试专用：掌门路修真牌堆的「卡名 → 张数」统计 */
+    __xtsZmlDeckStats: () => Record<string, number>;
     clearWrongBook: () => void;
     // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习 / 复习模式
     toggleStudyItem: (key: string) => void;

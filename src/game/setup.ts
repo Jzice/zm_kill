@@ -7,10 +7,13 @@ import { G } from './state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG } from '../data/characters';
 import { charPoolForPacket, packTollOf, isExpansion, packetName } from '../data/packets';
-import { SELECTED_CARD_PACKS } from '../ui/lobby';
+import { SELECTED_CARD_PACKS, SELECTED_RULE_MODE } from '../ui/lobby';
 import { applyDeckComposition } from './aicounts';
 import { expansionEquipById, expansionItemById } from '../data/expansion';
 import { buildDeck, shuffle } from '../data/cards';
+import { groundSetupFor, isZml } from '../core/mode';
+import { zmlCharById, zmlCharPool } from '../data/zml/characters.zml';
+import { initCult } from './zml/economy';
 import { drawCards } from './rules';
 import { addChat, resetChatMessages } from './chat';
 import { addLog, resetPlayLog } from './log';
@@ -112,6 +115,13 @@ function applyLoadoutTo(p: Player, loadout: Loadout | undefined, unlockedEquips:
 }
 
 function setupPlayers(playerCount: number, localChar: Character, localName: string): void {
+  // 掌门路模式：角色池切换到原著角色池；若当前自选角色不在池中则随机换将
+  if (isZml(SELECTED_RULE_MODE)) {
+    const pool = zmlCharPool();
+    if (!pool.some((c) => c.id === localChar.id)) {
+      localChar = pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
   const roleDeck = [...(ROLE_CONFIG[playerCount] || ROLE_CONFIG[4])];
   const available = [...new Set(roleDeck)];
   let myRole: Role;
@@ -134,7 +144,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       for (const p of m.pref?.cardPacks || []) if (p !== 'core' && !cardPacks.includes(p)) cardPacks.push(p);
     }
   }
-  const roomPool = effectiveCharPool(grade, base, extraAll);
+  const roomPool = isZml(SELECTED_RULE_MODE) ? zmlCharPool() : effectiveCharPool(grade, base, extraAll);
   const aiChars = roomPool.filter((c) => c.id !== localChar.id);
   shuffle(aiChars);
   // 已分配角色，避免多座位重复
@@ -146,7 +156,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   G.settled = false;
   G.myKills = 0;
   const deckPacks = withCore(cardPacks);
-  G.deck = buildDeck({ packs: deckPacks });
+  G.deck = buildDeck({ packs: deckPacks, mode: SELECTED_RULE_MODE });
   // AI 信息集：牌堆构成随启用卡包变化（概率分母），须与实际牌堆同步
   applyDeckComposition(deckPacks);
   G.discard = [];
@@ -235,7 +245,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
         (typeof rawName === 'string' && rawName ? { ...localIdentity(), name: rawName } : null);
       const name = identity?.name || member?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
       // 远程玩家：优先采用其在设置界面自选的阵营 / 角色偏好（限定在其「基础包 ∪ 叠加包」的有效池内）
-      const seatPool = effectiveCharPool(grade, base, member?.pref?.packets || []);
+      const seatPool = isZml(SELECTED_RULE_MODE) ? zmlCharPool() : effectiveCharPool(grade, base, member?.pref?.packets || []);
       const seatChars = seatPool.filter((c) => c.id !== localChar.id && !used.has(c.id));
       const fallback = seatChars[0] ?? aiChars.find((c) => !used.has(c.id)) ?? roomPool[0];
       const byFaction = member?.pref?.faction
@@ -259,6 +269,17 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   resetLlmFailStreak(); // 新对局：清空大模型连续失败计数（解除上一局可能的自动降级）
   applyLlmModes(); // 依据当前大模型配置标记各 AI 座位的决策模式
   G.players.forEach((p) => drawCards(p, 4));
+  // 掌门路模式：写入对局模式、布置灵地盘、为每位玩家注入修真状态（境界 / 本命 / 家族）
+  G.mode = SELECTED_RULE_MODE;
+  if (isZml(SELECTED_RULE_MODE)) {
+    G.grounds = groundSetupFor(playerCount);
+    G.players.forEach((pl) => {
+      const zc = zmlCharById(pl.charId);
+      initCult(pl.id, zc?.realm ?? 'lianqi', zc?.benming ?? [], zc?.family);
+    });
+  } else {
+    G.grounds = undefined;
+  }
   G.current = G.players.findIndex((p) => p.role === 'lord');
   if (G.current < 0) G.current = 0;
   G.myPlayerIdx = hostSeat;

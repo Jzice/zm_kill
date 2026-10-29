@@ -134,6 +134,8 @@ export function discardCard(p: Player, card: Card, toDiscard = true): void {
 
 export function handLimit(p: Player): number {
   let l = Math.max(p.hp, 0);
+  // 掌门路：【储物袋】宝物 —— 手牌上限 +2
+  if (p.equip.treasure?.skill === 'chuwu') l += 2;
   // 声明式技能：手牌上限原语（缀术 +2 / 数论直觉 +1（有对子再 +1）/ 元素 +1 …）
   l += handLimitBonus(p);
   // 扩展包触发技：手牌上限原语（数学/化学「厚积薄发」handLimit: +1 等）

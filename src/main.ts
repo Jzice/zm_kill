@@ -8,9 +8,10 @@ import { G } from './game/state';
 import { dealDamage, checkWin } from './game/damage';
 import { useTrick } from './game/actions';
 
-import type { FactionId } from './core/types';
+import type { FactionId, GameMode } from './core/types';
 import { setSim, sleep, togglePanel } from './core/dom';
 import { CHARACTERS } from './data/characters';
+import { renderRuleModePicker, setRuleMode } from './ui/lobby';
 import { FACTIONS } from './data/factions';
 import { defOf, SKILL_DEFS } from './data/skilldefs';
 import { stageOf } from './data/packets';
@@ -171,6 +172,14 @@ window.setTimerSec = setTimerSec;
 window.renderPacketPicker = renderPacketPicker;
 window.renderCardPackPicker = renderCardPackPicker;
 window.toggleCardPack = toggleCardPack;
+window.setRuleMode = (m: string) => setRuleMode(m as GameMode);
+/** 冒烟测试专用：掌门路修真牌堆的「卡名 → 张数」统计（scripts/smoke-zml.mjs） */
+window.__xtsZmlDeckStats = (): Record<string, number> => {
+  const deck = buildDeck({ mode: 'zml' });
+  const out: Record<string, number> = {};
+  for (const c of deck) out[c.name] = (out[c.name] || 0) + 1;
+  return out;
+};
 /**
  * 冒烟测试专用：按给定卡包合成牌堆并返回「sub → 张数」统计。
  * 用于断言「不启用扩展包时牌堆与基础 125 张逐项一致」（scripts/smoke-cards.mjs）。
@@ -474,6 +483,7 @@ function init(): void {
   renderProfileEditor();
   ensureCharValid();
   renderPacketPicker();
+  renderRuleModePicker();
   renderCardPackPicker();
   renderTimerPicker();
   renderFactionPicker();

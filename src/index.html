@@ -137,6 +137,11 @@
     <div class="scope-hint" id="packetHint"></div>
   </div>
     <div class="panel">
+      <h3>◈ 对局模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（经典＝原版三国杀规则不变；掌门路＝修真牌堆 + 原著角色 + 灵石 / 境界 / 灵地）</span></h3>
+      <div class="opt-row" id="ruleModePicker"></div>
+      <div class="scope-hint" id="ruleModeHint"></div>
+    </div>
+    <div class="panel">
       <h3>◈ 牌库扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（在基础 125 张之上追加扩展卡牌，可多选；房主勾选后随房间同步）</span></h3>
       <div class="opt-row" id="cardPackPicker"></div>
       <div class="scope-hint" id="cardPackHint"></div>
@@ -245,6 +250,8 @@
           <div class="play-zone-label">出 牌 区</div>
           <span class="play-zone-empty">— 牌桌中央 —</span>
         </div>
+        <!-- 掌门路：灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石） -->
+        <div class="ground-board" id="zmlGroundBoard" style="display:none;"></div>
         <div class="pile">
           <div class="pile-label">弃牌</div>
           <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>

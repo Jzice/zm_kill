@@ -478,6 +478,9 @@ export function onClientData(data: NetMessage): void {
     G.llmEnabled = data.llmEnabled ?? G.llmEnabled;
     G.llmTakeoverAll = data.llmTakeoverAll ?? G.llmTakeoverAll;
     G.thinkingSeat = data.thinkingSeat ?? null;
+    // 掌门路：模式与灵地盘由房主权威下发
+    G.mode = data.mode ?? G.mode;
+    G.grounds = data.grounds ?? G.grounds;
     if (data.playLog) {
       setPlayLog(data.playLog);
     }
@@ -552,6 +555,9 @@ export function syncStateToClients(): void {
     llmEnabled: getLlmConfig().enabled,
     llmTakeoverAll: getLlmConfig().takeoverAll,
     thinkingSeat: G.thinkingSeat ?? null,
+    // 掌门路：对局模式与灵地盘（顶层字段，必须显式同步；Player.cult 随 players 全量下发）
+    mode: G.mode,
+    grounds: G.grounds,
   });
 }
 

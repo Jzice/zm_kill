@@ -30,6 +30,16 @@ import { dealDamage, onLoseArmor } from './damage';
 import { useActiveSkill } from './skills';
 import { useSha, useTao, useJiu, useTrick } from './actions';
 import { defOf } from '../data/skilldefs';
+import { GROUND_CLAIM_COST, MARKET_COST, REALM_LABEL, isZml } from '../core/mode';
+import {
+  canMarket,
+  checkBreakthrough,
+  claimableGrounds,
+  doBreakthrough,
+  doClaimGround,
+  doMarket,
+  zmlTurnStart,
+} from './zml/economy';
 import {
   canBeTarget,
   canConvertAs,
@@ -102,6 +112,8 @@ export async function runTurn(idx: number): Promise<void> {
   // 准备阶段（判定前）：观星 / 周期律
   await fire('onTurnStart', { idx });
   await judgePhase(p);
+  // 掌门路：回合开始的灵石产出（打坐吐纳 + 已占灵地）
+  zmlTurnStart(idx);
   // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
   // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
   const bonusDraw = extraDrawOf(p) + (treasureSkillOf(p) === 'muyu' ? 1 : 0);
@@ -274,10 +286,30 @@ export async function playPhase(idx: number): Promise<void> {
     if (canSha && p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
       opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
     }
+    // 掌门路：出牌阶段追加的修真行动（坊市 / 突破 / 开辟灵地）
+    if (isZml(G.mode)) {
+      if (canMarket(idx)) opts.push({ label: `🏪坊市：付 ${MARKET_COST} 灵石摸 1 张`, value: 'zml_market' });
+      const bt = checkBreakthrough(idx);
+      if (bt.ok && bt.next) opts.push({ label: `🆙突破至【${REALM_LABEL[bt.next]}】`, value: 'zml_break' });
+      for (const g of claimableGrounds(idx))
+        opts.push({ label: `⛰️开辟【${g.name}】（${g.tier} 阶，${GROUND_CLAIM_COST} 灵石）`, value: 'zml_ground_' + g.id });
+    }
     opts.push({ label: '结束出牌', value: 'end' });
     const ch = await nextPlay(opts);
     if (ch === 'end' || !ch) break;
     if (!p.alive || G.gameOver) break;
+    if (ch === 'zml_market') {
+      doMarket(idx);
+      continue;
+    }
+    if (ch === 'zml_break') {
+      doBreakthrough(idx);
+      continue;
+    }
+    if (String(ch).startsWith('zml_ground_')) {
+      doClaimGround(idx, String(ch).replace('zml_ground_', ''));
+      continue;
+    }
     if (ch === 'zhangba') {
       const two = await pickTwoCards(idx);
       if (two.length === 2) {

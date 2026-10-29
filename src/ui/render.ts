@@ -3,6 +3,7 @@ import type { Player } from '../core/types';
 import { G } from '../game/state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_ICON, EQUIP_SHORT } from '../data/characters';
+import { REALM_LABEL, isZml, zmlRoleLabel } from '../core/mode';
 import { genderIcon } from '../profile/profile';
 import { escapeHtml, isSim } from '../core/dom';
 import { displayOrder, handLimit } from '../game/rules';
@@ -46,13 +47,15 @@ function buildPlayerCard(p: Player, i: number): string {
   const mark = ROLE_MARKS[i];
   const isMarked = !!mark && !isSelf && !p.roleRevealed;
   // 身份展示：自己/已公开 → 真实身份；被自己标记且未公开 → 标记身份（虚线框区分）；否则未知
+  // 掌门路模式下显示名改为 掌门 / 弟子 / 邪修 / 黑手
+  const zl = (r: 'lord' | 'loyal' | 'rebel' | 'spy'): string => zmlRoleLabel(r, G.mode) || ROLES[r].name;
   let roleName: string;
   let roleColor: string;
   if (isSelf || p.roleRevealed) {
-    roleName = '【' + ROLES[p.role].name + '】';
+    roleName = '【' + zl(p.role) + '】';
     roleColor = ROLES[p.role].color;
   } else if (mark) {
-    roleName = '【' + ROLES[mark].name + '】';
+    roleName = '【' + zl(mark) + '】';
     roleColor = ROLES[mark].color;
   } else {
     roleName = '身份未知';
@@ -68,7 +71,14 @@ function buildPlayerCard(p: Player, i: number): string {
   const equipSlots = EQUIP_SLOTS.map((k) => {
     const eq = p.equip[k];
     const f = !!eq;
-    const tip = f ? eq!.name : EQUIP_LABEL[k] + '（空）';
+    // 掌门路：±1 马槽改称「载具·守 / 载具·进」
+    const emptyTip =
+      isZml(G.mode) && k === 'horsePlus'
+        ? '载具·守（空）'
+        : isZml(G.mode) && k === 'horseMinus'
+          ? '载具·进（空）'
+          : EQUIP_LABEL[k] + '（空）';
+    const tip = f ? eq!.name : emptyTip;
     const short = f ? EQUIP_SHORT[eq!.name] || eq!.name.slice(0, 1) : '';
     return `<div class="equip-slot ${f ? 'filled' : ''}" title="${tip}"><span class="eq-icon">${EQUIP_ICON[k]}</span>${f ? `<span class="eq-short">${short}</span>` : ''}</div>`;
   }).join('');
@@ -92,8 +102,14 @@ function buildPlayerCard(p: Player, i: number): string {
     idt && idt.mood
       ? `<div class="pmood" title="${escapeHtml(idt.mood)}">${idt.moodIcon} ${escapeHtml(idt.mood)}</div>`
       : '';
+  // 掌门路：境界 / 修为 / 灵石 条（经典模式为 undefined，不渲染）
+  const cultBar = p.cult
+    ? `<div title="境界 ${REALM_LABEL[p.cult.realm]}｜修为 ${p.cult.exp}｜灵石 ${p.cult.lingShi}${p.cult.benmingShown && p.cult.benming.length ? '｜本命：' + p.cult.benming.join('、') : ''}" style="display:flex;gap:5px;align-items:center;justify-content:center;font-size:9px;margin-top:2px;line-height:1.4;">
+        <span style="background:rgba(120,90,40,.35);border-radius:6px;padding:0 4px;">${REALM_LABEL[p.cult.realm]}</span><span style="opacity:.85;">修为 ${p.cult.exp}</span><span style="color:#7fd4ff;">💠${p.cult.lingShi}</span>
+      </div>`
+    : '';
   let badges = '';
-  if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${ROLES[p.role].name}</span>`;
+  if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${zl(p.role)}</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
   if (p.chained) badges += `<span class="badge badge-chain" title="铁索连环·横置：受属性伤害时传导">🔗连环</span>`;
   if (p.turned) badges += `<span class="badge badge-turned" title="翻面：跳过下一个回合">🔄翻面</span>`;
@@ -103,12 +119,38 @@ function buildPlayerCard(p: Player, i: number): string {
     ${markBtn}
     <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${genderIconHtml}${aiTag}${isThinking ? '<span class="seat-thinking">🤖 思考中…</span>' : ''}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="php-bar">${hpGems}</div>
+    ${cultBar}
     <div class="pequip-slots">${equipSlots}</div>
     ${equipNamesHtml}
     <div class="pfooter"><div class="hand-pile">${miniCards}<span class="hand-count">${handCount}</span></div></div>
     <div class="p-badges">${badges}</div>
     ${judgeTags ? `<div class="pjudge-row">${judgeTags}</div>` : ''}
   </div>`;
+}
+
+/** 掌门路：灵地盘渲染（经典模式隐藏）。灵地按阶产灵石，是开辟战争模式的胜负目标。 */
+function renderGroundBoard(): void {
+  const box = document.getElementById('zmlGroundBoard');
+  if (!box) return;
+  if (!isZml(G.mode) || !G.grounds || !G.grounds.length) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  box.style.display = 'flex';
+  box.innerHTML =
+    '<div style="font-size:9px;opacity:.75;width:100%;text-align:center;">⛰️灵地</div>' +
+    G.grounds
+      .map((g) => {
+        const own = g.owner != null ? G.players[g.owner] : null;
+        const color = own ? FACTIONS[own.faction].color : '#8a8070';
+        return `<div title="${g.name}（${g.tier} 阶）｜${own ? own.name : '无主'}" style="border:1px solid ${color};border-radius:6px;padding:2px 5px;font-size:9px;display:flex;flex-direction:column;align-items:center;min-width:46px;background:rgba(0,0,0,.18);">
+          <span style="font-weight:600;">${g.name}</span>
+          <span style="opacity:.7;">${g.tier} 阶</span>
+          <span style="color:${color};">${own ? own.name.slice(0, 4) : '无主'}</span>
+        </div>`;
+      })
+      .join('');
 }
 
 function seatPos(rel: number, total: number): { x: number; y: number } {
@@ -313,6 +355,7 @@ export function render(): void {
   if (centerArea) centerArea.style.display = 'flex';
   document.getElementById('deckCount')!.textContent = String(G.deck.length || 0);
   document.getElementById('discardCount')!.textContent = String(G.discard.length || 0);
+  renderGroundBoard();
 
   const chatPanel = document.getElementById('chatPanel');
   if (chatPanel) chatPanel.style.display = NET.mode === 'single' ? 'none' : 'flex';
