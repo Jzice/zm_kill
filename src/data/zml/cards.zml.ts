@@ -1,6 +1,6 @@
-/* ==================== 掌门路修真牌堆（144 张） ====================
+/* ==================== 掌门路修真牌堆（234 张） ====================
  * 选词规则：所有卡名均出自 docs/（详见 docs/掌门路规则设计.md 的出处审计表）。
- *   - 基本牌沿用三国杀原名「杀 / 火杀 / 雷杀 / 闪」，桃 → 回春丹、酒 → 真源丹
+ *   - 基本牌按功能拆为修真变体（杀/火杀/雷杀/闪/桃/酒 各由功法、符箓、身法、丹药代替），sub 沿用引擎 key
  *   - 锦囊取自 功法(B) / 技能(K) / 符箓(C) / 本命天赋 / 原著灾劫
  *   - 兵器词条仅作装备；阵法可作防具；载具取代 ±1 马
  *
@@ -27,14 +27,41 @@ export interface ZmlCardDef {
   src: string;
 }
 
-/* ---------------- 基本牌 58 张 ---------------- */
+/* ---------------- 基本牌 58 张 ----------------
+ * 同一 sub 拆成多个修真变体：sub / type / damageType 全部不变，仅卡名与副题不同，
+ * 因此出牌 / 判定 / 无懈响应链 / AI 分支零改动。
+ * 各 sub 张数保持不变：杀 20 / 火杀 5 / 雷杀 5 / 闪 15 / 桃 8 / 酒 5。
+ */
 export const ZML_BASIC: ZmlCardDef[] = [
-  { sub: 'sha', name: '杀', subtitle: '御剑', type: 'basic', count: 20, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害', src: '通用攻击（docs/md/物事/法器.md 飞剑类高频词）' },
-  { sub: 'huo', name: '火杀', subtitle: '碧磷斩', type: 'basic', count: 5, extra: { damageType: 'fire' }, desc: '火属性伤害 1（碧磷冷火）', src: 'docs/md/物事/功法.md · 碧磷斩（二阶法术，斯温家）' },
-  { sub: 'lei', name: '雷杀', subtitle: '五雷焚心符', type: 'basic', count: 5, extra: { damageType: 'thunder' }, desc: '雷属性伤害 1', src: 'docs/md/物事/符篆.md · 五雷焚心符（二阶极品攻击符）' },
-  { sub: 'shan', name: '闪', subtitle: '遥及闪', type: 'basic', count: 15, desc: '抵消一次【杀】', src: 'docs/md/物事/功法.md · 遥及闪（二阶中品身法）' },
-  { sub: 'tao', name: '回春丹', subtitle: '桃', type: 'basic', count: 8, desc: '回复 1 点体力；濒死时可自救', src: 'docs/md/物事/丹药.md · 回春丹（一阶，治疗元素法术伤害）' },
-  { sub: 'jiu', name: '真源丹', subtitle: '酒', type: 'basic', count: 5, desc: '本回合下一张【杀】伤害 +1；濒死时可当【回春丹】', src: 'docs/md/物事/丹药.md · 真源丹（二阶上品，筑基修士顶级修为丹）' },
+  /* 杀（普通攻击，共 20） */
+  { sub: 'sha', name: '蔓藤符', subtitle: '杀', type: 'basic', count: 4, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害（木系藤蔓缠缚）', src: 'docs/md/物事/符篆.md · 藤蔓符（一阶攻击符，木系；本作写作蔓藤符）' },
+  { sub: 'sha', name: '碧磷斩', subtitle: '杀', type: 'basic', count: 4, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害（碧磷冷火斩击）', src: 'docs/md/物事/功法.md · 碧磷斩（二阶法术，斯温家）' },
+  { sub: 'sha', name: '伏虎夺法', subtitle: '杀', type: 'basic', count: 4, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害（近身夺法重击）', src: 'docs/md/物事/功法.md · 伏虎夺法（四阶近战法术，霍家家传）' },
+  { sub: 'sha', name: '金剑封绝阵', subtitle: '杀', type: 'basic', count: 4, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害（剑阵封锁）', src: 'docs/md/物事/符篆.md · 金剑封绝阵（三阶攻击符）' },
+  { sub: 'sha', name: '万森惊木诀', subtitle: '杀', type: 'basic', count: 4, extra: { damageType: 'normal' }, desc: '对攻击范围内的一名角色造成 1 点伤害（木系法术）', src: 'docs/md/物事/功法.md · 万森惊木诀（二阶木系功法）' },
+  /* 火杀（火属性，共 5） */
+  { sub: 'huo', name: '黑炎凤凰符宝', subtitle: '火杀', type: 'basic', count: 2, extra: { damageType: 'fire' }, desc: '火属性伤害 1（黑炎凤凰灵兽之力）', src: 'docs/md/物事/符篆.md · 黑炎凤凰符宝' },
+  { sub: 'huo', name: '澄蓝火焰符宝', subtitle: '火杀', type: 'basic', count: 2, extra: { damageType: 'fire' }, desc: '火属性伤害 1（澄蓝烈焰）', src: 'docs/md/物事/符篆.md · 澄蓝火焰符宝' },
+  { sub: 'huo', name: '熔岩火人召唤符', subtitle: '火杀', type: 'basic', count: 1, extra: { damageType: 'fire' }, desc: '火属性伤害 1（召熔岩火人灼烧）', src: 'docs/md/物事/符篆.md · 熔岩火人召唤符（三阶召唤符）' },
+  /* 雷杀（雷属性，共 5） */
+  { sub: 'lei', name: '五雷焚心符', subtitle: '雷杀', type: 'basic', count: 2, extra: { damageType: 'thunder' }, desc: '雷属性伤害 1（五雷轰心）', src: 'docs/md/物事/符篆.md · 五雷焚心符（二阶极品攻击符）' },
+  { sub: 'lei', name: '神霄五雷正法', subtitle: '雷杀', type: 'basic', count: 2, extra: { damageType: 'thunder' }, desc: '雷属性伤害 1（道家根本雷法）', src: 'docs/md/物事/功法.md · 神霄五雷正法（三阶雷法，大周书院）' },
+  { sub: 'lei', name: '一指奔雷', subtitle: '雷杀', type: 'basic', count: 1, extra: { damageType: 'thunder' }, desc: '雷属性伤害 1（雷系指法神通）', src: 'docs/md/角色/楚秦门/02.筑基/展剑锋.md · 【一指奔雷】（雷系指法）' },
+  /* 闪（防御，共 15） */
+  { sub: 'shan', name: '遥及闪', subtitle: '闪', type: 'basic', count: 3, desc: '抵消一次【杀】（遥及身法）', src: 'docs/md/物事/功法.md · 遥及闪（二阶中品身法）' },
+  { sub: 'shan', name: '极空闪', subtitle: '闪', type: 'basic', count: 3, desc: '抵消一次【杀】（极空身法残卷）', src: 'docs/md/物事/功法.md · 极空闪残卷（一阶极品身法）' },
+  { sub: 'shan', name: '泼风盾舞', subtitle: '闪', type: 'basic', count: 3, desc: '抵消一次【杀】（运盾之法，泼风难近）', src: 'docs/md/物事/功法.md · 泼风盾舞（一阶运盾之法）' },
+  { sub: 'shan', name: '灵猴身法', subtitle: '闪', type: 'basic', count: 3, desc: '抵消一次【杀】（灵猴腾挪）', src: 'docs/md/技能/灵猴身法.md · 灵猴身法' },
+  { sub: 'shan', name: '幻珑闪', subtitle: '闪', type: 'basic', count: 3, desc: '抵消一次【杀】（金丹自创身法）', src: 'docs/md/角色/楚秦门/03.金丹/齐休.md · 幻珑闪' },
+  /* 桃（恢复，共 8） */
+  { sub: 'tao', name: '回春丹', subtitle: '桃', type: 'basic', count: 2, desc: '回复 1 点体力；濒死时可自救', src: 'docs/md/物事/丹药.md · 回春丹（一阶，治疗元素法术伤害）' },
+  { sub: 'tao', name: '回血丹', subtitle: '桃', type: 'basic', count: 2, desc: '回复 1 点体力；濒死时可自救', src: 'docs/md/物事/丹药.md · 回血丹（一阶下品，廉价回血丹）' },
+  { sub: 'tao', name: '大还丹', subtitle: '桃', type: 'basic', count: 2, desc: '回复 1 点体力；濒死时可自救', src: 'docs/md/物事/丹药.md · 大还丹（四阶，齐云特产）' },
+  { sub: 'tao', name: '小还丹', subtitle: '桃', type: 'basic', count: 2, desc: '回复 1 点体力；濒死时可自救', src: 'docs/md/物事/丹药.md · 小还丹（三阶，齐云特产）' },
+  /* 酒（增益，共 5） */
+  { sub: 'jiu', name: '真源丹', subtitle: '酒', type: 'basic', count: 2, desc: '本回合下一张【杀】伤害 +1；濒死时可当【回春丹】', src: 'docs/md/物事/丹药.md · 真源丹（二阶上品，筑基顶级修为丹）' },
+  { sub: 'jiu', name: '豹胎玄极丹', subtitle: '酒', type: 'basic', count: 2, desc: '本回合下一张【杀】伤害 +1；濒死时可当【回春丹】', src: 'docs/md/物事/丹药.md · 豹胎玄极丹（二阶中品，辅助筑基）' },
+  { sub: 'jiu', name: '三才培元丹', subtitle: '酒', type: 'basic', count: 1, desc: '本回合下一张【杀】伤害 +1；濒死时可当【回春丹】', src: 'docs/md/物事/丹药.md · 三才培元丹（增金丹修为）' },
 ];
 
 /* ---------------- 锦囊牌 55 张 ---------------- */
@@ -48,7 +75,7 @@ export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'wanjian', name: '万剑钻心', subtitle: '万箭齐发', type: 'skill', count: 1, desc: '群攻（数百飞剑攒刺），需打出【闪】抵御', src: 'docs/md/技能/万剑钻心.md' },
   { sub: 'taoyuan', name: '三木回心阵', subtitle: '桃园结义', type: 'skill', count: 1, desc: '所有存活角色各回复 1 点体力', src: 'docs/md/技能/三木回心阵.md（多罗森三木同心本命衍生疗伤阵法）' },
   { sub: 'lebu', name: '七星定身阵', subtitle: '乐不思蜀', type: 'skill', count: 3, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段', src: 'docs/md/技能/七星定身阵.md（七柄飞剑布阵锁定气机）' },
-  { sub: 'bingliang', name: '藤蔓符', subtitle: '兵粮寸断', type: 'skill', count: 2, extra: { judgeType: 'bingliang' }, desc: '延时：判定若不为♣梅花，则跳过其摸牌阶段 —— 藤蔓缠身、无从取物', src: 'docs/md/物事/符篆.md · 藤蔓符（一阶攻击符，木系）' },
+  { sub: 'bingliang', name: '哼哈真言', subtitle: '兵粮寸断', type: 'skill', count: 2, extra: { judgeType: 'bingliang' }, desc: '延时：判定若不为♣梅花，则跳过其摸牌阶段 —— 真言封喉、无从取物', src: 'docs/md/角色/楚秦门/03.金丹/齐休.md · 哼哈真言（真言破法）' },
   { sub: 'shandian', name: '天劫', subtitle: '闪电', type: 'skill', count: 2, extra: { judgeType: 'shandian', damageType: 'thunder' }, desc: '延时：判定若为♠黑桃 2~9，受到 3 点雷属性伤害', src: 'docs/md/设定/修行体系.md（九道雷劫 / 大道劫雷）；角色篇「天劫设定」' },
   { sub: 'jiedao', name: '银甲乐傀召唤符', subtitle: '借刀杀人', type: 'skill', count: 2, desc: '令一名角色对另一名角色打出【杀】—— 驱傀儡代你出手', src: 'docs/md/物事/符篆.md · 银甲乐傀召唤符；docs/md/技能/银甲乐傀.md' },
   { sub: 'wugu', name: '同参木阵', subtitle: '五谷丰登', type: 'skill', count: 2, desc: '亮出若干张牌，存活者轮流各取 1 张 —— 同参共修、共享其利', src: 'docs/md/物事/功法.md · 同参木阵（一阶中品阵法，秦唯喻/阚缺/多罗森）' },
@@ -188,8 +215,6 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
   { sub: 'fabao', name: '熊氏重甲', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（北烈山熊氏）', src: 'docs/md/角色/楚秦门/03.金丹/熊十四.md' },
   { sub: 'fabao', name: '五烟绮罗纱', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【杀】对你无效', src: 'docs/md/角色/楚秦门/02.筑基/赵瑶.md' },
   { sub: 'fabao', name: '小红', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：普通【杀】与群攻技能对你无效；受到火属性伤害 +1（魔化之躯）', src: 'docs/md/角色/楚秦门/02.筑基/赵瑶.md（化名小红）' },
-  { sub: 'fabao', name: '神霄五雷正法', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效（雷法护体）', src: 'B-神霄五雷正法；docs/md/角色/楚秦门/02.筑基/展剑锋.md' },
-  { sub: 'fabao', name: '泼风盾舞', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【闪】时判定，红色视为打出【闪】（楚秦六本秘传之一）', src: 'B-泼风盾舞；docs/md/角色/楚秦门/02.筑基/白晓生.md' },
   { sub: 'fabao', name: '藏经阁钥匙', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【杀】对你无效', src: 'docs/md/角色/楚秦门/02.筑基/白晓生.md（管藏经阁数十年）' },
   { sub: 'fabao', name: '红玉屏风', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1', src: 'docs/md/角色/齐云/04.元婴/楚红裳.md' },
   { sub: 'fabao', name: '万丈天火', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：普通【杀】与群攻技能对你无效；受到火属性伤害 +1', src: 'K-万丈天火；docs/md/角色/齐云/04.元婴/楚红裳.md' },
@@ -217,7 +242,7 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
 
 export const ZML_ALL: ZmlCardDef[] = [...ZML_BASIC, ...ZML_TRICK, ...ZML_EQUIP, ...ZML_FABAO_ATK, ...ZML_FABAO_DEF, ...ZML_SKILL_EXTRA];
 
-/** 掌门路牌堆总张数（144） */
+/** 掌门路牌堆总张数（234） */
 export const ZML_DECK_TOTAL: number = ZML_ALL.reduce((s, d) => s + d.count, 0);
 
 /** 按 sub 取首条定义（锦囊 / 基本牌文案兜底） */

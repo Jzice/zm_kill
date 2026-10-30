@@ -107,7 +107,7 @@ export function buildDeck(opts?: { packs?: CardPackId[]; mode?: GameMode }): Car
 }
 
 /**
- * 掌门路修真牌堆（144 张）：按 src/data/zml/cards.zml.ts 的定义投放。
+ * 掌门路修真牌堆（234 张）：按 src/data/zml/cards.zml.ts 的定义投放。
  * 所有 sub 复用现有引擎 key，因此结算 / 判定 / AI 分支无需任何改动；
  * 仅 name（修真卡名）与 subtitle（卡面副题）不同。
  */

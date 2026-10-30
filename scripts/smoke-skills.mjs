@@ -83,9 +83,9 @@ check('天赋定义数量充足（≥250）', audit.total >= 250, `${audit.total
 check('所有角色 / 主公技均有定义', audit.missing.length === 0, audit.missing.join(','));
 check('天赋 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
 
-// 2. 齐休三天赋（明己心 / 见人性 / 哼哈真言）—— 已避开牌堆中的「不在算中」「命演术」
-check('齐休为三天赋角色（明己心 / 见人性 / 哼哈真言）',
-  audit.qixiu.length === 3 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_jianrenxing') && audit.qixiu.includes('zml_qixiu_hengha'),
+// 2. 齐休双天赋（明己心 / 见人性）——「哼哈真言」已移作兵粮寸断锦囊卡
+check('齐休为双天赋角色（明己心 / 见人性）',
+  audit.qixiu.length === 2 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_jianrenxing'),
   audit.qixiu.join(','));
 // 28 位主要角色重做后每人 2~3 个本命天赋，其余天赋已拆为通用技能 / 法宝卡
 check('多天赋角色数量合理（3~20 名）', audit.multi.length >= 3 && audit.multi.length <= 20, `${audit.multi.length} 名`);

@@ -241,6 +241,8 @@ export async function useSha(
     /** 【杀】的点数（林则徐·海防 点数对抗判据） */
     num?: string | number;
     damageType?: DamageType;
+    /** 实际卡名（修真变体名），用于战报 / 飞牌展示；缺省按属性回退 杀 / 火杀 / 雷杀 */
+    cardName?: string;
   } = {},
 ): Promise<void> {
   const a = G.players[attackerIdx],
@@ -273,7 +275,7 @@ export async function useSha(
   }
   a.flags.shaUsed = (a.flags.shaUsed || 0) + 1;
   const dmgType: DamageType = opts.damageType || 'normal';
-  const cname = dmgType === 'fire' ? '火杀' : dmgType === 'thunder' ? '雷杀' : '杀';
+  const cname = opts.cardName || (dmgType === 'fire' ? '火杀' : dmgType === 'thunder' ? '雷杀' : '杀');
   const suit = opts.suit ?? '♠';
   addPlayLog(a.name, 'use', cname, t.name);
   aiSpeak(a, 'attack');
@@ -381,6 +383,7 @@ export async function useSha(
           fromQinglong: true,
           suit: shaInHand.suit,
           damageType: shaInHand.damageType,
+          cardName: shaInHand.name,
         });
         return;
       }
@@ -412,22 +415,24 @@ export async function useSha(
   await resolveHit();
 }
 
-export async function useTao(idx: number): Promise<void> {
+/** 使用恢复类丹药（引擎 key = tao）。cardName 为实际卡名，缺省回退「桃」 */
+export async function useTao(idx: number, cardName = '桃'): Promise<void> {
   const p = G.players[idx];
   if (p.hp >= p.maxHp) {
     addLog('体力已满');
     return;
   }
   p.hp++;
-  addPlayLog(p.name, 'heal', '桃', p.name);
-  showPlayCard({ name: '桃', suit: '♥', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
+  addPlayLog(p.name, 'heal', cardName, p.name);
+  showPlayCard({ name: cardName, suit: '♥', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
   Sound.play('tao');
   FX.healGlow(idx);
   floatTextFx(idx, '+1', '#27ae60');
   render();
 }
 
-export async function useJiu(idx: number): Promise<void> {
+/** 使用增益类丹药/符箓（引擎 key = jiu）。cardName 为实际卡名，缺省回退「酒」 */
+export async function useJiu(idx: number, cardName = '酒'): Promise<void> {
   const p = G.players[idx];
   // 每回合限一次：多张酒不得叠加，避免一刀秒杀（原版规则）
   if (p.flags.jiuUsed) {
@@ -436,8 +441,8 @@ export async function useJiu(idx: number): Promise<void> {
   }
   p.flags.jiuUsed = true;
   p.flags.extraDamage = (p.flags.extraDamage || 0) + 1;
-  addPlayLog(p.name, 'use', '酒', '');
-  showPlayCard({ name: '酒', suit: '♠', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
+  addPlayLog(p.name, 'use', cardName, '');
+  showPlayCard({ name: cardName, suit: '♠', num: '?', type: 'basic' }, p.name, FACTIONS[p.faction].color);
   Sound.play('jiu');
   FX.skillWave(idx);
 }
@@ -550,9 +555,9 @@ export async function useSkill(
         const sha = usableHand(def, (c) => SHA_SUBS.includes(c.sub))[0];
         if (sha) {
           discardCard(def, sha);
-          addLog(`${def.name} 打出【杀】`);
+          addLog(`${def.name} 打出【${sha.name}】`);
           FX.attackLunge(di);
-          await FX.flyCard(di, ai, '杀', 'basic', 420);
+          await FX.flyCard(di, ai, sha.name, 'basic', 420);
           [ai, di] = [di, ai];
           def = G.players[di];
         } else {
@@ -669,6 +674,7 @@ export async function useSkill(
             fromJiedao: true,
             suit: shaCard.suit,
             damageType: shaCard.damageType,
+            cardName: shaCard.name,
           });
         } else {
           const w = holder.equip.weapon;

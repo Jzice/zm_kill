@@ -240,7 +240,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     const tao = p.hand.find((c) => c.sub === 'tao');
     if (!tao) break;
     discardCard(p, tao);
-    await useTao(idx);
+    await useTao(idx, tao.name);
     await sleep(300);
   }
   const wz = p.hand.find((c) => c.sub === 'wuzhong');
@@ -363,7 +363,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       const jiu = p.hand.find((c) => c.sub === 'jiu');
       if (jiu) {
         discardCard(p, jiu);
-        await useJiu(idx);
+        await useJiu(idx, jiu.name);
         await sleep(250);
       }
     }
@@ -415,7 +415,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
           const dmgType = sha.damageType || convertDamageType(p, sha, 'sha', false) || 'normal';
           for (let k = 0; k < targets.length; k++) {
             if (!G.players[targets[k]].alive) continue;
-            await useSha(idx, targets[k], { suit: sha.suit, num: sha.num, damageType: dmgType, fromFangtian: k > 0 });
+            await useSha(idx, targets[k], { suit: sha.suit, num: sha.num, damageType: dmgType, fromFangtian: k > 0, cardName: sha.name });
           }
           await sleep(300);
         }

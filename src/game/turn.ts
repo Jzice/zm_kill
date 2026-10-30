@@ -359,15 +359,16 @@ export async function playPhase(idx: number): Promise<void> {
                 suit: card.suit,
                 num: card.num,
                 damageType: convertDamageType(p, card, 'sha', false) || 'normal',
+                cardName: card.name,
               });
             }
           }
         } else if (to === 'jiu') {
           discardCard(p, card);
-          await useJiu(idx);
+          await useJiu(idx, card.name);
         } else if (to === 'tao') {
           discardCard(p, card);
-          await useTao(idx);
+          await useTao(idx, card.name);
         } else if (to === 'guohe') {
           const targets: ChoiceOption[] = [];
           for (let i = 0; i < G.players.length; i++) {
@@ -444,12 +445,12 @@ export async function playPhase(idx: number): Promise<void> {
       await noteCardPlayed(idx, card);
       for (let k = 0; k < picked.length; k++) {
         if (!G.players[picked[k]].alive) continue;
-        await useSha(idx, picked[k], { suit: card.suit, num: card.num, damageType: dmgType, fromFangtian: k > 0 });
+        await useSha(idx, picked[k], { suit: card.suit, num: card.num, damageType: dmgType, fromFangtian: k > 0, cardName: card.name });
       }
     } else if (kind === 'tao') {
       discardCard(p, card);
       await noteCardPlayed(idx, card);
-      await useTao(idx);
+      await useTao(idx, card.name);
     } else if (kind === 'jiu') {
       if (p.flags.jiuUsed) {
         addLog('本回合已使用过【酒】');
@@ -457,7 +458,7 @@ export async function playPhase(idx: number): Promise<void> {
       }
       discardCard(p, card);
       await noteCardPlayed(idx, card);
-      await useJiu(idx);
+      await useJiu(idx, card.name);
     } else if (kind === 'skill') {
       let tgt: number | null = null;
       let second: number | null = null;

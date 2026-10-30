@@ -36,7 +36,7 @@ export const REALM_HP: Record<Realm, number> = {
 
 /* 楚秦门（14） */
 const CHUQIN: ZmlCharacter[] = [
-  { id: 'zml_qixiu', name: '齐休', title: '第五代掌门', faction: 'chuqin', hp: 4, avatar: '🏯', realm: 'jindan', benming: ['赤尻马猴', '七窍玲珑心'], family: '齐', talents: [talentOf('zml_qixiu_mingjixin'), talentOf('zml_qixiu_jianrenxing'), talentOf('zml_qixiu_hengha')], src: 'docs/md/角色/楚秦门/03.金丹/齐休.md' },
+  { id: 'zml_qixiu', name: '齐休', title: '第五代掌门', faction: 'chuqin', hp: 4, avatar: '🏯', realm: 'jindan', benming: ['赤尻马猴', '七窍玲珑心'], family: '齐', talents: [talentOf('zml_qixiu_mingjixin'), talentOf('zml_qixiu_jianrenxing')], src: 'docs/md/角色/楚秦门/03.金丹/齐休.md' },
   { id: 'zml_qizhuang', name: '齐妆', title: '白山剑魔', faction: 'chuqin', hp: 3, avatar: '🗡️', realm: 'zhuji', benming: ['鎏花幻月剑匣'], family: '齐', talents: [talentOf('zml_qizhuang_xiazhong'), talentOf('zml_qizhuang_guizhen')], src: 'docs/md/角色/楚秦门/03.金丹/齐妆.md' },
   { id: 'zml_chuwuying', name: '楚无影', title: '影剑', faction: 'chuqin', hp: 4, avatar: '🌑', realm: 'jindan', benming: ['黑白气团', '万影阁'], family: '楚', talents: [talentOf('zml_chuwuying_wanhuan'), talentOf('zml_chuwuying_yingshen')], src: 'docs/md/角色/楚秦门/03.金丹/楚无影.md' },
   { id: 'zml_qinchangfeng', name: '秦长风', title: '星剑', faction: 'chuqin', hp: 4, avatar: '⭐', realm: 'jindan', benming: ['参宿星'], family: '秦', talents: [talentOf('zml_qinchangfeng_xingdun'), talentOf('zml_qinchangfeng_xingzhi')], src: 'docs/md/角色/楚秦门/03.金丹/秦长风.md' },

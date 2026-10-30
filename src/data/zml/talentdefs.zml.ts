@@ -28,15 +28,6 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     effects: [{ kind: 'peekHand', then: 'toDeckTop' }],
   },
   {
-    id: 'zml_qixiu_hengha',
-    name: '哼哈真言',
-    kind: 'active',
-    timing: 'active',
-    desc: '出牌阶段限一次：与一名其他角色拼点，赢的你弃置其 1 张手牌（真言破法，曾以此破解姜炎【红莲业火】）。出处：K-哼哈真言',
-    limit: 'perTurn',
-    effects: [{ kind: 'pointDuel', win: [{ kind: 'targetDiscard', n: 1 }], lose: [] }],
-  },
-  {
     id: 'zml_qizhuang_jianmo',
     name: '剑魔',
     kind: 'active',
