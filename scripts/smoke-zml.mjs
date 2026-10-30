@@ -100,7 +100,7 @@ check('已切换到掌门路模式', (activeMode || '').includes('掌门路'), (
 // 3. 修真牌堆 144 张与关键卡名
 const stats = await page.evaluate(() => (window.__xtsZmlDeckStats ? window.__xtsZmlDeckStats() : {}));
 const total = Object.values(stats).reduce((s, n) => s + n, 0);
-check('掌门路牌堆共 146 张', total === 146, `${total} 张`);
+check('掌门路牌堆共 236 张', total === 236, `${total} 张`);
 const mustHave = ['杀', '火杀', '雷杀', '闪', '回春丹', '真源丹', '不在算中', '决斗', '魔灾泛起', '万剑钻心', '天劫', '三木回心阵', '七星定身阵', '藤蔓符', '混元剑狱', '极寒碧火诀', '趋吉避凶诀', '破阵符', '敛息诀', '银甲乐傀召唤符', '同参木阵', '诡代之法', '命演术', '通明身识', '全知天眼'];
 const missing = mustHave.filter((n) => !stats[n]);
 check('关键修真卡全部入池', missing.length === 0, missing.length ? `缺：${missing.join('、')}` : `${mustHave.length} 种`);
