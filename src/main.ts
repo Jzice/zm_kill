@@ -6,14 +6,14 @@ import './style.css';
 
 import { G } from './game/state';
 import { dealDamage, checkWin } from './game/damage';
-import { useTrick } from './game/actions';
+import { useSkill } from './game/actions';
 
 import type { FactionId, GameMode } from './core/types';
 import { setSim, sleep, togglePanel } from './core/dom';
 import { CHARACTERS } from './data/characters';
 import { renderRuleModePicker, setRuleMode } from './ui/lobby';
 import { FACTIONS } from './data/factions';
-import { defOf, SKILL_DEFS } from './data/skilldefs';
+import { defOf, TALENT_DEFS } from './data/talentdefs';
 import { stageOf } from './data/packets';
 import { buildDeck } from './data/cards';
 import { normalizeCardPacks, withCore } from './data/cardPacks';
@@ -25,8 +25,8 @@ import {
   enemyEquipVoidOf,
   horseDistOf,
   shaRedirectOf,
-  trickRedirectOf,
-} from './game/skillEngine';
+  skillRedirectOf,
+} from './game/talentEngine';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
@@ -218,8 +218,8 @@ window.llmSetField = llmSetField;
 window.llmTestConn = llmTestConn;
 
 /** 动态测量顶栏实际高度（换行行数随屏宽变化），写入 CSS 变量供 body 顶部让位；
- *  并实测切换布局模式：单行放得下=单行(品牌左, 等级积分+按钮+个人信息靠右)；
- *  放不下=恒定两行(第一行 品牌左+个人信息右, 第二行 等级积分左+按钮组右)，更窄时整栏横向滚动 */
+ *  并实测切换布局模式：单行放得下=单行(品牌左, 境界修为+按钮+个人信息靠右)；
+ *  放不下=恒定两行(第一行 品牌左+个人信息右, 第二行 境界修为左+按钮组右)，更窄时整栏横向滚动 */
 function syncTopBarHeight(): void {
   const tb = document.getElementById('topBar');
   if (!tb) return;
@@ -258,7 +258,7 @@ function syncTopBarHeight(): void {
 window.copyInviteLink = copyInviteLink;
 window.nativeShare = nativeShare;
 
-/* ---- 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-skills.mjs 用） ---- */
+/* ---- 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-talents.mjs 用） ---- */
 window.xtsSim = (on: boolean) => setSim(!!on);
 // AI 策略参数（A/B 对比与 scripts/tune-ai.mjs 参数校准入口）
 window.xtsSetAiPolicy = (patch: Partial<AiPolicy> | null) => setPolicy(patch);
@@ -287,21 +287,21 @@ window.xtsSnapshot = () => ({
 });
 window.xtsSkillAudit = () => {
   const missing: string[] = [];
-  for (const c of CHARACTERS) for (const s of c.skills) if (!defOf(s.id)) missing.push(`${c.id}:${s.id}`);
+  for (const c of CHARACTERS) for (const s of c.talents) if (!defOf(s.id)) missing.push(`${c.id}:${s.id}`);
   for (const f of Object.values(FACTIONS)) {
     const ls = f.lordSkill;
     if (ls && !defOf(ls.id)) missing.push(`lord:${ls.id}`);
   }
-  const ids = Object.keys(SKILL_DEFS);
+  const ids = Object.keys(TALENT_DEFS);
   const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
   // 掌门路：以主角齐休作为「三技能基准角色」（诸葛亮等名人角色已移除）
-  const qixiu = CHARACTERS.find((c) => c.id === 'zml_qixiu')?.skills.map((s) => s.id) || [];
-  const multi = CHARACTERS.filter((c) => c.skills.length >= 3).map((c) => c.id);
+  const qixiu = CHARACTERS.find((c) => c.id === 'zml_qixiu')?.talents.map((s) => s.id) || [];
+  const multi = CHARACTERS.filter((c) => c.talents.length >= 3).map((c) => c.id);
   return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, qixiu, multi };
 };
 
 /**
- * 高中扩展包 50 将专项指针（scripts/verify-senior50.mjs / smoke-skills.mjs 用）。
+ * 高中扩展包 50 将专项指针（scripts/verify-senior50.mjs / smoke-talents.mjs 用）。
  * 返回高中段（高一上~高三下）角色清单，含学科分布与每名角色的技能明细。
  */
 window.xtsSeniorPool = () => {
@@ -316,7 +316,7 @@ window.xtsSeniorPool = () => {
       name: c.name,
       faction: c.faction,
       hp: c.hp,
-      skills: c.skills.map((s) => ({
+      talents: c.talents.map((s) => ({
         id: s.id,
         name: s.name,
         kind: defOf(s.id)?.kind || '',
@@ -411,7 +411,7 @@ window.xtsV21 = {
   /** 指定座位是否免疫某张牌名 */
   cardImmune: (idx: number, name: string) => cardImmuneTo(G.players[idx], name),
   /** 目标合法性（可带牌名 / 花色） */
-  canBeTarget: (idx: number, scope: 'trick' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) =>
+  canBeTarget: (idx: number, scope: 'skill' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) =>
     canBeTarget(idx, scope, cardName, cardSuit),
   /** 其他角色装备区指定槽位对目标是否失效 */
   equipVoid: (idx: number, slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus') =>
@@ -421,7 +421,7 @@ window.xtsV21 = {
   /** 马政距离减免 */
   horseDist: (idx: number) => horseDistOf(G.players[idx]),
   /** 可否转移锦囊 / 杀 */
-  trickRedirect: (idx: number) => trickRedirectOf(G.players[idx]),
+  skillRedirect: (idx: number) => skillRedirectOf(G.players[idx]),
   shaRedirect: (idx: number) => shaRedirectOf(G.players[idx]),
   /** 座位号 → 角色 id */
   charOf: (idx: number) => G.players[idx]?.charId || '',
@@ -522,6 +522,6 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     dealDamage,
     checkWin,
-    useTrick,
+    useSkill,
   };
 }

@@ -1,22 +1,22 @@
 /* ==================== 技能原语分派器 ====================
  * 108 个扩展包技能均由有限原语组合声明（见 src/data/expansion.ts），
  * 由本文件统一分派执行，避免 108 个独立分支：
- *   - 主动技：useActiveSkill 在走到 legacy switch 之前先拦截「带 effects 的技能」调用 runSkillEffects
+ *   - 主动技：useActiveTalent 在走到 legacy switch 之前先拦截「带 effects 的技能」调用 runSkillEffects
  *   - 触发技：trigger* 系列纯函数被各规则钩子（距离/手牌上限/摸牌/伤害）聚合查询；
- *             只统计「带 effects 的技能」，与 legacy hasSkill 检查互不干扰（加法式接入）
+ *             只统计「带 effects 的技能」，与 legacy hasTalent 检查互不干扰（加法式接入）
  */
-import type { Player, Skill, SkillEffect } from '../core/types';
+import type { Player, Talent, SkillEffect } from '../core/types';
 import { G } from './state';
 import { FX } from '../core/fx';
 import { addLog, addPlayLog } from './log';
-import { hasSkill, drawCards, discardCard } from './rules';
+import { hasTalent, drawCards, discardCard } from './rules';
 import { render } from '../ui/render';
 import { dealDamage } from './damage';
 import { waitChoice } from './choice';
 import { NET, syncStateToClients } from '../net/network';
 
 /** 是否为主动技（带原语、需手动发动） */
-export function isExpansionActive(sk: Skill): boolean {
+export function isExpansionActive(sk: Talent): boolean {
   return !!sk.effects && sk.effects.length > 0 && sk.type === 'active';
 }
 
@@ -138,8 +138,8 @@ export async function runSkillEffects(idx: number, p: Player, effects: SkillEffe
 /* ---------------- 触发技聚合（加法式接入现有钩子） ---------------- */
 function sumEffects(p: Player, kind: SkillEffect['kind'], pick: (e: SkillEffect) => number): number {
   let sum = 0;
-  for (const s of p.skills) {
-    if (!s.effects) continue; // 仅统计扩展包技能，legacy 技能走 hasSkill
+  for (const s of p.talents) {
+    if (!s.effects) continue; // 仅统计扩展包技能，legacy 技能走 hasTalent
     for (const e of s.effects) if (e.kind === kind) sum += pick(e);
   }
   return sum;
@@ -162,4 +162,4 @@ export function triggerDamageMod(p: Player): number {
   return sumEffects(p, 'damageMod', (e) => (e.kind === 'damageMod' ? e.delta : 0));
 }
 
-export { hasSkill };
+export { hasTalent };

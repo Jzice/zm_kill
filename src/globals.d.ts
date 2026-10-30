@@ -168,7 +168,7 @@ declare global {
     clickHandCard: (cardId: number) => void;
     clickTargetSeat: (idx: number) => void;
     handleLocalChoice: (v: string | number) => void;
-    // 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-skills.mjs）
+    // 无头模拟 / 技能自检（scripts/balance.mjs、scripts/smoke-talents.mjs）
     xtsSim: (on: boolean) => void;
     xtsMakeAllAI: () => void;
     xtsSnapshot: () => {
@@ -186,16 +186,16 @@ declare global {
         name: string;
         faction: string;
         hp: number;
-        skills: { id: string; name: string; kind: string; timing: string; effects: { kind: string; at: string | null }[] }[];
+        talents: { id: string; name: string; kind: string; timing: string; effects: { kind: string; at: string | null }[] }[];
       }[];
     };
     xtsV21: {
       cardImmune: (idx: number, name: string) => boolean;
-      canBeTarget: (idx: number, scope: 'trick' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) => boolean;
+      canBeTarget: (idx: number, scope: 'skill' | 'sha' | 'juedou' | 'equip', cardName?: string, cardSuit?: string) => boolean;
       equipVoid: (idx: number, slot: 'weapon' | 'armor' | 'horsePlus' | 'horseMinus') => boolean;
       distTrap: (idx: number) => number;
       horseDist: (idx: number) => number;
-      trickRedirect: (idx: number) => boolean;
+      skillRedirect: (idx: number) => boolean;
       shaRedirect: (idx: number) => boolean;
       charOf: (idx: number) => string;
       players: () => Player[];

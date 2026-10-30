@@ -1,6 +1,6 @@
 /* ==================== 自定义扩展包运行时注册表 ====================
  * 让用户在「不改动引擎、不需要重新构建」的前提下，导入自制扩展包：
- *   - 角色：每条技能注册为 SkillDef，由 src/game/skillEngine.ts 用全套 SkillE 原语执行
+ *   - 角色：每条技能注册为 TalentDef，由 src/game/talentEngine.ts 用全套 SkillE 原语执行
  *   - 锦囊：每条卡牌注册为 KtDef，由 cards.ts 自动入牌堆 + actions.ts 通用结算
  * 数据为追加式；不装任何包时行为与改造前逐项一致（联机加入方亦不可见自定义内容）。
  *
@@ -14,7 +14,7 @@
 import type {
   Character,
   FactionId,
-  SkillDef,
+  TalentDef,
   SkillE,
   SkillKind,
   SkillTiming,
@@ -22,11 +22,11 @@ import type {
 import { FACTIONS } from './factions';
 import { stageOf, type PacketId } from './packets';
 import {
-  registerSkillDef,
-  unregisterSkillDef,
-  skillOf,
-  runtimeSkillIds,
-} from './skilldefs';
+  registerTalentDef,
+  unregisterTalentDef,
+  talentOf,
+  runtimeTalentIds,
+} from './talentdefs';
 import {
   registerTrick,
   unregisterTrick,
@@ -39,16 +39,16 @@ import {
 
 /* ---------------- 类型 ---------------- */
 
-/** 扩展包内的一条技能（与 SkillDef 同构，作为数据声明） */
-export interface PackSkillDef {
+/** 扩展包内的一条技能（与 TalentDef 同构，作为数据声明） */
+export interface PackTalentDef {
   id: string;
   name: string;
   kind: SkillKind;
   timing: SkillTiming;
   desc: string;
-  cost?: SkillDef['cost'];
-  limit?: SkillDef['limit'];
-  cond?: SkillDef['cond'];
+  cost?: TalentDef['cost'];
+  limit?: TalentDef['limit'];
+  cond?: TalentDef['cond'];
   effects: SkillE[];
 }
 
@@ -60,7 +60,7 @@ export interface PackCharacter {
   faction: FactionId;
   hp: number;
   avatar: string;
-  skills: PackSkillDef[];
+  skills: PackTalentDef[];
 }
 
 /** 扩展包内的一张锦囊牌 */
@@ -107,9 +107,9 @@ const KNOWN_EFFECT_KINDS = new Set<string>([
   'costThenDamage', 'doubleJudge', 'drawDiscardMin', 'extraDrawDiscardOdd',
   'peekHand', 'replaceDraw', 'targetChoose', 'swapHp', 'turnFace', 'giveHand',
   'giveHandIfShan', 'exchangeHand', 'multiDraw', 'stealFrom', 'revealAllPickOne', 'showHand',
-  'discardToHeal', 'takeDuelCard', 'giveDuelCard', 'discardSuitMatch', 'trickDraw',
+  'discardToHeal', 'takeDuelCard', 'giveDuelCard', 'discardSuitMatch', 'skillDraw',
   'addMark', 'tickMark', 'pledge', 'immune', 'noHandImmune', 'cardImmune', 'suitImmune',
-  'distTrap', 'trickRedirect', 'shaRedirect', 'enemyEquipVoid', 'horseDist', 'reduceDamage',
+  'distTrap', 'skillRedirect', 'shaRedirect', 'enemyEquipVoid', 'horseDist', 'reduceDamage',
   'replaceJudge', 'awaken', 'revive', 'nextShaBonus', 'nextShaUnblockable', 'rangePlus',
   'distPlusToMe', 'ignoreHorsePlus', 'shunshouNoDist',
 ]);
@@ -117,7 +117,7 @@ const KNOWN_EFFECT_KINDS = new Set<string>([
 const SKILL_KINDS: SkillKind[] = ['active', 'trigger', 'passive', 'limit', 'awaken', 'lord', 'convert'];
 const SKILL_TIMINGS: SkillTiming[] = [
   'active', 'passive', 'onTurnStart', 'onDraw', 'onTurnEnd', 'beforeJudge', 'beforeDamage',
-  'onDamaged', 'onTargetSha', 'onUseShan', 'onShaHit', 'onUseTrick',
+  'onDamaged', 'onTargetSha', 'onUseShan', 'onShaHit', 'onUseSkill',
 ];
 const KT_KINDS: KtKind[] = ['strategy', 'quiz'];
 const KT_TARGETS: KtTarget[] = ['none', 'one'];
@@ -273,13 +273,13 @@ export function setCustomAllowed(v: boolean): void {
 
 function rebuildRuntime(): void {
   // 先整体清理旧的运行时注册，避免残留
-  for (const id of runtimeSkillIds()) unregisterSkillDef(id);
+  for (const id of runtimeTalentIds()) unregisterTalentDef(id);
   for (const sub of runtimeTrickSubs()) unregisterTrick(sub);
 
   for (const p of enabledPacks()) {
     for (const c of p.characters || []) {
       for (const s of c.skills) {
-        registerSkillDef({
+        registerTalentDef({
           id: s.id, name: s.name, kind: s.kind, timing: s.timing, desc: s.desc,
           cost: s.cost, limit: s.limit, cond: s.cond, effects: s.effects,
         });
@@ -348,10 +348,12 @@ export function installPackFromText(text: string): { ok: boolean; errors: string
 /* ---------------- 选角池接入 ---------------- */
 
 function buildCharacter(c: PackCharacter): Character {
-  const skills = c.skills.map((s) => skillOf(s.id));
+  // 注意：PackCharacter.skills 是扩展包 JSON 的对外字段名，为兼容存量安装包保持不变，
+  // 仅在装配成引擎 Character 时映射为 talents。
+  const talents = c.skills.map((s) => talentOf(s.id));
   return {
     id: c.id, name: c.name, title: c.title, faction: c.faction,
-    hp: c.hp, avatar: c.avatar, skills,
+    hp: c.hp, avatar: c.avatar, talents,
   };
 }
 

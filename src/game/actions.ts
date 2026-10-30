@@ -18,6 +18,7 @@ import {
   inRange,
   sameFaction,
   usableHand,
+  hasFabaoSkill,
 } from './rules';
 import {
   canBeTarget,
@@ -35,7 +36,8 @@ import {
   tryNumGuard,
   tryPreventShaDamage,
   tryReflect,
-} from './skillEngine';
+} from './talentEngine';
+import { isZml } from '../core/mode';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
@@ -152,9 +154,8 @@ function redirectScore(from: Player, to: Player): number {
 export const EQUIP_SLOT_LABEL: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
-  horsePlus: '+1马',
-  horseMinus: '-1马',
-  treasure: '宝物',
+  horsePlus: '+1载具',
+  horseMinus: '-1载具',
 };
 
 /** 【太平要术】：锁定技，不能成为延时锦囊的目标 */
@@ -180,10 +181,10 @@ async function tryTrickRedirect(attackerIdx: number, targetIdx: number): Promise
   const t = G.players[targetIdx];
   if (!t || !t.alive) return targetIdx;
   const cands = G.players.map((_, i) => i).filter(
-    (i) => i !== attackerIdx && i !== targetIdx && G.players[i].alive && canBeTarget(i, 'trick'),
+    (i) => i !== attackerIdx && i !== targetIdx && G.players[i].alive && canBeTarget(i, 'skill'),
   );
   if (!cands.length) return targetIdx;
-  const d = consumeRedirect(t, 'trickRedirect');
+  const d = consumeRedirect(t, 'skillRedirect');
   if (!d) return targetIdx;
   addLog(`【${d.name}】${t.name} 将此锦囊转移给另一名角色`, 'hl');
   let to = cands[0];
@@ -281,8 +282,8 @@ export async function useSha(
   showPlayCard({ name: cname, suit, num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
   // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
-  // 掌门路【通天令】宝物：你使用的【杀】同样无视目标护身法器
-  const ignoreArmor = (a.equip.weapon?.skill === 'qinggang' || a.equip.treasure?.skill === 'tongtian') && !wVoid;
+  // 掌门路【通天令】法宝（进攻型，占武器槽）：你使用的【杀】同样无视目标护身法器
+  const ignoreArmor = (a.equip.weapon?.skill === 'qinggang' || hasFabaoSkill(a, 'tongtian')) && !wVoid;
   const armor = ignoreArmor || aVoid ? undefined : t.equip.armor?.skill;
   const black = suit === '♠' || suit === '♣';
   if (armor === 'renwang' && black) {
@@ -441,7 +442,7 @@ export async function useJiu(idx: number): Promise<void> {
   FX.skillWave(idx);
 }
 
-export async function useTrick(
+export async function useSkill(
   attackerIdx: number,
   card: Card,
   targetIdxIn: number | null,
@@ -453,7 +454,8 @@ export async function useTrick(
   addPlayLog(a.name, 'use', card.name, tn);
   const trickDesc = TRICK_DESC[card.sub] || trickDefOf(card.sub)?.desc || '（暂无说明）';
   addLog(`📘 玩法·【${card.name}】：${trickDesc}`, 'explain');
-  showPlayHint('锦囊', card.name, trickDesc);
+  // 掌门路模式下「锦囊」改称「技能」
+  showPlayHint(isZml(G.mode) ? '技能' : '锦囊', card.name, trickDesc);
   showPlayCard(card, a.name, FACTIONS[a.faction].color);
   render();
   // 锦囊释放特效与音效：按子类区分
@@ -468,7 +470,7 @@ export async function useTrick(
             ? 'trick_steal'
             : card.sub === 'juedou'
               ? 'duel'
-              : 'trick',
+              : 'skill',
   );
   await trickCast(
     attackerIdx,
@@ -497,7 +499,7 @@ export async function useTrick(
     if (res.countered) {
       addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
       // 茅盾【批判】：锦囊被无懈后可弃一张牌令其弃一张牌
-      await fire('onTrickCountered', {
+      await fire('onSkillCountered', {
         idx: attackerIdx,
         srcIdx: res.by,
         card,
@@ -528,13 +530,13 @@ export async function useTrick(
       break;
     }
     case 'guohe': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '过河拆桥', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '过河拆桥', card.suit)) {
         await discardTargetCard(targetIdx, attackerIdx, '弃置');
       }
       break;
     }
     case 'shunshou': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '顺手牵羊', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '顺手牵羊', card.suit)) {
         await discardTargetCard(targetIdx, attackerIdx, '获得');
       }
       break;
@@ -564,7 +566,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'trick', '南蛮入侵', card.suit)) continue;
+        if (!canBeTarget(i, 'skill', '南蛮入侵', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#e74c3c');
@@ -588,7 +590,7 @@ export async function useTrick(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'trick', '万箭齐发', card.suit)) continue;
+        if (!canBeTarget(i, 'skill', '万箭齐发', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#f39c12');
@@ -620,7 +622,7 @@ export async function useTrick(
       break;
     }
     case 'lebu': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '乐不思蜀', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '乐不思蜀', card.suit)) {
         // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
           addLog(`${G.players[targetIdx].name} 的【太平要术】免疫延时锦囊`, 'hl');
@@ -696,7 +698,7 @@ export async function useTrick(
       for (const i of order) {
         if (!shown.length) break;
         const pl = G.players[i];
-        if (!canBeTarget(i, 'trick')) continue;
+        if (!canBeTarget(i, 'skill')) continue;
         let pickId = shown[0].id;
         if (!pl.isAI) {
           const ch = await waitChoice(
@@ -787,7 +789,7 @@ export async function useTrick(
     /* ---------------- 扩展包锦囊（卡牌扩展包启用后才可能出现） ---------------- */
     case 'bingliang': {
       // 【兵粮寸断】：延时锦囊，置入目标判定区
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
           addLog(`${G.players[targetIdx].name} 的【太平要术】免疫延时锦囊`, 'hl');
@@ -813,7 +815,7 @@ export async function useTrick(
     }
     case 'shuishui': {
       // 【水淹七军】：目标弃置一张装备牌，否则受到 1 点伤害
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         const t = G.players[targetIdx];
         const slots = filledEquipSlots(t);
         if (!slots.length) {
@@ -855,7 +857,7 @@ export async function useTrick(
     }
     case 'caomu': {
       // 【草木皆兵】：目标弃置两张手牌
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         const dropped = await chooseSelfDiscard(G.players[targetIdx], 2, { aiPick: tailPick });
         for (const c of dropped) discardCard(G.players[targetIdx], c);
         addLog(`【草木皆兵】${G.players[targetIdx].name} 弃置 ${dropped.length} 张手牌`, 'dmg');
@@ -864,7 +866,7 @@ export async function useTrick(
     }
     case 'yuanjiao': {
       // 【远交近攻】：目标摸 1 张，自己摸 2 张
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         drawCards(G.players[targetIdx], 1);
         addLog(`${G.players[targetIdx].name} 摸 1 张牌`);
       }
@@ -874,7 +876,7 @@ export async function useTrick(
     }
     case 'yiyi': {
       // 【以逸待劳】：目标摸 2 张，自己摸 1 张
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         drawCards(G.players[targetIdx], 2);
         addLog(`${G.players[targetIdx].name} 摸 2 张牌`);
       }
@@ -884,7 +886,7 @@ export async function useTrick(
     }
     case 'huoshao': {
       // 【火烧连营】：1 点火属性伤害；目标处于连环状态时额外 1 点
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         const t = G.players[targetIdx];
         const bonus = t.chained ? 1 : 0;
         if (bonus) addLog(`【火烧连营】${t.name} 处于连环状态，伤害 +1`, 'hl');
@@ -894,7 +896,7 @@ export async function useTrick(
     }
     case 'diaohu': {
       // 【调虎离山】：弃置目标装备区的一张牌
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', card.name, card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         const t = G.players[targetIdx];
         const slots = filledEquipSlots(t);
         if (!slots.length) {
@@ -941,11 +943,11 @@ export async function useTrick(
     }
     /* ---- 掌门路原著机制卡 ---- */
     case 'guidai': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '诡代之法', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '诡代之法', card.suit)) {
         const t = G.players[targetIdx];
-        const sk = t.skills.find((s) => s.type === 'active');
-        if (sk && !a.skills.some((x) => x.id === sk.id)) {
-          a.skills.push({ ...sk });
+        const sk = t.talents.find((s) => s.type === 'active');
+        if (sk && !a.talents.some((x) => x.id === sk.id)) {
+          a.talents.push({ ...sk });
           addLog(`【诡代之法】${a.name} 以假代真，暂得【${sk.name}】`, 'hl');
         } else {
           addLog(`【诡代之法】${t.name} 无可复制的天赋`, 'dmg');
@@ -954,11 +956,11 @@ export async function useTrick(
       break;
     }
     case 'daizheng': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'trick', '本命代征', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '本命代征', card.suit)) {
         const t = G.players[targetIdx];
-        const sk = t.skills[0];
-        if (sk && !a.skills.some((x) => x.id === sk.id)) {
-          a.skills.push({ ...sk });
+        const sk = t.talents[0];
+        if (sk && !a.talents.some((x) => x.id === sk.id)) {
+          a.talents.push({ ...sk });
           addLog(`【本命代征】${a.name} 去象显真，暂得【${sk.name}】`, 'hl');
         }
       }
@@ -1005,18 +1007,18 @@ export async function useTrick(
   }
   // 使用锦囊后：诗成（顺序连锁）/ 随笔 / 讽刺小说 / 诗辩 / 区位 …
   if (a.alive) {
-    await fire('onUseTrick', {
+    await fire('onUseSkill', {
       idx: attackerIdx,
       card,
       targetIdx: targetIdx ?? undefined,
-      trickSeq: a.flags.trickCount || 1,
+      skillSeq: a.flags.skillCount || 1,
     });
   }
   render();
 }
 
 /**
- * 知识点锦囊结算（由 useTrick 的 default 分支调起）：
+ * 知识点锦囊结算（由 useSkill 的 default 分支调起）：
  * 直接套用 effects 原语（runEffects 分派执行）；
  * 目标 / 反噬均通过 SkillEffect 原语完成，不新增 Card 字段、不改 G 结构。
  */
@@ -1107,16 +1109,15 @@ function trickLabel(sub: string): string {
 export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string): Promise<void> {
   const t = G.players[targetIdx];
   // 焚书（锦囊免疫）：不能被【过河拆桥】/【顺手牵羊】指定
-  if (!canBeTarget(targetIdx, 'trick')) return;
+  if (!canBeTarget(targetIdx, 'skill')) return;
   const opts: { label: string; value: string }[] = [];
   if (t.hand.length > 0) opts.push({ label: `手牌（${t.hand.length}张）`, value: 'hand' });
   // 凯库勒【结构式】：装备不能被过河拆桥 / 顺手牵羊指定
   if (!equipImmune(t)) {
     if (t.equip.weapon) opts.push({ label: `武器：${t.equip.weapon.name}`, value: 'weapon' });
     if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
-    if (t.equip.horsePlus) opts.push({ label: '+1马', value: 'horsePlus' });
-    if (t.equip.horseMinus) opts.push({ label: '-1马', value: 'horseMinus' });
-    if (t.equip.treasure) opts.push({ label: `宝物：${t.equip.treasure.name}`, value: 'treasure' });
+    if (t.equip.horsePlus) opts.push({ label: '+1载具', value: 'horsePlus' });
+    if (t.equip.horseMinus) opts.push({ label: '-1载具', value: 'horseMinus' });
   }
   if (!opts.length) return;
   const src = G.players[srcIdx];

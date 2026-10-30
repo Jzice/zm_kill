@@ -10,11 +10,11 @@ import { addLog, addPlayLog } from './log';
 import { discardCard, drawCards, inRange, sameFaction } from './rules';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
-import { useActiveSkill } from './skills';
-import { useTao, useTrick, useSha, useJiu } from './actions';
+import { useActiveTalent } from './skills';
+import { useTao, useSkill, useSha, useJiu } from './actions';
 import { onLoseArmor } from './damage';
 import { NET, syncStateToClients } from '../net/network';
-import { defOf } from '../data/skilldefs';
+import { defOf } from '../data/talentdefs';
 import {
   canConvertAs,
   canPay,
@@ -23,7 +23,7 @@ import {
   markConvertUse,
   shaExtraCost,
   shaLimitOf,
-} from './skillEngine';
+} from './talentEngine';
 import { noteAiTurn } from './aibrain';
 import { AIPOLICY } from './aipolicy';
 import {
@@ -69,7 +69,7 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
     if (!c || !p.alive) return;
     if (tgt === null) return; // 无合法目标：保留手牌
     discardCard(p, c);
-    await useTrick(idx, c, tgt);
+    await useSkill(idx, c, tgt);
     await sleep(300);
   };
   // 兵粮寸断：给敌方主力断补给（【太平要术】免疫延时锦囊，须排除）
@@ -112,7 +112,7 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
       const c = p.hand.find((x) => x.sub === 'lianjun');
       if (c) {
         discardCard(p, c);
-        await useTrick(idx, c, null);
+        await useSkill(idx, c, null);
         await sleep(300);
       }
     }
@@ -124,7 +124,7 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
       const c = p.hand.find((x) => x.sub === 'chiling');
       if (c) {
         discardCard(p, c);
-        await useTrick(idx, c, null);
+        await useSkill(idx, c, null);
         await sleep(300);
       }
     }
@@ -138,7 +138,7 @@ export function aiSkillUsable(p: Player, id: string): boolean {
     if (!limitLeft(p, d)) return false;
     return canPay(p, d);
   }
-  const sk = p.skills.find((s) => s.id === id);
+  const sk = p.talents.find((s) => s.id === id);
   // 扩展包技能：按原语 costCard 判定费用门槛
   if (sk?.effects) {
     const cost = sk.effects.find((e) => e.kind === 'costCard');
@@ -176,7 +176,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   const p = G.players[idx];
   if (!p.flags.skillUsed && p.alive) {
     // 观星 / 周期律 / 行医等「非出牌阶段」技能不在此发动
-    const acts = p.skills.filter((s) => {
+    const acts = p.talents.filter((s) => {
       const d = defOf(s.id);
       if (d && d.timing !== 'active') return false;
       return s.type === 'active';
@@ -193,7 +193,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
         const best = pool.reduce((a, b) => (aiSkillValue(p, b.id) > aiSkillValue(p, a.id) ? b : a));
         act = Math.random() < 0.7 ? best : pool[Math.floor(Math.random() * pool.length)];
       }
-      await useActiveSkill(idx, act.id);
+      await useActiveTalent(idx, act.id);
       await sleep(400);
     }
   }
@@ -218,9 +218,15 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       } else if (c.sub === 'horse-') {
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = c;
-      } else if (c.sub === 'treasure') {
-        if (p.equip.treasure) G.discard.push(p.equip.treasure);
-        p.equip.treasure = c;
+      } else if (c.sub === 'fabao') {
+        // 法宝不是独立槽位：按 equipSlot 装备进武器槽（进攻型）或防具槽（防守型）
+        const slot: 'weapon' | 'armor' = c.equipSlot ?? 'armor';
+        const old = p.equip[slot];
+        if (old) {
+          if (slot === 'armor') onLoseArmor(p, old);
+          G.discard.push(old);
+        }
+        p.equip[slot] = c;
       }
       addLog(`${p.name} 装备【${c.name}】`);
       Sound.play('equip');
@@ -240,14 +246,14 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   const wz = p.hand.find((c) => c.sub === 'wuzhong');
   if (wz) {
     discardCard(p, wz);
-    await useTrick(idx, wz, null);
+    await useSkill(idx, wz, null);
     await sleep(300);
   }
   // 五谷丰登：直接铺牌
   const wugu = p.hand.find((c) => c.sub === 'wugu');
   if (wugu && p.alive) {
     discardCard(p, wugu);
-    await useTrick(idx, wugu, null);
+    await useSkill(idx, wugu, null);
     await sleep(300);
   }
   // 铁索连环：优先横置最多两名敌方目标，无乘之机则按概率重铸
@@ -262,7 +268,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     const picks = ranked.slice(0, 2);
     if (enemies.length && (!AIPOLICY.useEv || evTiesuo(idx, picks) >= AIPOLICY.tiesuoMin)) {
       discardCard(p, tiesuo);
-      await useTrick(idx, tiesuo, picks[0], picks[1] ?? null);
+      await useSkill(idx, tiesuo, picks[0], picks[1] ?? null);
       await sleep(300);
     } else if (Math.random() < 0.4) {
       discardCard(p, tiesuo);
@@ -279,7 +285,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     if (hi >= 0 && G.players[hi].hand.length > 0) {
       if (!AIPOLICY.useEv || evHuogong(idx, hi) >= AIPOLICY.huogongMin) {
         discardCard(p, huogong);
-        await useTrick(idx, huogong, hi);
+        await useSkill(idx, huogong, hi);
         await sleep(300);
       }
     }
@@ -316,7 +322,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     }
     if (hi >= 0) {
       discardCard(p, jiedao);
-      await useTrick(idx, jiedao, hi, vi);
+      await useSkill(idx, jiedao, hi, vi);
       await sleep(300);
     }
   }
@@ -327,7 +333,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     // 子博弈闭式解：对方杀数 K~Bin(n,q)，我方胜 ⇔ K ≤ 我方杀数
     if (di >= 0 && (!AIPOLICY.useEv || evDuel(idx, di) >= AIPOLICY.duelMin)) {
       discardCard(p, juedou);
-      await useTrick(idx, juedou, di);
+      await useSkill(idx, juedou, di);
       await sleep(300);
     }
   }
@@ -339,7 +345,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       const ok = AIPOLICY.useEv ? evAoe(idx, sub) >= AIPOLICY.aoeMin : !allyAlive;
       if (ok) {
         discardCard(p, aoe);
-        await useTrick(idx, aoe, null);
+        await useSkill(idx, aoe, null);
         await sleep(300);
       }
     }

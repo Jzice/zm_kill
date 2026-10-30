@@ -116,7 +116,8 @@ await guest.click('#modePicker .mode-card[data-mode="net"]');
 await guest.click('#netModePicker .opt-btn[data-net="join"]');
 await guest.waitForSelector('#joinConfig', { state: 'visible', timeout: 3000 });
 const jf = await guest.locator('#joinFactionPicker .faction-card').count();
-check('加入档阵营选择器渲染', jf === 9, `${jf} 个`);
+// 掌门路第十势力「蛮荒」已加入，故为 10 门派
+check('加入档阵营选择器渲染', jf === 10, `${jf} 个`);
 await guest.locator('#joinFactionPicker .faction-card').nth(1).click();
 await guest.waitForTimeout(150);
 const jc = await guest.locator('#joinCharGrid .char-card').count();

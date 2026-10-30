@@ -5,7 +5,7 @@
  *   - junior  ：初中扩展包（首版等同全量）
  *   - senior  ：高中扩展包（首版等同全量）
  */
-import type { Character, Skill } from '../core/types';
+import type { Character, Talent } from '../core/types';
 import { CHARACTERS } from './characters';
 
 /** 扩展包：并列的角色池范围选项 */
@@ -25,7 +25,7 @@ export interface Packet {
  * 角色池只有一套原著 48 人，选角改为按「九大门派」筛选（#factionPicker）。
  * 保留 `all` 单项与 PacketId 类型，仅为兼容联机协议与存档字段，不再有分桶语义。
  */
-export const PACKETS: Packet[] = [{ id: 'all', name: '全部角色', icon: '📖', desc: '掌门路原著 48 人' }];
+export const PACKETS: Packet[] = [{ id: 'all', name: '全部角色', icon: '📖', desc: '掌门路原著 61 人' }];
 
 /** 扩展包取池阶序（计费 / 合并取最高阶，首版未启用学分） */
 export function packetRank(id: PacketId): number {

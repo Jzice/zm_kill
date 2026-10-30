@@ -175,10 +175,10 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     identity: PlayerIdentity | null = null,
     self: boolean = false,
   ): Player => {
-    let skills = [...char.skills];
+    let talents = [...char.talents];
     if (role === 'lord') {
       const ls = FACTIONS[char.faction].lordSkill;
-      if (!skills.some((s) => s.id === ls.id)) skills.push({ ...ls });
+      if (!talents.some((s) => s.id === ls.id)) talents.push({ ...ls });
     }
     const p: Player = {
       id,
@@ -192,12 +192,12 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       hp: role === 'lord' ? char.hp + 1 : char.hp,
       maxHp: role === 'lord' ? char.hp + 1 : char.hp,
       hand: [],
-      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null, treasure: null },
+      equip: { weapon: null, armor: null, horsePlus: null, horseMinus: null },
       judge: [],
       shield: 0,
       alive: true,
       isAI,
-      skills,
+      talents,
       peerId: peerId || null,
       flags: { shaUsed: 0, skillUsed: false, extraDamage: 0, skipPlay: false, noSha: false, jiuUsed: false },
       chained: false,

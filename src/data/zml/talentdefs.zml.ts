@@ -1,14 +1,14 @@
 /* ==================== 掌门路原著角色技能 ====================
  * 技能名全部取自 docs/ 的功法(B) / 技能(K) / 符箓(C) / 本命天赋 / 设定(L)。
- * 效果一律复用现有 SkillEffect 原语（见 core/types.ts），由 game/skillEngine.ts 统一分派，
- * 因此无需新增任何引擎分支；本表经 skilldefs.ts 合并进 SKILL_DEFS（编译期数据，无运行时副作用）。
+ * 效果一律复用现有 SkillEffect 原语（见 core/types.ts），由 game/talentEngine.ts 统一分派，
+ * 因此无需新增任何引擎分支；本表经 talentdefs.ts 合并进 TALENT_DEFS（编译期数据，无运行时副作用）。
  *
  * 出处代号：B=物事/功法.md  C=物事/符篆.md  D=物事/丹药.md  K=技能/*.md  L=设定/*.md
  */
-import type { SkillDef } from '../../core/types';
+import type { TalentDef } from '../../core/types';
 
-/** 技能定义列表（由 skilldefs.ts 展开进 SKILL_DEFS） */
-export const ZML_SKILL_LIST: SkillDef[] = [
+/** 技能定义列表（由 talentdefs.ts 展开进 TALENT_DEFS） */
+export const ZML_TALENT_LIST: TalentDef[] = [
   /* ---------------- 楚秦门 ---------------- */
   {
     id: 'zml_qixiu_mingjixin',
@@ -19,13 +19,22 @@ export const ZML_SKILL_LIST: SkillDef[] = [
     effects: [{ kind: 'selfDraw', n: 1 }],
   },
   {
-    id: 'zml_qixiu_mingyan',
-    name: '命演术',
+    id: 'zml_qixiu_jianrenxing',
+    name: '见人性',
     kind: 'active',
     timing: 'active',
-    desc: '出牌阶段限一次：观看牌堆顶 2 张，任意分配置顶 / 置底（以十年阳寿推演命运之问）。出处：K-命演术',
+    desc: '出牌阶段限一次：观看一名其他角色的手牌，然后将其一张牌置于牌堆顶（直见人性、洞悉意图）。出处：K-齐休本命天赋【见人性】',
     limit: 'perTurn',
-    effects: [{ kind: 'star', n: 2 }],
+    effects: [{ kind: 'peekHand', then: 'toDeckTop' }],
+  },
+  {
+    id: 'zml_qixiu_hengha',
+    name: '哼哈真言',
+    kind: 'active',
+    timing: 'active',
+    desc: '出牌阶段限一次：与一名其他角色拼点，赢的你弃置其 1 张手牌（真言破法，曾以此破解姜炎【红莲业火】）。出处：K-哼哈真言',
+    limit: 'perTurn',
+    effects: [{ kind: 'pointDuel', win: [{ kind: 'targetDiscard', n: 1 }], lose: [] }],
   },
   {
     id: 'zml_qizhuang_jianmo',
@@ -76,7 +85,7 @@ export const ZML_SKILL_LIST: SkillDef[] = [
     kind: 'convert',
     timing: 'passive',
     desc: '你可将一张锦囊牌当【杀】使用或打出，每回合限一次（诡代本命：以假代真）。出处：L-诡代法.md',
-    effects: [{ kind: 'convert', from: { type: 'trick' }, to: 'sha', limit: 'perTurn' }],
+    effects: [{ kind: 'convert', from: { type: 'skill' }, to: 'sha', limit: 'perTurn' }],
   },
   {
     id: 'zml_mingzhen_yixiu',
@@ -125,9 +134,9 @@ export const ZML_SKILL_LIST: SkillDef[] = [
     id: 'zml_xiongdai_beilie',
     name: '北烈山',
     kind: 'trigger',
-    timing: 'onUseTrick',
+    timing: 'onUseSkill',
     desc: '你使用锦囊牌后，摸 1 张牌（北烈山熊氏，齐休之妻）。出处：楚秦门·熊黛儿条目',
-    effects: [{ kind: 'trickDraw', n: 1 }],
+    effects: [{ kind: 'skillDraw', n: 1 }],
   },
   {
     id: 'zml_heyu_shenkui',
@@ -242,9 +251,9 @@ export const ZML_SKILL_LIST: SkillDef[] = [
     id: 'zml_chaiyi_lingmu',
     name: '灵木盟',
     kind: 'trigger',
-    timing: 'onUseTrick',
+    timing: 'onUseSkill',
     desc: '你使用锦囊牌后，摸 1 张牌（灵木盟金丹，柴冠晚辈）。出处：白山·柴艺条目',
-    effects: [{ kind: 'trickDraw', n: 1 }],
+    effects: [{ kind: 'skillDraw', n: 1 }],
   },
   {
     id: 'zml_sikongshou_zhaixing',
@@ -411,9 +420,9 @@ export const ZML_SKILL_LIST: SkillDef[] = [
     id: 'zml_qinxizhao_junwu',
     name: '海东军务',
     kind: 'trigger',
-    timing: 'onUseTrick',
+    timing: 'onUseSkill',
     desc: '你使用锦囊牌后，摸 1 张牌（海东城芩家，主持军务）。出处：势力/008.外海·芩熙照条目',
-    effects: [{ kind: 'trickDraw', n: 1 }],
+    effects: [{ kind: 'skillDraw', n: 1 }],
   },
   {
     id: 'zml_qinlaozu_pingfeng',
@@ -513,7 +522,108 @@ export const ZML_SKILL_LIST: SkillDef[] = [
   { id: 'zml_tufeng_heigu', name: '黑风谷主', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色弃置 2 张手牌（黑风谷主，阴风卷物）。出处：黑风谷·屠风条目', limit: 'perTurn', effects: [{ kind: 'targetDiscard', n: 2 }] },
   { id: 'zml_qixiu_buzai', name: '不在算中', kind: 'passive', timing: 'passive', desc: '你不能成为【全知天眼】【命演术】的目标（本命天赋，命运之术不可测）。出处：角色/楚秦门/03.金丹/齐休.md', effects: [{ kind: 'cardImmune', names: ['全知天眼', '命演术'] }] },
 
-  /* ==================== 九大门派主公技（掌门路） ==================== */
+  /* ==================== 28 位主要角色·核心天赋（按 docs 重做） ====================
+   * 每人只保留 2~3 个本命天赋；其余天赋已拆为通用「技能」与「法宝」卡（见 cards.zml.ts）。
+   * 天赋名一律避开牌堆已有词条：不在算中 / 命演术 / 诡代之法 / 本命代征 / 通明身识 / 敛息诀。
+   */
+
+  /* ---- 齐妆 ---- */
+  { id: 'zml_qizhuang_xiazhong', name: '匣中万剑', kind: 'passive', timing: 'passive', desc: '你的【杀】无次数限制，每多出一张须弃 1 张手牌，每回合最多额外 2 张（本命【鎏花幻月剑匣】天赋）。出处：docs/md/角色/楚秦门/03.金丹/齐妆.md', effects: [{ kind: 'shaUnlimited', maxExtra: 2, extraCostHand: 1 }] },
+  { id: 'zml_qizhuang_guizhen', name: '归真经', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，可弃 1 张手牌摸 2 张（返璞归真，剑心不乱）。出处：B-归真经（齐妆所修功法）', effects: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }] },
+
+  /* ---- 秦长风 ---- */
+  { id: 'zml_qinchangfeng_xingzhi', name: '星之无垠', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，观看牌堆顶 2 张并获得其中 1 张（丹论「星之无垠」，众星皆可为我所用）。出处：docs/md/角色/楚秦门/03.金丹/秦长风.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'deckPeek', n: 2, then: 'pickOne' }] },
+
+  /* ---- 顾叹 ---- */
+  { id: 'zml_gutan_hezong', name: '合纵连横', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令至多 2 名其他角色各摸 1 张，然后你摸 1 张（楚秦谋主长于合纵连横）。出处：docs/md/角色/楚秦门/03.金丹/顾叹.md', limit: 'perTurn', effects: [{ kind: 'multiDraw', max: 2, n: 1 }, { kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_gutan_shezhan', name: '舌战', kind: 'active', timing: 'active', desc: '出牌阶段限一次：与一名其他角色拼点，赢的你夺取其 1 张手牌（九星坊舌战群修，一夫当关）。出处：docs/md/角色/楚秦门/03.金丹/顾叹.md', limit: 'perTurn', effects: [{ kind: 'pointDuel', win: [{ kind: 'stealFrom', max: 1 }], lose: [] }] },
+
+  /* ---- 沙诺 ---- */
+  { id: 'zml_shanuo_guzhong', name: '青铜古钟', kind: 'passive', timing: 'onTargetSha', desc: '每回合限一次：你成为【杀】的目标时，可展示一张手牌，若其点数不小于该【杀】的点数则该【杀】无效（废本命【青铜古钟】钟鸣护体）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', limit: 'perTurn', effects: [{ kind: 'numGuard', op: 'ge', against: 'shaNum', limit: 'perTurn' }] },
+  { id: 'zml_shanuo_sanhun', name: '散魂棺', kind: 'trigger', timing: 'onDeath', desc: '每当一名角色阵亡，你摸 3 张牌（散魂棺聚敛魂魄；曾以此湮灭齐妆的聚魂棺）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', effects: [{ kind: 'soulSeize', on: 'death', draw: 3 }] },
+
+  /* ---- 明真 ---- */
+  { id: 'zml_mingzhen_zhennang', name: '檀香针囊', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名已受伤的角色回复 1 点体力（一囊御群针，医修仁心）。出处：docs/md/角色/楚秦门/03.金丹/明真.md', limit: 'perTurn', effects: [{ kind: 'targetHeal', n: 1 }] },
+  { id: 'zml_mingzhen_yanmei', name: '言魅之术', kind: 'active', timing: 'active', desc: '出牌阶段限一次：与一名其他角色拼点，赢的你令其弃 1 张牌并摸 1 张（言魅安抚心神、制止自爆，融佛门手段）。出处：K-言魅之术；docs/md/角色/楚秦门/03.金丹/明真.md', limit: 'perTurn', effects: [{ kind: 'pointDuel', win: [{ kind: 'targetDiscard', n: 1 }, { kind: 'selfDraw', n: 1 }], lose: [] }] },
+
+  /* ---- 莫剑心 ---- */
+  { id: 'zml_mojianxin_chengjian', name: '成剑', kind: 'trigger', timing: 'onEquip', desc: '你装备一张装备牌后，可摸 1 张牌（本命天赋「成剑」，器修铸器即得）。出处：K-成剑；docs/md/角色/楚秦门/02.筑基/莫剑心.md', effects: [{ kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_mojianxin_sijian', name: '以身饲剑', kind: 'limit', timing: 'onDeath', desc: '限定技：你阵亡时，可令一名其他角色摸 3 张牌并回复 1 点体力（冰源岛以身饲剑，铸成日、月、星、影四剑分赠同门）。出处：docs/md/角色/楚秦门/02.筑基/莫剑心.md', limit: 'perGame', effects: [{ kind: 'targetDraw', n: 3 }, { kind: 'targetHeal', n: 1 }] },
+
+  /* ---- 何玉 ---- */
+  { id: 'zml_heyu_bingleng', name: '冰棱地刺', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（本命天赋，黑河蜥之战领悟）。出处：K-冰棱地刺；docs/md/角色/散修/03.金丹/何玉.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'targetDamage', n: 1 }] },
+  { id: 'zml_heyu_shenkui', name: '神傀化身', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 2 张手牌，获得一名其他角色的一个天赋，直到你的下个回合开始（白山密宗秘法，斩出恶念成邪恶化身）。出处：B-神傀化身；docs/md/角色/散修/03.金丹/何玉.md', limit: 'perTurn', cost: { hand: 2 }, effects: [{ kind: 'copyTalent', duration: 'turn' }] },
+
+  /* ---- 熊十四 ---- */
+  { id: 'zml_xiongshisi_beilie', name: '北烈山', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +2（北烈山熊氏厚积薄发，熊家附庸中的中流砥柱）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'handLimit', n: 2 }] },
+  { id: 'zml_xiongshisi_shouwei', name: '首位金丹', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，可弃 1 张手牌摸 2 张（熊氏首位金丹，结丹后底气自生）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }] },
+
+  /* ---- 赵瑶 ---- */
+  { id: 'zml_zhaoyao_yisha', name: '以杀证道', kind: 'trigger', timing: 'onShaHit', desc: '你用【杀】造成伤害后，可摸 1 张牌（白山深处独杀上千凶兽以杀证道）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_zhaoyao_rumo', name: '入魔', kind: 'awaken', timing: 'awaken', desc: '觉醒技：准备阶段若你已受伤，减 1 点体力上限并获得【魔化】。出处：赵瑶魔筑基、化名小红；docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'awaken', replaceWith: 'zml_zhaoyao_mohua', minusMaxHp: 1 }] },
+  { id: 'zml_zhaoyao_mohua', name: '魔化', kind: 'passive', timing: 'passive', desc: '你造成的伤害 +1（魔筑基，双瞳变红）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'damageMod', delta: 1 }] },
+
+  /* ---- 展剑锋 ---- */
+  { id: 'zml_zhanjianfeng_yizhi', name: '一指奔雷', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点雷属性伤害（本命天赋，号「楚秦金丹以下第一人」）。出处：K-一指奔雷；docs/md/角色/楚秦门/02.筑基/展剑锋.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'targetDamage', n: 1, damageType: 'thunder' }] },
+  { id: 'zml_zhanjianfeng_rujie', name: '入劫见真', kind: 'awaken', timing: 'awaken', desc: '觉醒技：准备阶段若你已受伤，减 1 点体力上限并获得【劫真】。出处：丹论「入劫见真」，碎丹为斩；docs/md/角色/楚秦门/02.筑基/展剑锋.md', effects: [{ kind: 'awaken', replaceWith: 'zml_zhanjianfeng_jiezhen', minusMaxHp: 1 }] },
+  { id: 'zml_zhanjianfeng_jiezhen', name: '劫真', kind: 'passive', timing: 'passive', desc: '你造成的伤害 +1（本命剑觉醒，以剑劫渡劫）。出处：docs/md/角色/楚秦门/02.筑基/展剑锋.md', effects: [{ kind: 'damageMod', delta: 1 }] },
+
+  /* ---- 白晓生（外号百晓生） ---- */
+  { id: 'zml_baixiaosheng_fengwu', name: '北方风物志', kind: 'active', timing: 'active', desc: '出牌阶段限一次：观看一名其他角色的手牌，然后将其一张牌置于牌堆顶（著《百晓生北方风物志》，知天下事）。出处：docs/md/角色/楚秦门/02.筑基/白晓生.md', limit: 'perTurn', effects: [{ kind: 'peekHand', then: 'toDeckTop' }] },
+  { id: 'zml_baixiaosheng_chuangong', name: '传功教习', kind: 'active', timing: 'active', desc: '出牌阶段限一次：交给一名其他角色 1 张手牌，然后你摸 1 张（任楚秦传功教习数十年，为赵瑶、秦长风等打基础）。出处：docs/md/角色/楚秦门/02.筑基/白晓生.md', limit: 'perTurn', effects: [{ kind: 'giveHand', n: 1 }, { kind: 'selfDraw', n: 1 }] },
+
+  /* ---- 楚震 ---- */
+  { id: 'zml_chuzhen_laozu', name: '楚老祖', kind: 'passive', timing: 'passive', desc: '其他角色计算与你的距离 +1（元婴后期威压震齐云近两千年）。出处：docs/md/角色/齐云/04.元婴/楚震.md', effects: [{ kind: 'distPlusToMe', n: 1 }] },
+  { id: 'zml_chuzhen_kaizong', name: '开宗之恩', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，可令一名其他角色摸 1 张牌，然后你摸 1 张（曾为弟子秦烈儿争得楚秦山开宗立派）。出处：docs/md/角色/齐云/04.元婴/楚震.md', effects: [{ kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }] },
+
+  /* ---- 姜炎 ---- */
+  { id: 'zml_jiangyan_honglian', name: '红莲业火', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点火属性伤害（火系兼心神攻击，曾以此焚杀南宫嫣然）。出处：B-红莲业火；docs/md/角色/齐云/03.金丹/姜炎.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'targetDamage', n: 1, damageType: 'fire' }] },
+  { id: 'zml_jiangyan_bisha', name: '必杀十人', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色获得 1 枚「必杀」标记，你对其造成的伤害 +1（山都山刻必杀十人名单）。出处：docs/md/角色/齐云/03.金丹/姜炎.md', limit: 'perTurn', effects: [{ kind: 'markBonus', mark: '必杀', dmgBonus: 1 }] },
+
+  /* ---- 楚夺 ---- */
+  { id: 'zml_chuduo_weiya', name: '威压', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色弃置 1 张手牌（金丹修士威压震慑，曾斥齐休为「废物」）。出处：docs/md/角色/齐云/03.金丹/楚夺.md', limit: 'perTurn', effects: [{ kind: 'targetDiscard', n: 1 }] },
+  { id: 'zml_chuduo_daoying', name: '盗婴', kind: 'active', timing: 'active', desc: '出牌阶段限一次：观看一名其他角色的手牌并夺取其中 1 张（白山盗婴案真凶，借楚秦商队偷运婴儿）。出处：docs/md/角色/齐云/03.金丹/楚夺.md', limit: 'perTurn', effects: [{ kind: 'peekHand', then: 'steal' }] },
+
+  /* ---- 楚神通 ---- */
+  { id: 'zml_chushentong_shuimo', name: '水墨山河阵', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色弃置 1 张牌，然后你摸 1 张（南楚幕后谋主，以智谋与阵法见长）。出处：K-水墨山河阵；docs/md/角色/齐云/04.元婴/楚神通.md', limit: 'perTurn', effects: [{ kind: 'targetDiscard', n: 1 }, { kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_chushentong_caibu', name: '采补双修', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，若来源的手牌多于你，你夺取其 1 张手牌（采补双修炉鼎邪法，黑风谷窦买所授）。出处：B-采补双修；docs/md/角色/齐云/04.元婴/楚神通.md', cond: { k: 'srcHandMoreThanMe' }, effects: [{ kind: 'stealFrom', max: 1 }] },
+
+  /* ---- 楚问 ---- */
+  { id: 'zml_chuwen_qixing', name: '七星剑诀', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（本命【七星剑诀】，青元星 / 琉璃星 / 斩元星）。出处：B-七星剑诀；docs/md/角色/齐云/04.元婴/楚问.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'targetDamage', n: 1 }] },
+  { id: 'zml_chuwen_weisha', name: '唯杀可解', kind: 'passive', timing: 'passive', desc: '当你已受伤时，你造成的伤害 +1（「世间许多事，唯『杀』字一法可解」，山都山以一敌四）。出处：docs/md/角色/齐云/04.元婴/楚问.md', cond: { k: 'isHurt' }, effects: [{ kind: 'damageMod', delta: 1 }] },
+
+  /* ---- 刑铣 ---- */
+  { id: 'zml_xingxi_zhifa', name: '执法', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色选择：弃置 1 张手牌，或令你摸 1 张牌（执法峰座主行事，依法依规）。出处：docs/md/角色/齐云/05.化神/刑铣.md', limit: 'perTurn', effects: [{ kind: 'targetChoose', maxTargets: 1, options: [[{ kind: 'targetDiscard', n: 1 }], [{ kind: 'selfDraw', n: 1 }]] }] },
+  { id: 'zml_xingxi_gongping', name: '公平', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，令来源弃置 1 张手牌（「照规矩办就是公平」）。出处：docs/md/角色/齐云/05.化神/刑铣.md', effects: [{ kind: 'targetDiscard', n: 1 }] },
+
+  /* ---- 天地峰座主 ---- */
+  { id: 'zml_tiandifeng_qianzhang', name: '千丈法相', kind: 'passive', timing: 'passive', desc: '你的攻击范围 +2（千丈巨人法相化身，一掌击开聂疯子飞剑）。出处：K-千丈巨人法相；docs/md/角色/齐云/05.化神/天地峰座主.md', effects: [{ kind: 'rangePlus', n: 2 }] },
+  { id: 'zml_tiandifeng_weiwo', name: '唯我独尊', kind: 'passive', timing: 'passive', desc: '你每次受到的伤害 -1（此界战力第二，天上天下唯我独尊）。出处：docs/md/角色/齐云/05.化神/天地峰座主.md', effects: [{ kind: 'reduceDamage', types: ['normal', 'fire', 'thunder'], n: 1 }] },
+
+  /* ---- 南宫木 ---- */
+  { id: 'zml_nangongmu_qingmu', name: '青木为龙', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（木灵力凝成青色龙头虚影，化神之威）。出处：docs/md/角色/齐云/05.化神/南宫木.md', limit: 'perTurn', cost: { hand: 1 }, effects: [{ kind: 'targetDamage', n: 1 }] },
+  { id: 'zml_nangongmu_zhuiji', name: '追缉', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色获得 1 枚「追缉」标记，你对其造成的伤害 +1（追捕何玉数十年，不惜借外力耗损阳寿）。出处：docs/md/角色/齐云/05.化神/南宫木.md', limit: 'perTurn', effects: [{ kind: 'markBonus', mark: '追缉', dmgBonus: 1 }] },
+
+  /* ---- 南宫梦（无独立档案，据 docs 多处提及整理） ---- */
+  { id: 'zml_nangongmeng_gongguan', name: '共管', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色摸 1 张牌，然后你观看其一张手牌（与姜焕共管碧湖密藏探宝秩序）。出处：docs/md/事件/M-03 碧湖密藏崩塌事件.md；docs/md/角色/齐云/04.元婴/姜焕.md', limit: 'perTurn', effects: [{ kind: 'targetDraw', n: 1 }, { kind: 'peekHand', then: 'toDeckTop' }] },
+  { id: 'zml_nangongmeng_fenting', name: '分庭抗礼', kind: 'active', timing: 'active', desc: '出牌阶段限一次：与一名其他角色拼点，赢的你令其弃 1 张牌并摸 1 张（与姜焕因碧湖之争对峙，势同水火）。出处：docs/md/角色/齐云/04.元婴/姜焕.md；docs/md/角色/齐云/04.元婴/南宫止.md', limit: 'perTurn', effects: [{ kind: 'pointDuel', win: [{ kind: 'targetDiscard', n: 1 }, { kind: 'selfDraw', n: 1 }], lose: [] }] },
+
+  /* ---- 南宫嫣然 ---- */
+  { id: 'zml_nangongyanran_lianyin', name: '联姻', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色摸 1 张牌，然后你摸 1 张（南宫家以联姻换取楚秦门参与探宝）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', limit: 'perTurn', effects: [{ kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_nangongyanran_hushen', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你被【杀】造成伤害后，对伤害来源造成 1 点伤害（伪六道空间中护身项链反击，杀死秦思瑶）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }] },
+
+  /* ---- 法引 ---- */
+  { id: 'zml_fayin_xuncha', name: '巡察使', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色选择：弃置 1 张手牌，或令你观看其手牌（受齐休安置为楚秦巡察使，立誓震慑众家主）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'targetChoose', maxTargets: 1, options: [[{ kind: 'targetDiscard', n: 1 }], [{ kind: 'peekHand', then: 'toDeckTop' }]] }] },
+  { id: 'zml_fayin_hongyuan', name: '大宏愿', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色本回合结束时若未使用过【杀】，则你摸 2 张牌（「一日不清和太平，一日不归本寺，不登极乐」）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'pledge', onTurnEnd: [{ kind: 'selfDraw', n: 2 }] }] },
+
+  /* ---- 玉鹤 ---- */
+  { id: 'zml_yuhe_qingxin', name: '清心寡欲', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +2（证道元婴后踏上清心寡欲无情道）。出处：docs/md/角色/御兽门/04.元婴/玉鹤.md', effects: [{ kind: 'handLimit', n: 2 }] },
+
+  /* ---- 醒狮 ---- */
+  { id: 'zml_xingshi_hunshui', name: '昏睡', kind: 'limit', timing: 'active', desc: '限定技：出牌阶段，你可翻面并摸 3 张牌、回复 2 点体力（多数时候处于昏睡，沉睡中积蓄力量）。出处：docs/md/角色/蛮荒/05.化神/醒狮.md', limit: 'perGame', effects: [{ kind: 'turnFace', draw: 3 }, { kind: 'selfHeal', n: 2 }] },
+  { id: 'zml_xingshi_xiuhun', name: '嗅魂', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，令伤害来源失去 1 点体力（昏睡中凭鼻子一嗅即可吸走修士灵魂，潜意识扑击瞬杀元婴）。出处：docs/md/角色/蛮荒/05.化神/醒狮.md', effects: [{ kind: 'targetLoseHp', n: 1 }] },
+
+  /* ==================== 十大门派主公技（掌门路） ==================== */
   { id: 'zml_lord_chuqin', name: '开山立派', kind: 'lord', timing: 'passive', desc: '主公技：你的手牌上限 +2（楚秦门自白山北部开山立派，门人归附）。出处：L-大周书院宗法制.md · 开辟之功', effects: [{ kind: 'handLimit', n: 2 }] },
   { id: 'zml_lord_qiyun', name: '天地峰令', kind: 'lord', timing: 'active', desc: '主公技：出牌阶段限一次，令一名其他角色弃置 1 张手牌（齐云天地峰座主号令诸派）。出处：势力·齐云条目', limit: 'perTurn', effects: [{ kind: 'targetDiscard', n: 1 }] },
   { id: 'zml_lord_baishan', name: '转世轮回', kind: 'lord', timing: 'onDamaged', desc: '主公技：你受到伤害后，回复 1 点体力（白山之主双星化神，转世轮回）。出处：白山·贾长庚条目', effects: [{ kind: 'selfHeal', n: 1 }] },
@@ -523,4 +633,5 @@ export const ZML_SKILL_LIST: SkillDef[] = [
   { id: 'zml_lord_nanlin', name: '枯荣禅意', kind: 'lord', timing: 'onDamaged', desc: '主公技：你受到伤害后，令来源弃置 1 张手牌（佛门禅意反震）。出处：南林寺·枯荣条目', effects: [{ kind: 'targetDiscard', n: 1 }] },
   { id: 'zml_lord_waihai', name: '海东军务', kind: 'lord', timing: 'passive', desc: '主公技：你造成的伤害 +1（外海芩家主持海东军务）。出处：势力/008.外海·芩熙照条目', effects: [{ kind: 'damageMod', delta: 1 }] },
   { id: 'zml_lord_tianli', name: '崇理', kind: 'lord', timing: 'beforeJudge', desc: '主公技：判定牌生效前，你可用一张手牌替换之（天理门崇理一脉）。出处：天理门·天理门化神条目', effects: [{ kind: 'replaceJudge' }] },
+  { id: 'zml_lord_manhuang', name: '兽王领地', kind: 'lord', timing: 'onTurnStart', desc: '主公技：其他角色计算与你的距离 +1；准备阶段你可摸 1 张牌（蛮荒古兽领地辽阔，外人难以深入）。出处：docs/md/角色/蛮荒/05.化神/醒狮.md；docs/md/势力/009.蛮荒/醒狮谷.md', effects: [{ kind: 'distPlusToMe', n: 1 }, { kind: 'selfDraw', n: 1 }] },
 ];

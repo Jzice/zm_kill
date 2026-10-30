@@ -66,7 +66,7 @@ export function checkBreakthrough(idx: number): BreakthroughCheck {
   if (!p?.cult) return { ok: false, next: null, reason: '' };
   const c = p.cult;
   const next = REALM_NEXT[c.realm];
-  if (!next) return { ok: false, next: null, reason: '已至化神，无法再进' };
+  if (!next) return { ok: false, next: null, reason: '已至炼虚，无法再进' };
   if (c.breakthroughs >= MAX_BREAKTHROUGH) return { ok: false, next, reason: '本局突破次数已尽' };
   const req = BREAKTHROUGH[c.realm];
   const owned = groundsOf(G.grounds, idx);

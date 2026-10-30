@@ -17,7 +17,7 @@ async function saveWillingness(i: number, idx: number): Promise<boolean> {
   if (q.aiMode === 'llm') return llmShouldSave(i, idx);
   return aiShouldSave(i, idx) > 0;
 }
-import { canConvertAs, fire, markConvertUse, reduceDamageOf, tryRevive } from './skillEngine';
+import { canConvertAs, fire, markConvertUse, reduceDamageOf, tryRevive, markBonusOf } from './talentEngine';
 import { isZml } from '../core/mode';
 import { onDamageGain, onKillGain, spendLingShi } from './zml/economy';
 import { render } from '../ui/render';
@@ -96,11 +96,19 @@ async function applyDamage(
   } else if (armor) {
     addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
   }
-  // 掌门路【红玉阵盘】：可支付 1 灵石令本次伤害 -1（十方风火归元大阵主控阵盘）
-  if (isZml(G.mode) && tgt.equip.treasure?.skill === 'hongyu' && dmg > 1) {
+  // 掌门路【红玉阵盘】（已按特性归类为防具/阵法）：可支付 1 灵石令本次伤害 -1
+  if (isZml(G.mode) && tgt.equip.armor?.skill === 'hongyu' && dmg > 1) {
     if (spendLingShi(tgtIdx, 1)) {
       dmg = Math.max(1, dmg - 1);
       addLog(`【红玉阵盘】${tgt.name} 付 1 灵石，伤害 -1`, 'heal');
+    }
+  }
+  // 掌门路【必杀十人】/【追缉】：来源对已列入名单的目标伤害 +n
+  if (srcIdx >= 0 && G.players[srcIdx]) {
+    const mb = markBonusOf(G.players[srcIdx], tgt);
+    if (mb > 0) {
+      dmg += mb;
+      addLog(`【必杀】${G.players[srcIdx].name} 对 ${tgt.name} 的伤害 +${mb}`, 'dmg');
     }
   }
   // 局前护甲：减少受到的伤害（由配装注入，整局有效，每次伤害事件生效一次）

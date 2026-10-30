@@ -1,5 +1,5 @@
 /* ==================== 声明式技能引擎 ====================
- * 46 名基础角色 93 个技能 + 9 个主公技 + 18 个学科主题技全部由 SkillDef 声明，
+ * 46 名基础角色 93 个技能 + 9 个主公技 + 18 个学科主题技全部由 TalentDef 声明，
  * 由本文件统一分派：时机过滤 → 条件校验 → 次数限制 → 费用支付 → 原语执行。
  *
  * 设计约束（与项目不变式一致）：
@@ -13,7 +13,7 @@ import type {
   DamageType,
   Player,
   SkillCond,
-  SkillDef,
+  TalentDef,
   SkillE,
   SkillEffect,
   SkillTiming,
@@ -28,7 +28,7 @@ import { render } from '../ui/render';
 import { showPlayHint } from '../ui/hint';
 import { NET, scheduleSync } from '../net/network';
 import { C, shuffle } from '../data/cards';
-import { defOf, isPrimeNum } from '../data/skilldefs';
+import { defOf, isPrimeNum } from '../data/talentdefs';
 
 /* ---------------- 上下文 ---------------- */
 
@@ -48,14 +48,14 @@ export interface SkillCtx {
   /** 【杀】的点数（海防点数对抗） */
   shaNum?: number;
   /** 本回合已使用的锦囊张数（诗成顺序连锁） */
-  trickSeq?: number;
+  skillSeq?: number;
   /** 参照花色 / 点数（秦始皇统一「与你弃牌同花色」、郦道元水经注） */
   refSuit?: string;
   refNum?: number;
   /** 拼点 / 反间展示的牌 */
   duelCard?: Card | null;
   /** 当前执行的技能定义（觉醒技替换自身等场景需要） */
-  def?: SkillDef;
+  def?: TalentDef;
   /** 是否为翻转抉择：由「目标」替发动者做选择（targetChoose 中 selfDraw 归发动者） */
   chooser?: number;
   /** 最近一次受到的伤害属性（法拉第·避雷针判据） */
@@ -181,9 +181,9 @@ function stealOne(from: Player, to: Player): void {
 
 /* ---------------- 技能查询 ---------------- */
 
-export function defsOf(p: Player): SkillDef[] {
-  const out: SkillDef[] = [];
-  for (const s of p.skills || []) {
+export function defsOf(p: Player): TalentDef[] {
+  const out: TalentDef[] = [];
+  for (const s of p.talents || []) {
     const d = defOf(s.id);
     if (d) out.push(d);
   }
@@ -191,12 +191,12 @@ export function defsOf(p: Player): SkillDef[] {
 }
 
 /** 该玩家在指定时机生效的技能定义 */
-export function skillsOf(p: Player, t: SkillTiming): SkillDef[] {
+export function skillsOf(p: Player, t: SkillTiming): TalentDef[] {
   return defsOf(p).filter((d) => effectsAt(d, t).length > 0);
 }
 
 /** 技能在指定时机生效的效果列表（含「效果自带 at 时机」） */
-export function effectsAt(d: SkillDef, t: SkillTiming): SkillE[] {
+export function effectsAt(d: TalentDef, t: SkillTiming): SkillE[] {
   const out: SkillE[] = [];
   for (const e of d.effects as SkillE[]) {
     if (e.at ? e.at === t : d.timing === t) out.push(e);
@@ -205,7 +205,7 @@ export function effectsAt(d: SkillDef, t: SkillTiming): SkillE[] {
 }
 
 /** 发动费用是否可支付（技能 cost 与效果里的 costCard 一并统计） */
-export function canPay(p: Player, d: SkillDef): boolean {
+export function canPay(p: Player, d: TalentDef): boolean {
   let need = d.cost?.hand || 0;
   for (const e of d.effects) {
     if (e.kind === 'costCard') {
@@ -228,14 +228,14 @@ function hasPair(p: Player, kind: 'num' | 'suit'): boolean {
 }
 
 /** 使用次数是否还有剩余 */
-export function limitLeft(p: Player, d: SkillDef): boolean {
+export function limitLeft(p: Player, d: TalentDef): boolean {
   if (d.limit === 'perTurn') return (p.skillUse?.[d.id] || 0) < 1;
   if (d.limit === 'perGame') return !((p.skillGame?.[d.id] || 0) > 0);
   return true;
 }
 
 /** 记一次使用 */
-function markUse(p: Player, d: SkillDef): void {
+function markUse(p: Player, d: TalentDef): void {
   if (d.limit === 'perTurn') {
     p.skillUse = p.skillUse || {};
     p.skillUse[d.id] = (p.skillUse[d.id] || 0) + 1;
@@ -245,7 +245,7 @@ function markUse(p: Player, d: SkillDef): void {
   }
 }
 
-export function payCost(p: Player, d: SkillDef): void {
+export function payCost(p: Player, d: TalentDef): void {
   const n = d.cost?.hand || 0;
   for (let i = 0; i < n && p.hand.length > 0; i++) discardCard(p, p.hand[p.hand.length - 1]);
 }
@@ -271,13 +271,13 @@ function condOk(p: Player, c: SkillCond | undefined, ctx: SkillCtx): boolean {
     case 'playedNothingThisTurn': return (p.flags.playedCount || 0) === 0;
     case 'noShaThisTurn': return (p.flags.shaUsed || 0) === 0;
     case 'noDamageDealtThisTurn': return !p.flags.dealtDamage;
-    case 'noTrickThisTurn': return !p.flags.usedTrick;
-    case 'lastCardIsTrick': return p.flags.lastCardType === 'trick';
+    case 'noSkillThisTurn': return !p.flags.usedSkill;
+    case 'lastCardIsSkill': return p.flags.lastCardType === 'skill';
     case 'hasNumPair': return hasPair(p, 'num');
     case 'handAtMost': return p.hand.length <= c.n;
     case 'outsideTurn': return G.current !== G.players.indexOf(p);
     case 'roleIn': return c.roles.includes(p.role);
-    case 'targetHasNoEquip': return !!tgt && !tgt.equip.armor && !tgt.equip.weapon && !tgt.equip.horsePlus && !tgt.equip.horseMinus && !tgt.equip.treasure;
+    case 'targetHasNoEquip': return !!tgt && !tgt.equip.armor && !tgt.equip.weapon && !tgt.equip.horsePlus && !tgt.equip.horseMinus;
     case 'targetChained': return !!tgt && !!tgt.chained;
     case 'targetIsLord': return !!tgt && tgt.role === 'lord';
     case 'lastCardBlack': return isBlack(ctx.card);
@@ -294,12 +294,12 @@ function condOk(p: Player, c: SkillCond | undefined, ctx: SkillCtx): boolean {
 }
 
 /** 触发技是否需要玩家确认：主动型 / 限定技 / 带弃牌代价的一律询问 */
-function needsAsk(d: SkillDef): boolean {
+function needsAsk(d: TalentDef): boolean {
   if (d.kind === 'active' || d.kind === 'limit' || d.kind === 'lord') return true;
   return d.effects.some((e) => e.kind === 'costCard');
 }
 
-async function askUse(idx: number, d: SkillDef): Promise<boolean> {
+async function askUse(idx: number, d: TalentDef): Promise<boolean> {
   const p = G.players[idx];
   if (!p || !p.alive) return false;
   if (p.isAI) {
@@ -379,7 +379,7 @@ export async function invokeActive(idx: number, skillId: string): Promise<void> 
   addLog(`${isLord ? '【主公技·' : '【'}${d.name}】${p.name} 发起挑战…`, 'hl');
   render();
   addLog(`📘 玩法·【${d.name}】：${d.desc}`, 'explain');
-  showPlayHint('技能', d.name, d.desc);
+  showPlayHint('天赋', d.name, d.desc);
   FX.skillWave(idx);
   payCost(p, d);
   markUse(p, d);
@@ -1020,6 +1020,60 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         }
         break;
       }
+      /* ---- 掌门路原著机制：诡代 / 神傀化身 / 本命代征 ---- */
+      case 'copyTalent': {
+        const ti = await resolveTarget(idx, ctx, false);
+        if (ti < 0) break;
+        const src = G.players[ti];
+        const pool = (src.talents || []).filter((s) => !s.copied);
+        if (!pool.length) {
+          addLog(`${src.name} 无可复制的天赋`, 'hl');
+          break;
+        }
+        // AI 直接取第一个；真人弹出选择
+        let picked = pool[0];
+        if (!G.players[idx].isAI) {
+          const opts: ChoiceOption[] = pool.map((s) => ({ label: s.name, value: s.id }));
+          opts.push({ label: '取消', value: -1 });
+          const ch = await waitChoice(idx, opts, 'list');
+          if (ch === -1 || ch === '-1') break;
+          const hit = pool.find((s) => s.id === String(ch));
+          if (!hit) break;
+          picked = hit;
+        }
+        if (G.players[idx].talents.some((s) => s.id === picked.id && !s.copied)) break;
+        G.players[idx].talents.push({
+          id: picked.id, name: picked.name, type: picked.type, desc: picked.desc,
+          copied: true, copiedUntil: e.duration,
+        });
+        addLog(`🔮 ${G.players[idx].name} 以诡代之术获得【${picked.name}】${e.duration === 'turn' ? '（至本回合结束）' : '（至本局结束）'}`, 'hl');
+        break;
+      }
+      /* ---- 掌门路原著机制：必杀十人 / 追缉 ---- */
+      case 'markBonus': {
+        const ti = await resolveTarget(idx, ctx, false);
+        if (ti < 0) break;
+        const t = G.players[ti];
+        t.marks = t.marks || {};
+        t.marks[e.mark] = (t.marks[e.mark] || 0) + 1;
+        addLog(`🎯 ${G.players[idx].name} 将 ${t.name} 列入「${e.mark}」，对其造成的伤害 +${e.dmgBonus}`, 'dmg');
+        break;
+      }
+      /* ---- 掌门路原著机制：散魂棺 / 嗅魂 / 鬼幡 ---- */
+      case 'soulSeize': {
+        const p = G.players[idx];
+        if (e.draw) {
+          drawCards(p, e.draw);
+          drawFx(idx, e.draw);
+          addLog(`💀 ${p.name} 摄魂，摸 ${e.draw} 张牌`, 'hl');
+        }
+        if (e.heal) {
+          const before = p.hp;
+          p.hp = Math.min(p.maxHp, p.hp + e.heal);
+          if (p.hp > before) addLog(`💀 ${p.name} 摄魂，回复 ${p.hp - before} 点体力`, 'heal');
+        }
+        break;
+      }
       case 'pledge': {
         const ti = ctx.targetIdx;
         if (ti == null || ti < 0) break;
@@ -1042,8 +1096,8 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         const nd = defOf(e.replaceWith);
         const srcId = ctx.def?.id;
         if (nd && srcId) {
-          const i = p.skills.findIndex((s) => s.id === srcId);
-          if (i >= 0) p.skills.splice(i, 1, { id: nd.id, name: nd.name, type: 'trigger', desc: nd.desc });
+          const i = p.talents.findIndex((s) => s.id === srcId);
+          if (i >= 0) p.talents.splice(i, 1, { id: nd.id, name: nd.name, type: 'trigger', desc: nd.desc });
           addLog(`✨ ${p.name} 觉醒，体力上限 -${e.minusMaxHp}，永久获得【${nd.name}】`, 'hl');
         }
         break;
@@ -1053,7 +1107,7 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'cardImmune':
       case 'suitImmune':
       case 'distTrap':
-      case 'trickRedirect':
+      case 'skillRedirect':
       case 'shaRedirect':
       case 'enemyEquipVoid':
       case 'horseDist':
@@ -1078,11 +1132,11 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'damageMod':
         // 由聚合查询 / 专用钩子处理，不作为「执行期原语」
         break;
-      case 'trickDraw': {
+      case 'skillDraw': {
         const c = ctx.card;
         if (!c) break;
         if (e.blackOnly && !isBlack(c)) break;
-        if (e.minSeq && (ctx.trickSeq || 0) < e.minSeq) break;
+        if (e.minSeq && (ctx.skillSeq || 0) < e.minSeq) break;
         let n = e.n;
         if (e.redExtra && isRed(c)) n += e.redExtra;
         if (e.richestExtra && ctx.targetIdx != null && ctx.targetIdx >= 0 && isRichest(ctx.targetIdx)) n += e.richestExtra;
@@ -1297,6 +1351,29 @@ export function damageModOf(p: Player): number {
   for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'damageMod') sum += e.delta;
   return sum;
 }
+/**
+ * 掌门路【必杀十人】/【追缉】：来源对带标记目标造成的伤害加成。
+ * 标记由 markBonus 原语施加，聚合在此统一结算。
+ */
+export function markBonusOf(src: Player, tgt: Player): number {
+  if (!tgt.marks) return 0;
+  let sum = 0;
+  for (const d of defsOf(src)) {
+    for (const e of d.effects) {
+      if (e.kind === 'markBonus' && (tgt.marks[e.mark] || 0) > 0) sum += e.dmgBonus;
+    }
+  }
+  return sum;
+}
+/** 清理本回合到期的「诡代复制」天赋（由 turn.ts 回合结束调用） */
+export function cleanupCopiedTalents(idx: number): void {
+  const p = G.players[idx];
+  if (!p?.talents?.length) return;
+  const removed = p.talents.filter((s) => s.copied && s.copiedUntil === 'turn');
+  if (!removed.length) return;
+  p.talents = p.talents.filter((s) => !(s.copied && s.copiedUntil === 'turn'));
+  for (const s of removed) addLog(`${p.name} 的诡代【${s.name}】失效`, 'hl');
+}
 /** 攻击范围加成 */
 export function rangeBonusOf(p: Player): number {
   let sum = 0;
@@ -1333,18 +1410,18 @@ export function reduceDamageOf(p: Player, type: DamageType): number {
 /** 免疫：不能成为某类牌的目标 */
 export function canBeTarget(
   tgtIdx: number,
-  scope: 'trick' | 'sha' | 'juedou' | 'equip',
+  scope: 'skill' | 'sha' | 'juedou' | 'equip',
   cardName?: string,
   cardSuit?: string,
 ): boolean {
   const p = G.players[tgtIdx];
   if (!p) return true;
   // 掌门路【通明身识】：本回合内不可被锦囊牌指定（融伪装、防御、隐匿为一体）
-  if (scope === 'trick' && p.skillUse?.['zml_tongshi']) return false;
+  if (scope === 'skill' && p.skillUse?.['zml_tongshi']) return false;
   for (const d of defsOf(p)) {
     for (const e of d.effects) {
       if (e.kind === 'immune') {
-        if (e.scope === 'trick' && scope === 'trick') return false;
+        if (e.scope === 'skill' && scope === 'skill') return false;
         if (e.scope === 'equip' && scope === 'equip') return false;
         if (e.scope === 'shaAndJuedou' && (scope === 'sha' || scope === 'juedou')) return false;
       }
@@ -1372,8 +1449,8 @@ export function distTrapOf(p: Player): number {
   return n;
 }
 /** 可否转移锦囊目标（墨子·兼爱） */
-export function trickRedirectOf(p: Player): boolean {
-  return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'trickRedirect'));
+export function skillRedirectOf(p: Player): boolean {
+  return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'skillRedirect'));
 }
 /** 可否转移【杀】的目标（卢瑟福·散射） */
 export function shaRedirectOf(p: Player): boolean {
@@ -1395,7 +1472,7 @@ export function horseDistOf(p: Player): number {
  * 转移类技能（墨子·兼爱 / 卢瑟福·散射）发动判定：每回合限一次。
  * 返回可发动的技能定义并记一次使用；不可发动返回 null。
  */
-export function consumeRedirect(p: Player, kind: 'shaRedirect' | 'trickRedirect'): SkillDef | null {
+export function consumeRedirect(p: Player, kind: 'shaRedirect' | 'skillRedirect'): TalentDef | null {
   for (const d of defsOf(p)) {
     if (!d.effects.some((e) => e.kind === kind)) continue;
     if ((p.skillUse?.[d.id] || 0) >= 1) continue;
@@ -1678,8 +1755,8 @@ export function resetTurnState(p: Player): void {
   p.turnSuits = [];
   p.flags.playedCount = 0;
   p.flags.dealtDamage = false;
-  p.flags.usedTrick = false;
-  p.flags.trickCount = 0;
+  p.flags.usedSkill = false;
+  p.flags.skillCount = 0;
   p.flags.lastCardType = null;
 }
 
@@ -1689,9 +1766,9 @@ export async function noteCardPlayed(idx: number, card: Card): Promise<void> {
   if (!p) return;
   p.flags.playedCount = (p.flags.playedCount || 0) + 1;
   p.flags.lastCardType = card.type;
-  if (card.type === 'trick') {
-    p.flags.usedTrick = true;
-    p.flags.trickCount = (p.flags.trickCount || 0) + 1;
+  if (card.type === 'skill') {
+    p.flags.usedSkill = true;
+    p.flags.skillCount = (p.flags.skillCount || 0) + 1;
   }
   p.turnSuits = p.turnSuits || [];
   if (!p.turnSuits.includes(card.suit)) p.turnSuits.push(card.suit);

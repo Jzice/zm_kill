@@ -7,7 +7,7 @@ export function showPlayCard(card: PlayCardView, ownerName: string, ownerColor: 
   const em = z.querySelector('.play-zone-empty');
   if (em) em.remove();
   const isRed = card.suit === '♥' || card.suit === '♦';
-  const cls = card.type === 'trick' ? 'trick' : card.type === 'equip' ? 'equip' : isRed ? 'red' : '';
+  const cls = card.type === 'skill' ? 'skill' : card.type === 'equip' ? 'equip' : isRed ? 'red' : '';
   const e = document.createElement('div');
   e.className = 'play-card ' + cls;
   if (ownerColor) e.style.borderColor = ownerColor;

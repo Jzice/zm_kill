@@ -59,16 +59,27 @@ export const REALM_LABEL: Record<Realm, string> = {
   jindan: '金丹',
   yuanying: '元婴',
   huashen: '化神',
+  lianxu: '炼虚',
+  heti: '合体',
+  dacheng: '大乘',
+  dujie: '渡劫',
 };
 
-/** 突破的下一阶（化神为顶点，返回 null） */
+/** 突破的下一阶（局内开放至炼虚，炼虚为顶点返回 null） */
 export const REALM_NEXT: Record<Realm, Realm | null> = {
   lianqi: 'zhuji',
   zhuji: 'jindan',
   jindan: 'yuanying',
   yuanying: 'huashen',
-  huashen: null,
+  huashen: 'lianxu',
+  lianxu: null,
+  heti: null,
+  dacheng: null,
+  dujie: null,
 };
+
+/** 局内境界序列（前 6 阶：练气 → 炼虚） */
+export const REALM_ORDER: Realm[] = ['lianqi', 'zhuji', 'jindan', 'yuanying', 'huashen', 'lianxu'];
 
 export interface BreakthroughReq {
   /** 所需灵地阶位（筑基一阶 / 结丹三阶 / 结婴五阶） */
@@ -88,11 +99,15 @@ export const BREAKTHROUGH: Record<Realm, BreakthroughReq> = {
   zhuji: { tier: 3, lingShi: 6, exp: 8, hpUp: 1, heal: 1 }, // → 金丹
   jindan: { tier: 5, lingShi: 10, exp: 12, hpUp: 2, heal: 2 }, // → 元婴
   yuanying: { tier: 5, lingShi: 14, exp: 16, hpUp: 2, heal: 2 }, // → 化神
-  huashen: { tier: 5, lingShi: 99, exp: 99, hpUp: 0, heal: 0 }, // 顶点，不可突破
+  huashen: { tier: 5, lingShi: 18, exp: 20, hpUp: 2, heal: 2 }, // → 炼虚
+  lianxu: { tier: 5, lingShi: 99, exp: 99, hpUp: 0, heal: 0 }, // 局内顶点，不可突破
+  heti: { tier: 5, lingShi: 99, exp: 99, hpUp: 0, heal: 0 },
+  dacheng: { tier: 5, lingShi: 99, exp: 99, hpUp: 0, heal: 0 },
+  dujie: { tier: 5, lingShi: 99, exp: 99, hpUp: 0, heal: 0 },
 };
 
-/** 每局突破次数上限 */
-export const MAX_BREAKTHROUGH = 2;
+/** 每局突破次数上限（3 次：金丹起步者可一路破至炼虚） */
+export const MAX_BREAKTHROUGH = 3;
 
 /* ---------------- 灵石 ---------------- */
 

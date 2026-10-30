@@ -6,10 +6,10 @@ import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
 import { triggerDistMod, triggerHandLimit } from './skillfx';
-import { distModOf, distPlusToMeOf, enemyEquipVoidOf, handLimitBonus, horseDistOf, ignoreHorsePlus } from './skillEngine';
+import { distModOf, distPlusToMeOf, enemyEquipVoidOf, handLimitBonus, horseDistOf, ignoreHorsePlus } from './talentEngine';
 
-export function hasSkill(p: Player, id: string): boolean {
-  return !!p.skills && p.skills.some((s) => s.id === id);
+export function hasTalent(p: Player, id: string): boolean {
+  return !!p.talents && p.talents.some((s) => s.id === id);
 }
 
 /** 角色性别：真人取个性化设置（隐藏则回退角色表），AI 取角色表；用于【雌雄双股剑】异性判定 */
@@ -77,9 +77,30 @@ export function usableHand(p: Player, pred: (c: Card) => boolean): Card[] {
   return p.hand.filter((c) => pred(c) && canUseCard(p, c));
 }
 
-/** 宝物槽技能（【木牛流马】等）是否生效 */
-export function treasureSkillOf(p: Player): string | undefined {
-  return p.equip.treasure?.skill;
+/**
+ * 法宝卡（按攻防特性装备在武器槽或防具槽）统一访问器。
+ * 法宝不是独立槽位，因此必须同时查 weapon 与 armor 两槽。
+ */
+export function fabaoCardsOf(p: Player): Card[] {
+  const out: Card[] = [];
+  if (p.equip.weapon?.sub === 'fabao') out.push(p.equip.weapon);
+  if (p.equip.armor?.sub === 'fabao') out.push(p.equip.armor);
+  return out;
+}
+/** 已装备法宝的 skill key 列表 */
+export function fabaoSkillsOf(p: Player): string[] {
+  return fabaoCardsOf(p)
+    .map((c) => c.skill)
+    .filter((s): s is string => !!s);
+}
+/** 是否已装备指定 skill key 的法宝（如 青灵石蒲团 muyu / 储物袋 chuwu / 通天令 tongtian） */
+export function hasFabaoSkill(p: Player, key: string): boolean {
+  return fabaoSkillsOf(p).includes(key);
+}
+
+/** 宝物槽技能是否生效（兼容旧调用，等价于首件法宝的 skill） */
+export function fabaoSkillOf(p: Player): string | undefined {
+  return fabaoSkillsOf(p)[0];
 }
 
 /** 装备区里所有坐骑牌所在的槽位（【麒麟弓】弃置目标坐骑用） */
@@ -97,7 +118,6 @@ export function filledEquipSlots(p: Player): EquipSlot[] {
   if (p.equip.armor) out.push('armor');
   if (p.equip.horsePlus) out.push('horsePlus');
   if (p.equip.horseMinus) out.push('horseMinus');
-  if (p.equip.treasure) out.push('treasure');
   return out;
 }
 
@@ -134,8 +154,8 @@ export function discardCard(p: Player, card: Card, toDiscard = true): void {
 
 export function handLimit(p: Player): number {
   let l = Math.max(p.hp, 0);
-  // 掌门路：【储物袋】宝物 —— 手牌上限 +2
-  if (p.equip.treasure?.skill === 'chuwu') l += 2;
+  // 掌门路：【储物袋】法宝 —— 手牌上限 +2（法宝可能在武器槽或防具槽）
+  if (hasFabaoSkill(p, 'chuwu')) l += 2;
   // 声明式技能：手牌上限原语（缀术 +2 / 数论直觉 +1（有对子再 +1）/ 元素 +1 …）
   l += handLimitBonus(p);
   // 扩展包触发技：手牌上限原语（数学/化学「厚积薄发」handLimit: +1 等）

@@ -1,7 +1,7 @@
 /* ==================== 知识点锦囊 ====================
  * 由初高中九科关键词 / 成语 / 短语与校园生活场景提炼而成的锦囊牌。
  * 纯数据驱动：每张锦囊 = 一条 KtDef 记录；分派与结算见 game/actions.ts 的 useKnowledgeTrick。
- *   - 策略型（strategy）：直接套用 effects 原语，由 game/skillEngine.ts 的 runEffects 执行；
+ *   - 策略型（strategy）：直接套用 effects 原语，由 game/talentEngine.ts 的 runEffects 执行；
  *   - 答题型（quiz）：先经 game/quiz.ts 的 askQuizForPlayer 答题，
  *     答对套用 effects（学习奖励已在 displayQuiz 内自动发放），答错执行 onWrong 或哑火。
  * 新增玩法 = 往 KNOWLEDGE_TRICKS 加一条数据 + 在 cards.ts 自动入牌堆，无需改动引擎。

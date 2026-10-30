@@ -1,19 +1,48 @@
-/* ==================== 个人档案 / 成就 / 结算 ==================== */
+/* ==================== 个人档案 / 修为境界 / 成就 / 结算 ==================== */
 import type {
   Achievement,
   Gender,
-  Level,
   PlayerIdentity,
   Profile,
   PublicProfile,
+  Realm,
 } from '../core/types';
 import { escapeHtml } from '../core/dom';
+import { REALM_LABEL } from '../core/mode';
 import { showSettle } from '../ui/settle';
 import { G } from '../game/state';
 import { addLog } from '../game/log';
 import { NET } from '../net/network';
+import {
+  REALM_TIERS,
+  bottleneckText,
+  checkBreakthrough,
+  currentTier,
+  nextTier,
+  playBreakthrough,
+  tierOfExp,
+  type RealmLike,
+} from './realm';
 
+/** 存档 key：沿用旧名以保证老玩家档案可读（v1 结构内的 score 会自动折算为 exp） */
 const PROFILE_KEY = 'xuetangsha_profile_v1';
+
+/* ==================== 修为结算常量 ==================== */
+/** 胜利基础修为 */
+export const EXP_WIN = 120;
+/** 败北基础修为 */
+export const EXP_LOSE = 40;
+/** 每击杀 1 名角色的修为 */
+export const EXP_PER_KILL = 15;
+/** 连胜加成：连胜 n（n≥2）时 +(n-1)×步进，最多 3 级 */
+export const EXP_STREAK_STEP = 20;
+export const EXP_STREAK_MAX_STEP = 3;
+/** 主公获胜加成 */
+export const EXP_LORD_BONUS = 30;
+/** 内奸获胜加成（独赢最难，加成最高） */
+export const EXP_SPY_BONUS = 40;
+/** 每解锁 1 个新成就的修为 */
+export const EXP_PER_ACH = 30;
 
 function todayStr(): string {
   const d = new Date();
@@ -51,35 +80,29 @@ export function genderLabel(g: Gender): string {
   return GENDER_OPTIONS.find((x) => x.value === g)?.label ?? '保密';
 }
 
-const LEVELS: Level[] = [
-  { n: '蒙童', min: 0 },
-  { n: '学童', min: 120 },
-  { n: '秀才', min: 350 },
-  { n: '举人', min: 700 },
-  { n: '贡士', min: 1100 },
-  { n: '进士', min: 1600 },
-  { n: '探花', min: 2300 },
-  { n: '榜眼', min: 3100 },
-  { n: '状元', min: 4200 },
-  { n: '大儒', min: 5600 },
-  { n: '宗师', min: 7500 },
-];
-
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first_game', name: '初入江湖', desc: '完成第一局游戏', icon: '🎒' },
   { id: 'first_win', name: '首战告捷', desc: '赢得第一场胜利', icon: '🏆' },
   { id: 'win_3', name: '连胜三场', desc: '取得3连胜', icon: '🔥' },
+  { id: 'win_5', name: '五连绝胜', desc: '取得5连胜', icon: '🎯' },
   { id: 'lord_win', name: '君临天下', desc: '以主公身份获胜', icon: '👑' },
   { id: 'rebel_win', name: '揭竿而起', desc: '以反贼身份获胜', icon: '⚔️' },
   { id: 'spy_win', name: '暗度陈仓', desc: '以内奸身份获胜', icon: '🦊' },
   { id: 'kill_3', name: '杀伐果断', desc: '单局击杀3名角色', icon: '💀' },
-  { id: 'score_1000', name: '千分高手', desc: '积分达到1000', icon: '🎖️' },
+  { id: 'kill_5', name: '伏尸百万', desc: '单局击杀5名角色', icon: '☠️' },
+  { id: 'games_50', name: '阅尽千帆', desc: '累计完成50局', icon: '📖' },
+  { id: 'win_20', name: '百战功成', desc: '累计取得20场胜利', icon: '🗡️' },
+  { id: 'realm_yuanying', name: '元婴大成', desc: '境界突破至元婴', icon: '🪷' },
+  { id: 'realm_huashen', name: '化神显圣', desc: '境界突破至化神', icon: '🌌' },
+  { id: 'realm_lianxu', name: '炼虚合道', desc: '境界突破至炼虚', icon: '✨' },
+  { id: 'realm_dujie', name: '天劫加身', desc: '境界突破至渡劫', icon: '🐉' },
 ];
 
 function defaultProfile(): Profile {
   return {
     name: '玩家',
-    score: 0,
+    exp: 0,
+    realm: REALM_TIERS[0].id,
     games: 0,
     wins: 0,
     winStreak: 0,
@@ -108,7 +131,12 @@ function loadProfile(): Profile {
     const raw = localStorage.getItem(PROFILE_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<Profile>;
+      // 旧档案兼容：原 score（积分）直接折算为 exp（修为），境界按修为回推
+      const legacyScore = (p as unknown as { score?: number }).score;
+      const exp = typeof p.exp === 'number' ? p.exp : typeof legacyScore === 'number' ? legacyScore : 0;
       return Object.assign(defaultProfile(), p, {
+        exp,
+        realm: p.realm || tierOfExp(exp).id,
         achievements: p.achievements || {},
         // 兼容旧档案：补齐个性化字段
         avatar: p.avatar || DEFAULT_AVATAR,
@@ -151,19 +179,14 @@ export function saveProfile(): void {
   }
 }
 
-export function levelOf(score: number): Level {
-  let l = LEVELS[0];
-  for (const x of LEVELS) {
-    if (score >= x.min) l = x;
-  }
-  return l;
+/** 当前境界阶位（供 UI 复用，定义见 profile/realm.ts） */
+export function profileTier() {
+  return currentTier(PROFILE);
 }
 
-export function nextLevelOf(score: number): Level | null {
-  for (const x of LEVELS) {
-    if (x.min > score) return x;
-  }
-  return null;
+/** 下一阶（渡劫为顶点返回 null） */
+export function profileNextTier() {
+  return nextTier(PROFILE);
 }
 
 export function publicProfile(): PublicProfile {
@@ -173,7 +196,8 @@ export function publicProfile(): PublicProfile {
     gender: PROFILE.gender ?? 'hidden',
     mood: PROFILE.mood || '',
     moodIcon: PROFILE.moodIcon || DEFAULT_MOOD_ICON,
-    score: PROFILE.score,
+    exp: PROFILE.exp,
+    realm: currentTier(PROFILE).id,
     games: PROFILE.games,
     wins: PROFILE.wins,
     achievements: PROFILE.achievements || {},
@@ -236,14 +260,24 @@ export function achCount(p: Profile | PublicProfile): number {
   return Object.keys((p && p.achievements) || {}).length;
 }
 
+/** 当前境界 → 下一境界的修为进度百分比（满级或卡瓶颈时为 100） */
+export function realmBarPct(p: RealmLike): number {
+  const cur = currentTier(p);
+  const nx = nextTier(p);
+  if (!nx) return 100;
+  if ((p.exp || 0) >= nx.min) return 100;
+  const span = Math.max(1, nx.min - cur.min);
+  return Math.max(2, Math.min(100, Math.round((((p.exp || 0) - cur.min) / span) * 100)));
+}
+
 export function refreshProfileUI(): void {
-  const lv = levelOf(PROFILE.score),
-    nx = nextLevelOf(PROFILE.score);
+  const lv = currentTier(PROFILE),
+    nx = nextTier(PROFILE);
   let barPct = 100;
   if (nx) {
     const base = lv.min,
       span = Math.max(1, nx.min - base);
-    barPct = Math.max(2, Math.min(100, Math.round(((PROFILE.score - base) / span) * 100)));
+    barPct = Math.max(2, Math.min(100, Math.round(((PROFILE.exp - base) / span) * 100)));
   }
   const wr = PROFILE.games ? Math.round((PROFILE.wins / PROFILE.games) * 100) : 0;
   const avatar = PROFILE.avatar || DEFAULT_AVATAR;
@@ -258,7 +292,7 @@ export function refreshProfileUI(): void {
       <div class="nc-avatar">${avatar}</div>
       <div class="nc-main">
         <div class="nc-name">${escapeHtml(PROFILE.name || '玩家')}<span class="nc-gender">${genderIcon(PROFILE.gender ?? 'hidden')}</span></div>
-        <div class="nc-level">${lv.n} · 积分 ${PROFILE.score}${nx ? ` / ${nx.min}` : ''}</div>
+        <div class="nc-level">${lv.name} · 修为 ${PROFILE.exp}${nx ? ` / ${nx.min}` : ''}</div>
         ${mood ? `<div class="nc-mood">${moodIcon} ${escapeHtml(mood)}</div>` : ''}
         <div class="nc-stats">对局 ${PROFILE.games} ｜ 胜率 ${wr}% ｜ 成就 ${achCount(PROFILE)}/${ACHIEVEMENTS.length}</div>
       </div>
@@ -272,7 +306,7 @@ export function refreshProfileUI(): void {
     <div class="profile-avatar">${PROFILE.avatar || DEFAULT_AVATAR}</div>
     <div class="profile-main">
       <div class="profile-name">${escapeHtml(PROFILE.name || '玩家')} <span class="profile-gender">${genderIcon(PROFILE.gender ?? 'hidden')}</span></div>
-      <div class="profile-level">${lv.n} · 积分 ${PROFILE.score}${nx ? ` / ${nx.min}` : ''}</div>
+      <div class="profile-level">${lv.name} · 修为 ${PROFILE.exp}${nx ? ` / ${nx.min}` : ''}</div>
       <div class="profile-bar"><i style="width:${barPct}%"></i></div>
       ${idtip ? `<div class="profile-mood">${idtip}</div>` : ''}
       <div class="profile-stats">对局 ${PROFILE.games} ｜ 胜场 ${PROFILE.wins}（${wr}%）｜ 最高连胜 ${PROFILE.bestStreak} ｜ 成就 ${achCount(PROFILE)}/${ACHIEVEMENTS.length}</div>
@@ -289,15 +323,17 @@ export function refreshProfileUI(): void {
 }
 
 export function showAchievements(p: Profile | PublicProfile, title: string, opts?: { editor?: boolean }): void {
-  // 自我视图（editor）：标题栏附等级/积分徽章；他人档案仅标题
+  // 自我视图（editor）：标题栏附境界/修为徽章；他人档案仅标题
   const titleEl = document.getElementById('profileModalTitle')!;
   if (opts?.editor) {
-    const lv0 = levelOf(p.score || 0);
-    titleEl.innerHTML = `${escapeHtml(title || '成就')}<span class="pm-badge">Lv.${lv0.n}</span><span class="pm-badge">⭐ ${p.score || 0}</span>`;
+    const lv0 = currentTier(p);
+    titleEl.innerHTML = `${escapeHtml(title || '成就')}<span class="pm-badge">境·${lv0.name}</span><span class="pm-badge">⭐ 修为 ${p.exp || 0}</span>`;
   } else {
     titleEl.textContent = title || '成就';
   }
-  const lv = levelOf(p.score || 0);
+  const lv = currentTier(p);
+  const bt = bottleneckText(p);
+  const nxTier = nextTier(p);
   const avatar = (p as PublicProfile).avatar || DEFAULT_AVATAR;
   const gender = (p as PublicProfile).gender ?? 'hidden';
   const mood = (p as PublicProfile).mood || '';
@@ -309,7 +345,15 @@ export function showAchievements(p: Profile | PublicProfile, title: string, opts
   document.getElementById('profileModalBody')!.innerHTML = `
     <div class="rule-section" style="padding:10px;background:rgba(0,0,0,.25);border-radius:8px;border-left:3px solid var(--gold);margin-bottom:10px">
       <div style="font-size:15px;color:var(--gold);font-weight:700">${avatar} ${escapeHtml(p.name || '玩家')} <span style="font-size:12px">${genderIcon(gender)}</span>${mood ? `<span style="font-size:12px;color:var(--muted)"> ${moodIcon} ${escapeHtml(mood)}</span>` : ''}</div>
-      <div style="font-size:11.5px;color:#8fd0ff;margin-top:3px">等级：${lv.n} ｜ 积分：${p.score || 0} ｜ 对局：${p.games || 0} ｜ 胜场：${p.wins || 0}</div>
+      <div style="font-size:11.5px;color:#8fd0ff;margin-top:3px">境界：${lv.name} ｜ 修为：${p.exp || 0} ｜ 对局：${p.games || 0} ｜ 胜场：${p.wins || 0}</div>
+      <div class="pm-realmbar"><i style="width:${realmBarPct(p)}%"></i></div>
+      <div style="font-size:11px;color:${bt ? '#ffb648' : '#b9e6ff'};margin-top:4px">${
+        nxTier
+          ? bt
+            ? `⚠ 瓶颈未破：${escapeHtml(bt)}`
+            : `距「${nxTier.name}」还需 ${Math.max(0, nxTier.min - (p.exp || 0))} 修为`
+          : '☯ 已至渡劫 · 羽化可期'
+      }</div>
     </div>
     <div class="rule-section"><h4>🏅 成就（${achCount(p)}/${ACHIEVEMENTS.length}）</h4>
       <div class="ach-grid">${grid}</div>
@@ -345,47 +389,103 @@ export function maybeSettle(): void {
     PROFILE.winStreak++;
     if (PROFILE.winStreak > PROFILE.bestStreak) PROFILE.bestStreak = PROFILE.winStreak;
   } else PROFILE.winStreak = 0;
-  let gained = win ? 120 : 40;
+  /* ---- 修为结算：基础 + 斩敌 + 连胜 + 身份加成 ---- */
+  const kills = G.myKills || 0;
+  const detail: string[] = [];
+  let gained = win ? EXP_WIN : EXP_LOSE;
+  detail.push(`${win ? '胜' : '负'} +${gained}`);
+  const killExp = kills * EXP_PER_KILL;
+  if (killExp > 0) {
+    gained += killExp;
+    detail.push(`斩敌${kills} +${killExp}`);
+  }
+  if (PROFILE.winStreak >= 2) {
+    const step = Math.min(PROFILE.winStreak - 1, EXP_STREAK_MAX_STEP);
+    const streakExp = step * EXP_STREAK_STEP;
+    gained += streakExp;
+    detail.push(`${PROFILE.winStreak}连胜 +${streakExp}`);
+  }
+  const me = G.players[G.myPlayerIdx];
+  if (win && me) {
+    if (me.role === 'lord') {
+      gained += EXP_LORD_BONUS;
+      detail.push(`掌门独尊 +${EXP_LORD_BONUS}`);
+    } else if (me.role === 'spy') {
+      gained += EXP_SPY_BONUS;
+      detail.push(`独赢天下 +${EXP_SPY_BONUS}`);
+    }
+  }
+
   const newAch: string[] = [];
   const unlock = (id: string): void => {
-    if (!PROFILE.achievements[id]) {
+    // 忽略未定义的成就 id（如未设成就的中间境界）
+    if (!PROFILE.achievements[id] && ACHIEVEMENTS.some((a) => a.id === id)) {
       PROFILE.achievements[id] = Date.now();
       newAch.push(id);
-      gained += 30;
+      gained += EXP_PER_ACH;
     }
   };
   unlock('first_game');
   if (win) unlock('first_win');
   if (PROFILE.winStreak >= 3) unlock('win_3');
-  const me = G.players[G.myPlayerIdx];
+  if (PROFILE.winStreak >= 5) unlock('win_5');
   if (me) {
     if (win && me.role === 'lord') unlock('lord_win');
     if (win && me.role === 'rebel') unlock('rebel_win');
     if (win && me.role === 'spy') unlock('spy_win');
   }
-  if ((G.myKills || 0) >= 3) unlock('kill_3');
-  PROFILE.score += gained;
-  if (PROFILE.score >= 1000) unlock('score_1000');
+  if (kills >= 3) unlock('kill_3');
+  if (kills >= 5) unlock('kill_5');
+  if (PROFILE.games >= 50) unlock('games_50');
+  if (PROFILE.wins >= 20) unlock('win_20');
+
+  PROFILE.exp += gained;
+
+  /* ---- 境界突破（修为 + 瓶颈条件同时满足） ---- */
+  const bt = checkBreakthrough(PROFILE);
+  let breakthrough: { from: Realm; to: Realm } | null = null;
+  if (bt.ok && bt.next) {
+    const from = currentTier(PROFILE).id;
+    PROFILE.realm = bt.next;
+    breakthrough = { from, to: bt.next };
+    unlock(`realm_${bt.next}`);
+  }
   saveProfile();
-  addLog(`📊 本局结算：${win ? '胜利' : '败北'} ｜ 积分 +${gained}`, 'hl');
+
+  const realmName = currentTier(PROFILE).name;
+  addLog(`📊 本局结算：${win ? '胜利' : '败北'} ｜ 修为 +${gained}（${detail.join(' ｜ ')}）`, 'hl');
+  if (breakthrough) {
+    addLog(`🆙 打破瓶颈，突破至【${REALM_LABEL[breakthrough.to]}】！`, 'hl');
+  }
   newAch.forEach((id) => {
     const a = ACHIEVEMENTS.find((x) => x.id === id);
     if (a) addLog(`🏅 解锁成就【${a.name}】`, 'reward');
   });
   refreshProfileUI();
   if (NET.isHost && NET.mode === 'host') {
-    NET.broadcast({ type: 'chat', name: '系统', text: `${PROFILE.name} 本局${win ? '胜利' : '败北'}，积分 +${gained}` });
+    NET.broadcast({ type: 'chat', name: '系统', text: `${PROFILE.name} 本局${win ? '胜利' : '败北'}，修为 +${gained}` });
+    if (breakthrough) {
+      NET.broadcast({ type: 'chat', name: '系统', text: `🆙 ${PROFILE.name} 突破至【${REALM_LABEL[breakthrough.to]}】！` });
+    }
   }
-  // 一局结束结算面板（含按胜利方式的个性动画 + 重开一局入口）
-  showSettle({
-    win,
-    gained,
-    correct: 0,
-    total: 0,
-    score: PROFILE.score,
-    newAch: newAch
-      .map((id) => ACHIEVEMENTS.find((x) => x.id === id))
-      .filter((a): a is (typeof ACHIEVEMENTS)[number] => !!a)
-      .map((a) => ({ icon: a.icon, name: a.name })),
-  });
+
+  // 一局结束结算面板（突破时先播全屏演出，再展示结算）
+  const settle = (): void =>
+    showSettle({
+      win,
+      gained,
+      detail,
+      exp: PROFILE.exp,
+      realm: realmName,
+      breakthrough: breakthrough ? { from: REALM_LABEL[breakthrough.from], to: REALM_LABEL[breakthrough.to] } : null,
+      bottleneck: breakthrough ? null : bottleneckText(PROFILE),
+      nextRealm: nextTier(PROFILE)?.name ?? null,
+      nextNeed: nextTier(PROFILE) ? Math.max(0, nextTier(PROFILE)!.min - PROFILE.exp) : 0,
+      newAch: newAch
+        .map((id) => ACHIEVEMENTS.find((x) => x.id === id))
+        .filter((a): a is (typeof ACHIEVEMENTS)[number] => !!a)
+        .map((a) => ({ icon: a.icon, name: a.name })),
+    });
+  if (breakthrough) void playBreakthrough(breakthrough.from, breakthrough.to).then(settle);
+  else settle();
 }

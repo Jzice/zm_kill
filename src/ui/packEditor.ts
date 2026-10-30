@@ -35,7 +35,7 @@ const TIMINGS: { v: string; t: string }[] = [
   { v: 'onTargetSha', t: '成为杀的目标时' },
   { v: 'onUseShan', t: '使用/打出闪后' },
   { v: 'onShaHit', t: '杀造成伤害后' },
-  { v: 'onUseTrick', t: '使用锦囊后' },
+  { v: 'onUseSkill', t: '使用锦囊后' },
 ];
 
 function val(id: string): string {
@@ -190,12 +190,12 @@ function parseEffects(id: string): { fx: any[]; err?: string } {
   const id = val('pcId').trim();
   const name = val('pcName').trim();
   if (!id || !name) return status('角色 id 与名称必填', 'err');
-  const skills: any[] = [];
+  const talents: any[] = [];
   const s1Name = val('pcS1Name').trim();
   if (s1Name) {
     const e1 = parseEffects('pcS1Fx');
     if (e1.err) return status(e1.err, 'err');
-    skills.push({
+    talents.push({
       id: val('pcS1Id').trim() || id + '_sk1',
       name: s1Name,
       kind: val('pcS1Kind'),
@@ -208,7 +208,7 @@ function parseEffects(id: string): { fx: any[]; err?: string } {
   if (s2Name) {
     const e2 = parseEffects('pcS2Fx');
     if (e2.err) return status(e2.err, 'err');
-    skills.push({
+    talents.push({
       id: val('pcS2Id').trim() || id + '_sk2',
       name: s2Name,
       kind: val('pcS2Kind'),
@@ -217,12 +217,12 @@ function parseEffects(id: string): { fx: any[]; err?: string } {
       effects: e2.fx,
     });
   }
-  if (!skills.length) return status('至少需要一个技能', 'err');
+  if (!talents.length) return status('至少需要一个技能', 'err');
   const c: PackCharacter = {
     id, name, title: val('pcTitle').trim() || name,
     faction: val('pcFaction') as any,
     hp: num('pcHp') || 4, avatar: val('pcAvatar').trim() || '🧑',
-    skills,
+    skills: talents,
   };
   draft.characters = draft.characters || [];
   draft.characters.push(c);

@@ -101,7 +101,8 @@ check('已移除答题弹窗', (await page.locator('#quizModal').count()) === 0)
 // 1.1 个人信息芯片（我的档案 + 个性化资料）
 await page.locator('#topBar .tb-user-chip').click();
 await page.waitForSelector('#profileModal.show', { timeout: 3000 });
-check('合并弹窗打开且标题栏含等级/积分徽章', (await page.textContent('#profileModalTitle'))?.includes('Lv.') === true);
+const pmt = (await page.textContent('#profileModalTitle')) || '';
+check('合并弹窗打开且标题栏含境界/修为徽章', pmt.includes('境·') && pmt.includes('修为'), pmt);
 const pickItems = await page.locator('#profileEditor .pick-item').count();
 check('个性化资料面板（头像+性别+心情图标）', pickItems >= 36, `${pickItems} 个可选项`);
 await page.fill('#profileNameInput', '齐休');
@@ -121,9 +122,10 @@ check('选择模式后进入设置子界面', await page.isVisible('#screenSetup
 const charCards = await page.locator('#charGrid .char-card').count();
 check('角色卡渲染（子界面）', charCards > 0, `${charCards} 名角色`);
 const factions = await page.locator('#factionPicker .faction-card').count();
-check('修真势力选择（子界面）', factions === 9, `${factions} 个势力`);
+// 掌门路第十势力「蛮荒」（承载醒狮等化神古兽）已加入，故为 10 门派
+check('修真势力选择（子界面）', factions === 10, `${factions} 个势力`);
 const packBtns = await page.locator('#packetPicker .opt-btn').count();
-// 年级扩展包已移除，角色池只剩「全部角色」单项；选角改由门派筛选（#factionPicker，9 门派）
+// 年级扩展包已移除，角色池只剩「全部角色」单项；选角改由门派筛选（#factionPicker，10 门派）
 check('角色池选择器仅剩「全部角色」', packBtns === 1, `${packBtns} 个选项`);
 
 // 1.3 随机武将预览卡：完整展示（技能/主公技）+ 换将

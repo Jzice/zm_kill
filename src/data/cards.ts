@@ -62,7 +62,7 @@ export function buildDeck(opts?: { packs?: CardPackId[]; mode?: GameMode }): Car
     ['火攻', 'huogong', { damageType: 'fire' }, 3],
   ];
   tr.forEach(([n, s, e, c]) => {
-    for (let i = 0; i < c; i++) d.push(C(n, 'trick', s, SUITS[i % 4], (i % 13) + 1, e));
+    for (let i = 0; i < c; i++) d.push(C(n, 'skill', s, SUITS[i % 4], (i % 13) + 1, e));
   });
   // 扩展卡：按 cardCatalog 追加（仅投放已启用卡包的卡牌；具名坐骑等 sub 重复项按记录各自投放）
   const packs = opts?.packs;
@@ -73,11 +73,11 @@ export function buildDeck(opts?: { packs?: CardPackId[]; mode?: GameMode }): Car
         d.push(C(def.name, def.type, def.sub, SUITS[i % 4], (i % 13) + 1, def.extra ? { ...def.extra } : {}));
     }
   }
-  // 知识点锦囊：按定义表批量注入（type='trick'，sub=定义表 key），张数受 KtDef.deck 控制，
+  // 知识点锦囊：按定义表批量注入（type='skill'，sub=定义表 key），张数受 KtDef.deck 控制，
   // 不改变基本牌 30/15/8/5 比例；随牌堆洗牌后与其他牌混合。
   for (const [sub, def] of Object.entries(allTrickDefs())) {
     for (let i = 0; i < (def.deck ?? 1); i++)
-      d.push(C(def.name, 'trick', sub, SUITS[i % 4], (i % 13) + 1));
+      d.push(C(def.name, 'skill', sub, SUITS[i % 4], (i % 13) + 1));
   }
   const eq: [string, string, Partial<Card>, number][] = [
     ['诸葛连弩', 'weapon', { range: 1, skill: 'liannu' }, 2],

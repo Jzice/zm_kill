@@ -2,7 +2,7 @@
  * 定位：在基础牌堆（core，现有 125 张）之上补齐原版三国杀缺失的卡牌。
  *
  * 设计约定：
- *   1. 装备牌的 `sub` **必须是槽位名**（weapon / armor / horse+ / horse- / treasure），
+ *   1. 装备牌的 `sub` **必须是槽位名**（weapon / armor / horse+ / horse- / fabao），
  *      装备写入哪个槽由 sub 决定（见 game/turn.ts 与 game/ai.ts 的装备分支）；
  *      具体是哪一件装备由 `extra.skill` 区分。锦囊 / 基本牌的 `sub` 沿用原版英文 key。
  *      由此 `Card` 结构不变 → `state_sync` 序列化结构不变，旧版客户端可正常解包。
@@ -13,7 +13,7 @@
  *
  * 结算方式 resolve：
  *   - 'judge'  ：延时锦囊，置入目标判定区，由 judgePhase 结算
- *   - 'switch' ：锦囊，由 game/actions.ts 的 useTrick 新增 case 结算
+ *   - 'switch' ：锦囊，由 game/actions.ts 的 useSkill 新增 case 结算
  *   - 'equip'  ：装备，通过 Card.skill 钩子结算（武器在 useSha、防具在 damage）
  *   - 'passive'：装备但无主动技能（具名坐骑，复用 ±1 马的距离计算）
  */
@@ -47,7 +47,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   bingliang: {
     sub: 'bingliang',
     name: '兵粮寸断',
-    type: 'trick',
+    type: 'skill',
     pack: 'junzheng',
     count: 2,
     extra: { judgeType: 'bingliang' },
@@ -129,7 +129,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     desc: '攻击范围 2；你使用【杀】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
   },
   muyu: {
-    sub: 'treasure',
+    sub: 'fabao',
     name: '木牛流马',
     type: 'equip',
     pack: 'sp',
@@ -204,7 +204,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   zhiji: {
     sub: 'zhiji',
     name: '知己知彼',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 2,
     resolve: 'switch',
@@ -213,7 +213,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   shuishui: {
     sub: 'shuishui',
     name: '水淹七军',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 2,
     resolve: 'switch',
@@ -222,7 +222,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   caomu: {
     sub: 'caomu',
     name: '草木皆兵',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 2,
     resolve: 'switch',
@@ -231,7 +231,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   yuanjiao: {
     sub: 'yuanjiao',
     name: '远交近攻',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 1,
     resolve: 'switch',
@@ -240,7 +240,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   yiyi: {
     sub: 'yiyi',
     name: '以逸待劳',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 1,
     resolve: 'switch',
@@ -249,7 +249,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   huoshao: {
     sub: 'huoshao',
     name: '火烧连营',
-    type: 'trick',
+    type: 'skill',
     pack: 'yingbian',
     count: 1,
     extra: { damageType: 'fire' },
@@ -261,7 +261,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   wuxieguo: {
     sub: 'wuxieguo',
     name: '无懈可击·国',
-    type: 'trick',
+    type: 'skill',
     pack: 'guozhan',
     count: 2,
     resolve: 'switch',
@@ -270,7 +270,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   diaohu: {
     sub: 'diaohu',
     name: '调虎离山',
-    type: 'trick',
+    type: 'skill',
     pack: 'guozhan',
     count: 2,
     resolve: 'switch',
@@ -279,7 +279,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   lianjun: {
     sub: 'lianjun',
     name: '联军盛宴',
-    type: 'trick',
+    type: 'skill',
     pack: 'guozhan',
     count: 1,
     resolve: 'switch',
@@ -288,7 +288,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   chiling: {
     sub: 'chiling',
     name: '敕令',
-    type: 'trick',
+    type: 'skill',
     pack: 'guozhan',
     count: 1,
     resolve: 'switch',
@@ -298,18 +298,18 @@ export const CARD_CATALOG: Record<string, CardDef> = {
 
 /** 需指定一名其他角色为目标的扩展锦囊（出牌阶段目标选择 / 兼爱转移共用） */
 export const ONE_TARGET_TRICKS: string[] = Object.values(CARD_CATALOG)
-  .filter((d) => d.type === 'trick' && d.resolve === 'switch' && d.sub !== 'wuxieguo' && d.sub !== 'lianjun' && d.sub !== 'chiling')
+  .filter((d) => d.type === 'skill' && d.resolve === 'switch' && d.sub !== 'wuxieguo' && d.sub !== 'lianjun' && d.sub !== 'chiling')
   .map((d) => d.sub);
 
 /** 群体锦囊（无需指定目标，对所有其他角色生效） */
 export const ALL_TARGET_TRICKS: string[] = ['lianjun', 'chiling'];
 
 /** 响应牌：只能被动打出，不出现在出牌阶段的可选列表 */
-export const RESPONSE_ONLY_TRICKS: string[] = ['wuxieguo'];
+export const RESPONSE_ONLY_SKILLS: string[] = ['wuxieguo'];
 
 /** 可被【无懈可击】响应的扩展锦囊（延时类不在此列，与既有 lebu / shandian 口径一致） */
 export const COUNTERABLE_EXTRA_TRICKS: string[] = Object.values(CARD_CATALOG)
-  .filter((d) => d.type === 'trick' && d.resolve === 'switch' && d.sub !== 'wuxieguo')
+  .filter((d) => d.type === 'skill' && d.resolve === 'switch' && d.sub !== 'wuxieguo')
   .map((d) => d.sub);
 
 /** 延时锦囊（置入判定区）的 sub 集合 */

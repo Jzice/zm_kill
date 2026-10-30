@@ -60,13 +60,13 @@ export const EQUIP_DESC: Record<string, string> = {
   taiping: '锁定技：你不能成为【乐不思蜀】【兵粮寸断】等延时锦囊的目标',
   mingguang: '你每次受到的伤害 -1（最低 1 点）',
   wuliu: '【杀】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
-  muyu: '宝物：摸牌阶段额外摸 1 张牌',
+  muyu: '法宝：摸牌阶段额外摸 1 张牌',
 };
 
 let hintTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** 使用技能 / 锦囊时在出牌区内浮现内容提示，数秒后自动淡出 */
-export function showPlayHint(kind: '技能' | '锦囊' | '装备', name: string, desc: string): void {
+/** 使用天赋 / 技能 / 装备时在出牌区内浮现内容提示，数秒后自动淡出 */
+export function showPlayHint(kind: '天赋' | '技能' | '锦囊' | '装备', name: string, desc: string): void {
   const zone = document.getElementById('playZoneCards');
   if (!zone) return;
   zone.querySelectorAll('.play-hint').forEach((e) => e.remove());

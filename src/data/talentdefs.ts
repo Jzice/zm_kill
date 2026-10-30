@@ -2,7 +2,7 @@
  * 81 名基础角色共 164 个技能全部在此登记：时机 + 费用 + 限制 + 效果原语。
  * （46 名基础角色 93 技能 + v2.7.0 高中扩展包 35 名角色 70 技能 + 1 个觉醒后技能
  *   + 9 主公技 + 18 学科主题技 = 191 条登记项）
- * 由 src/game/skillEngine.ts 统一分派，规则书 / 选人卡 / 亮将卡均读本表。
+ * 由 src/game/talentEngine.ts 统一分派，规则书 / 选人卡 / 亮将卡均读本表。
  *
  * 设计原则（详见 docs/游戏机制.md）：
  * - 一人一面：每名角色的技能在至少三个机制维度上与其他角色区分
@@ -10,11 +10,11 @@
  * - 未命中分支必有 ≥0.6 PP 保底；群体与无限类收益封顶
  * - 「+1 学识」仅保留居里夫人【镭元素】一处学识经济技
  */
-import type { Skill, SkillDef, SkillE, SkillTiming, SkillType } from '../core/types';
-import { ZML_SKILL_LIST } from './zml/skilldefs.zml';
+import type { Talent, TalentDef, SkillE, SkillTiming, SkillType } from '../core/types';
+import { ZML_TALENT_LIST } from './zml/talentdefs.zml';
 
 /** 展示类型 → 出牌阶段是否作为「主动技按钮」出现 */
-export function skillTypeOf(d: SkillDef): SkillType {
+export function skillTypeOf(d: TalentDef): SkillType {
   return d.kind === 'active' || d.kind === 'limit' || d.kind === 'lord' ? 'active' : 'trigger';
 }
 
@@ -29,7 +29,7 @@ export function isPrimeNum(n: number | string): boolean {
 /* ------------------------------------------------------------------ */
 
 /** 鲁迅·呐喊：甘宁【奇袭】式转化技 */
-const LUXUN_NAH: SkillDef = {
+const LUXUN_NAH: TalentDef = {
   id: 'luxun_nah',
   name: '呐喊',
   kind: 'convert',
@@ -39,7 +39,7 @@ const LUXUN_NAH: SkillDef = {
 };
 
 /** 鲁迅·横眉：展示手牌的花色分支反制 */
-const LUXUN_HENGMEI: SkillDef = {
+const LUXUN_HENGMEI: TalentDef = {
   id: 'luxun_hengmei',
   name: '横眉',
   kind: 'trigger',
@@ -55,7 +55,7 @@ const LUXUN_HENGMEI: SkillDef = {
 };
 
 /** 李白·将进酒：红色手牌当酒 */
-const LIBAI_JIANGJINJIU: SkillDef = {
+const LIBAI_JIANGJINJIU: TalentDef = {
   id: 'libai_jiangjinjiu',
   name: '将进酒',
   kind: 'convert',
@@ -65,17 +65,17 @@ const LIBAI_JIANGJINJIU: SkillDef = {
 };
 
 /** 李白·诗成：出牌顺序连锁（本回合第二张及之后的锦囊） */
-const LIBAI_SHICHENG: SkillDef = {
+const LIBAI_SHICHENG: TalentDef = {
   id: 'libai_shicheng',
   name: '诗成',
   kind: 'trigger',
-  timing: 'onUseTrick',
+  timing: 'onUseSkill',
   desc: '出牌阶段你使用的本回合第二张及之后的锦囊牌结算后，你摸一张牌；若为红色改为摸两张。',
-  effects: [{ kind: 'trickDraw', n: 1, minSeq: 2, redExtra: 1 }],
+  effects: [{ kind: 'skillDraw', n: 1, minSeq: 2, redExtra: 1 }],
 };
 
 /** 杜甫·三吏三别：窥牌 + 交换 */
-const DUFU_SANLI: SkillDef = {
+const DUFU_SANLI: TalentDef = {
   id: 'dufu_sanli',
   name: '三吏三别',
   kind: 'active',
@@ -85,7 +85,7 @@ const DUFU_SANLI: SkillDef = {
 };
 
 /** 杜甫·沉郁：觉醒技（残血觉醒） */
-const DUFU_CHENYU: SkillDef = {
+const DUFU_CHENYU: TalentDef = {
   id: 'dufu_chenyu',
   name: '沉郁',
   kind: 'awaken',
@@ -97,7 +97,7 @@ const DUFU_CHENYU: SkillDef = {
 };
 
 /** 杜甫觉醒后·诗史 */
-const DUFU_SHISHI: SkillDef = {
+const DUFU_SHISHI: TalentDef = {
   id: 'dufu_shishi',
   name: '诗史',
   kind: 'passive',
@@ -110,7 +110,7 @@ const DUFU_SHISHI: SkillDef = {
 };
 
 /** 朱自清·背影：给牌反哺 */
-const ZHUZIQING_BEIYING: SkillDef = {
+const ZHUZIQING_BEIYING: TalentDef = {
   id: 'zhuziqing_beiying',
   name: '背影',
   kind: 'active',
@@ -120,20 +120,20 @@ const ZHUZIQING_BEIYING: SkillDef = {
 };
 
 /** 朱自清·荷塘月色：回合末「最后一张牌」条件 */
-const ZHUZIQING_HETANG: SkillDef = {
+const ZHUZIQING_HETANG: TalentDef = {
   id: 'zhuziqing_hetang',
   name: '荷塘月色',
   kind: 'trigger',
   timing: 'onTurnEnd',
   desc: '回合结束，若你本回合使用的最后一张牌为锦囊牌，你摸一张牌；若你本回合未使用过任何牌，你回复 1 点体力。',
   effects: [
-    { kind: 'selfDraw', n: 1, cond: { k: 'lastCardIsTrick' } },
+    { kind: 'selfDraw', n: 1, cond: { k: 'lastCardIsSkill' } },
     { kind: 'selfHeal', n: 1, cond: { k: 'playedNothingThisTurn' } },
   ],
 };
 
 /** 老舍·茶馆：群体窥牌 + 控顶 */
-const LAOSHE_CHAGUAN: SkillDef = {
+const LAOSHE_CHAGUAN: TalentDef = {
   id: 'laoshe_chaguan',
   name: '茶馆',
   kind: 'active',
@@ -143,7 +143,7 @@ const LAOSHE_CHAGUAN: SkillDef = {
 };
 
 /** 老舍·骆驼祥子：装备牌当闪 */
-const LAOSHE_XIANGZI: SkillDef = {
+const LAOSHE_XIANGZI: TalentDef = {
   id: 'laoshe_xiangzi',
   name: '骆驼祥子',
   kind: 'convert',
@@ -153,7 +153,7 @@ const LAOSHE_XIANGZI: SkillDef = {
 };
 
 /** 茅盾·子夜：黑色手牌当杀 */
-const MAODUN_ZIYE: SkillDef = {
+const MAODUN_ZIYE: TalentDef = {
   id: 'maodun_ziye',
   name: '子夜',
   kind: 'convert',
@@ -163,11 +163,11 @@ const MAODUN_ZIYE: SkillDef = {
 };
 
 /** 茅盾·批判：锦囊被无懈后的反制 */
-const MAODUN_PIPAN: SkillDef = {
+const MAODUN_PIPAN: TalentDef = {
   id: 'maodun_pipan',
   name: '批判',
   kind: 'trigger',
-  timing: 'onTrickCountered',
+  timing: 'onSkillCountered',
   desc: '你的锦囊牌被【无懈可击】抵消后，你可弃置一张手牌，令该【无懈可击】的使用者弃置一张牌。',
   effects: [
     { kind: 'costCard', n: 1 },
@@ -180,7 +180,7 @@ const MAODUN_PIPAN: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 祖冲之·密率：质数判定（46.2%），命中 2 伤、未命中保底摸 1 */
-const ZCZ_MILV: SkillDef = {
+const ZCZ_MILV: TalentDef = {
   id: 'zcz_milv',
   name: '密率',
   kind: 'active',
@@ -197,7 +197,7 @@ const ZCZ_MILV: SkillDef = {
 };
 
 /** 祖冲之·缀术：手牌上限 +2，弃质数牌改为置顶 */
-const ZCZ_ZHUISHU: SkillDef = {
+const ZCZ_ZHUISHU: TalentDef = {
   id: 'zcz_zhuishu',
   name: '缀术',
   kind: 'passive',
@@ -210,7 +210,7 @@ const ZCZ_ZHUISHU: SkillDef = {
 };
 
 /** 华罗庚·统筹：拼点博弈 */
-const HLG_TONGCHOU: SkillDef = {
+const HLG_TONGCHOU: TalentDef = {
   id: 'hlg_tongchou',
   name: '统筹',
   kind: 'active',
@@ -226,7 +226,7 @@ const HLG_TONGCHOU: SkillDef = {
 };
 
 /** 华罗庚·优选法：额外摸 1 后弃 1，弃置牌为奇数则不弃 */
-const HLG_YOUXUAN: SkillDef = {
+const HLG_YOUXUAN: TalentDef = {
   id: 'hlg_youxuan',
   name: '优选法',
   kind: 'trigger',
@@ -236,7 +236,7 @@ const HLG_YOUXUAN: SkillDef = {
 };
 
 /** 高斯·算术研究：拼点博弈 */
-const GAOSI_SUANSHU: SkillDef = {
+const GAOSI_SUANSHU: TalentDef = {
   id: 'gaosi_suanshu',
   name: '算术研究',
   kind: 'active',
@@ -252,7 +252,7 @@ const GAOSI_SUANSHU: SkillDef = {
 };
 
 /** 高斯·数论直觉：手牌中有对子则上限额外 +1 */
-const GAOSI_SHULUN: SkillDef = {
+const GAOSI_SHULUN: TalentDef = {
   id: 'gaosi_shulun',
   name: '数论直觉',
   kind: 'passive',
@@ -265,7 +265,7 @@ const GAOSI_SHULUN: SkillDef = {
 };
 
 /** 笛卡尔·坐标系：双判定同色奖励（v2.1：以知识考核替代弃牌） */
-const DIKAER_ZUOBIAO: SkillDef = {
+const DIKAER_ZUOBIAO: TalentDef = {
   id: 'dikaer_zuobiao',
   name: '坐标系',
   kind: 'active',
@@ -275,7 +275,7 @@ const DIKAER_ZUOBIAO: SkillDef = {
 };
 
 /** 笛卡尔·我思故我在：改判（司马懿【鬼才】式） */
-const DIKAER_WOSI: SkillDef = {
+const DIKAER_WOSI: TalentDef = {
   id: 'dikaer_wosi',
   name: '我思故我在',
   kind: 'trigger',
@@ -285,7 +285,7 @@ const DIKAER_WOSI: SkillDef = {
 };
 
 /** 柯西·极限：判定阈值（v2.1：以判定替代弃牌，阈值 46.2%，未命中摸 2 张保底） */
-const KEXI_JIXIAN: SkillDef = {
+const KEXI_JIXIAN: TalentDef = {
   id: 'kexi_jixian',
   name: '极限',
   kind: 'active',
@@ -295,7 +295,7 @@ const KEXI_JIXIAN: SkillDef = {
 };
 
 /** 柯西·序列：弃置两张点数之差 ≤2 则摸 1 */
-const KEXI_XULIE: SkillDef = {
+const KEXI_XULIE: TalentDef = {
   id: 'kexi_xulie',
   name: '序列',
   kind: 'passive',
@@ -309,7 +309,7 @@ const KEXI_XULIE: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 莎士比亚·十四行诗：成对代价 + 令其选择 */
-const SHASHIBIYA_SHS: SkillDef = {
+const SHASHIBIYA_SHS: TalentDef = {
   id: 'shashibiya_shs',
   name: '十四行诗',
   kind: 'active',
@@ -329,7 +329,7 @@ const SHASHIBIYA_SHS: SkillDef = {
 };
 
 /** 莎士比亚·哈姆雷特：反转抉择（把选择权交给敌人） */
-const SHASHIBIYA_HMLT: SkillDef = {
+const SHASHIBIYA_HMLT: TalentDef = {
   id: 'shashibiya_hmlt',
   name: '哈姆雷特',
   kind: 'trigger',
@@ -347,7 +347,7 @@ const SHASHIBIYA_HMLT: SkillDef = {
 };
 
 /** 培根·论读书：观星取牌 */
-const PEIGEN_LUNDUOSHU: SkillDef = {
+const PEIGEN_LUNDUOSHU: TalentDef = {
   id: 'peigen_lundushu',
   name: '论读书',
   kind: 'active',
@@ -357,17 +357,17 @@ const PEIGEN_LUNDUOSHU: SkillDef = {
 };
 
 /** 培根·随笔：黑色锦囊摸牌 */
-const PEIGEN_SUIBI: SkillDef = {
+const PEIGEN_SUIBI: TalentDef = {
   id: 'peigen_suibi',
   name: '随笔',
   kind: 'trigger',
-  timing: 'onUseTrick',
+  timing: 'onUseSkill',
   desc: '你使用黑色锦囊牌后，摸一张牌。',
-  effects: [{ kind: 'trickDraw', n: 1, blackOnly: true }],
+  effects: [{ kind: 'skillDraw', n: 1, blackOnly: true }],
 };
 
 /** 马克·吐温·百万英镑：拼点 */
-const MATUWEN_BWYB: SkillDef = {
+const MATUWEN_BWYB: TalentDef = {
   id: 'matuwen_bwyb',
   name: '百万英镑',
   kind: 'active',
@@ -386,17 +386,17 @@ const MATUWEN_BWYB: SkillDef = {
 };
 
 /** 马克·吐温·讽刺小说：嘲讽手牌最多者 */
-const MATUWEN_FC: SkillDef = {
+const MATUWEN_FC: TalentDef = {
   id: 'matuwen_fc',
   name: '讽刺小说',
   kind: 'trigger',
-  timing: 'onUseTrick',
+  timing: 'onUseSkill',
   desc: '你使用锦囊牌后摸一张牌；若该锦囊的目标中含手牌最多的角色，改为摸两张牌。',
-  effects: [{ kind: 'trickDraw', n: 1, richestExtra: 1 }],
+  effects: [{ kind: 'skillDraw', n: 1, richestExtra: 1 }],
 };
 
 /** 狄更斯·双城记：反间猜花色 */
-const DIGENGSI_SCJ: SkillDef = {
+const DIGENGSI_SCJ: TalentDef = {
   id: 'digengsi_scj',
   name: '双城记',
   kind: 'active',
@@ -412,7 +412,7 @@ const DIGENGSI_SCJ: SkillDef = {
 };
 
 /** 狄更斯·雾都孤儿：连营式空手补偿 */
-const DIGENGSI_WDGE: SkillDef = {
+const DIGENGSI_WDGE: TalentDef = {
   id: 'digengsi_wdge',
   name: '雾都孤儿',
   kind: 'passive',
@@ -425,7 +425,7 @@ const DIGENGSI_WDGE: SkillDef = {
 };
 
 /** 雪莱·西风颂：传播（v2.1：以知识考核替代弃牌） */
-const XUELAI_XFS: SkillDef = {
+const XUELAI_XFS: TalentDef = {
   id: 'xuelai_xfs',
   name: '西风颂',
   kind: 'active',
@@ -438,13 +438,13 @@ const XUELAI_XFS: SkillDef = {
 };
 
 /** 雪莱·诗辩 */
-const XUELAI_SHIBIAN: SkillDef = {
+const XUELAI_SHIBIAN: TalentDef = {
   id: 'xuelai_shibian',
   name: '诗辩',
   kind: 'trigger',
-  timing: 'onUseTrick',
+  timing: 'onUseSkill',
   desc: '你使用锦囊牌后摸一张牌；若为红色锦囊，改为摸两张牌。',
-  effects: [{ kind: 'trickDraw', n: 1, redExtra: 1 }],
+  effects: [{ kind: 'skillDraw', n: 1, redExtra: 1 }],
 };
 
 /* ------------------------------------------------------------------ */
@@ -452,7 +452,7 @@ const XUELAI_SHIBIAN: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 牛顿·三大定律：自损爆发 */
-const NIUDUN_SDDL: SkillDef = {
+const NIUDUN_SDDL: TalentDef = {
   id: 'niudun_sddl',
   name: '三大定律',
   kind: 'active',
@@ -466,7 +466,7 @@ const NIUDUN_SDDL: SkillDef = {
 };
 
 /** 牛顿·万有引力：双向距离 */
-const NIUDUN_WYYL: SkillDef = {
+const NIUDUN_WYYL: TalentDef = {
   id: 'niudun_wyyl',
   name: '万有引力',
   kind: 'passive',
@@ -479,7 +479,7 @@ const NIUDUN_WYYL: SkillDef = {
 };
 
 /** 爱因斯坦·相对论：限定技换血 */
-const AINSTEIN_XDL: SkillDef = {
+const AINSTEIN_XDL: TalentDef = {
   id: 'ainstein_xdl',
   name: '相对论',
   kind: 'limit',
@@ -490,7 +490,7 @@ const AINSTEIN_XDL: SkillDef = {
 };
 
 /** 爱因斯坦·质能方程：红牌当火杀 */
-const AINSTEIN_ZNFC: SkillDef = {
+const AINSTEIN_ZNFC: TalentDef = {
   id: 'ainstein_znfc',
   name: '质能方程',
   kind: 'convert',
@@ -500,7 +500,7 @@ const AINSTEIN_ZNFC: SkillDef = {
 };
 
 /** 法拉第·避雷针：免疫【闪电】+ 受雷伤摸牌（v2.1：法拉第笼，替代原弃牌雷伤技） */
-const FALADI_DCYG: SkillDef = {
+const FALADI_DCYG: TalentDef = {
   id: 'faladi_dcyg',
   name: '避雷针',
   kind: 'passive',
@@ -513,7 +513,7 @@ const FALADI_DCYG: SkillDef = {
 };
 
 /** 法拉第·场论：闪的点数奇偶分支 */
-const FALADI_CHANGLUN: SkillDef = {
+const FALADI_CHANGLUN: TalentDef = {
   id: 'faladi_changlun',
   name: '场论',
   kind: 'trigger',
@@ -526,7 +526,7 @@ const FALADI_CHANGLUN: SkillDef = {
 };
 
 /** 伽利略·自由落体：咆哮变体（每回合最多额外 2 张） */
-const JIALILUE_ZYLT: SkillDef = {
+const JIALILUE_ZYLT: TalentDef = {
   id: 'jialilue_zylt',
   name: '自由落体',
   kind: 'passive',
@@ -536,7 +536,7 @@ const JIALILUE_ZYLT: SkillDef = {
 };
 
 /** 伽利略·望远镜：射程 + 常驻预知 */
-const JIALILUE_WYJ: SkillDef = {
+const JIALILUE_WYJ: TalentDef = {
   id: 'jialilue_wyj',
   name: '望远镜',
   kind: 'passive',
@@ -549,7 +549,7 @@ const JIALILUE_WYJ: SkillDef = {
 };
 
 /** 普朗克·量子：洛神式连续判定（v2.1：以知识考核替代弃牌） */
-const PULANGKE_LIANGZI: SkillDef = {
+const PULANGKE_LIANGZI: TalentDef = {
   id: 'pulangke_liangzi',
   name: '量子',
   kind: 'active',
@@ -567,7 +567,7 @@ const PULANGKE_LIANGZI: SkillDef = {
 };
 
 /** 普朗克·普朗克常数 */
-const PULANGKE_CS: SkillDef = {
+const PULANGKE_CS: TalentDef = {
   id: 'pulangke_cs',
   name: '普朗克常数',
   kind: 'passive',
@@ -584,7 +584,7 @@ const PULANGKE_CS: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 门捷列夫·周期律：排序式观星 */
-const MJLF_ZQL: SkillDef = {
+const MJLF_ZQL: TalentDef = {
   id: 'mjlf_zql',
   name: '周期律',
   kind: 'active',
@@ -594,7 +594,7 @@ const MJLF_ZQL: SkillDef = {
 };
 
 /** 门捷列夫·元素：三花色收集连锁 */
-const MJLF_YUANSU: SkillDef = {
+const MJLF_YUANSU: TalentDef = {
   id: 'mjlf_yuansu',
   name: '元素',
   kind: 'passive',
@@ -607,7 +607,7 @@ const MJLF_YUANSU: SkillDef = {
 };
 
 /** 拉瓦锡·质量守恒：等量转化（v2.1：以知识考核替代弃牌） */
-const LWY_ZLSH: SkillDef = {
+const LWY_ZLSH: TalentDef = {
   id: 'lwx_zlsh',
   name: '质量守恒',
   kind: 'active',
@@ -617,7 +617,7 @@ const LWY_ZLSH: SkillDef = {
 };
 
 /** 拉瓦锡·燃烧学说 */
-const LWY_RSHXS: SkillDef = {
+const LWY_RSHXS: TalentDef = {
   id: 'lwx_rshxs',
   name: '燃烧学说',
   kind: 'passive',
@@ -625,12 +625,12 @@ const LWY_RSHXS: SkillDef = {
   desc: '你的手牌上限 +1；每回合首次当你使用的红色牌进入弃牌堆时，你回复 1 点体力。',
   effects: [
     { kind: 'handLimit', n: 1 },
-    { kind: 'selfHeal', n: 1, cond: { k: 'lastCardRed' }, at: 'onUseTrick' },
+    { kind: 'selfHeal', n: 1, cond: { k: 'lastCardRed' }, at: 'onUseSkill' },
   ],
 };
 
 /** 居里夫人·放射性：标记持续伤害 */
-const JULI_FSX: SkillDef = {
+const JULI_FSX: TalentDef = {
   id: 'juli_fsx',
   name: '放射性',
   kind: 'active',
@@ -640,7 +640,7 @@ const JULI_FSX: SkillDef = {
 };
 
 /** 居里夫人·镭元素：手牌上限 +1（原学识经济技，随答题系统移除） */
-const JULI_LYS: SkillDef = {
+const JULI_LYS: TalentDef = {
   id: 'juli_lys',
   name: '镭元素',
   kind: 'passive',
@@ -650,7 +650,7 @@ const JULI_LYS: SkillDef = {
 };
 
 /** 凯库勒·苯环：循环交换（v2.1：以知识考核替代弃牌） */
-const KKL_BH: SkillDef = {
+const KKL_BH: TalentDef = {
   id: 'kkl_bh',
   name: '苯环',
   kind: 'active',
@@ -669,7 +669,7 @@ const KKL_BH: SkillDef = {
 };
 
 /** 凯库勒·结构式：装备区关联上限 + 装备免疫 */
-const KKL_JGS: SkillDef = {
+const KKL_JGS: TalentDef = {
   id: 'kkl_jgs',
   name: '结构式',
   kind: 'passive',
@@ -682,7 +682,7 @@ const KKL_JGS: SkillDef = {
 };
 
 /** 卢瑟福·核模型：无视防具 */
-const LSF_HMX: SkillDef = {
+const LSF_HMX: TalentDef = {
   id: 'lsf_hmx',
   name: '核模型',
   kind: 'active',
@@ -698,7 +698,7 @@ const LSF_HMX: SkillDef = {
 };
 
 /** 卢瑟福·散射实验：α 粒子被原子核散射偏转 → 转移【杀】的目标（每回合限一次） */
-const LSF_SSSY: SkillDef = {
+const LSF_SSSY: TalentDef = {
   id: 'lsf_sssy',
   name: '散射实验',
   kind: 'trigger',
@@ -716,7 +716,7 @@ const LSF_SSSY: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 达尔文·进化论：筛选择优（点数之和 ≤7 才回血） */
-const DEW_JHL: SkillDef = {
+const DEW_JHL: TalentDef = {
   id: 'dew_jhl',
   name: '进化论',
   kind: 'active',
@@ -734,7 +734,7 @@ const DEW_JHL: SkillDef = {
 };
 
 /** 达尔文·适者生存 */
-const DEW_SZSC: SkillDef = {
+const DEW_SZSC: TalentDef = {
   id: 'dew_szsc',
   name: '适者生存',
   kind: 'trigger',
@@ -747,7 +747,7 @@ const DEW_SZSC: SkillDef = {
 };
 
 /** 巴斯德·巴氏灭菌：花色代价（v2.1：以知识考核替代弃牌） */
-const BSD_MJ: SkillDef = {
+const BSD_MJ: TalentDef = {
   id: 'bsd_mj',
   name: '巴氏灭菌',
   kind: 'active',
@@ -757,7 +757,7 @@ const BSD_MJ: SkillDef = {
 };
 
 /** 巴斯德·免疫：属性减伤 + 花色免疫（v2.1：疫苗只对特定「菌株」生效） */
-const BSD_MY: SkillDef = {
+const BSD_MY: TalentDef = {
   id: 'bsd_my',
   name: '免疫',
   kind: 'passive',
@@ -770,7 +770,7 @@ const BSD_MY: SkillDef = {
 };
 
 /** 孟德尔·分离定律：点数成对代价 */
-const MDE_FLL: SkillDef = {
+const MDE_FLL: TalentDef = {
   id: 'mde_fll',
   name: '分离定律',
   kind: 'active',
@@ -784,7 +784,7 @@ const MDE_FLL: SkillDef = {
 };
 
 /** 孟德尔·显性性状 */
-const MDE_XXXZ: SkillDef = {
+const MDE_XXXZ: TalentDef = {
   id: 'mde_xxxz',
   name: '显性性状',
   kind: 'trigger',
@@ -797,7 +797,7 @@ const MDE_XXXZ: SkillDef = {
 };
 
 /** 屠呦呦·青蒿素：点数 ≤6 当桃 */
-const TYY_QHS: SkillDef = {
+const TYY_QHS: TalentDef = {
   id: 'tyy_qhs',
   name: '青蒿素',
   kind: 'convert',
@@ -807,7 +807,7 @@ const TYY_QHS: SkillDef = {
 };
 
 /** 屠呦呦·低温提取：弃置点数最小牌改为置顶 */
-const TYY_DWTQ: SkillDef = {
+const TYY_DWTQ: TalentDef = {
   id: 'tyy_dwtq',
   name: '低温提取',
   kind: 'passive',
@@ -820,7 +820,7 @@ const TYY_DWTQ: SkillDef = {
 };
 
 /** 李时珍·本草纲目：华佗【急救】式回合外转化 */
-const LSZ_BCGM: SkillDef = {
+const LSZ_BCGM: TalentDef = {
   id: 'lsz_bcgm',
   name: '本草纲目',
   kind: 'convert',
@@ -830,7 +830,7 @@ const LSZ_BCGM: SkillDef = {
 };
 
 /** 李时珍·行医：限定技自救 */
-const LSZ_XY: SkillDef = {
+const LSZ_XY: TalentDef = {
   id: 'lsz_xy',
   name: '行医',
   kind: 'limit',
@@ -845,7 +845,7 @@ const LSZ_XY: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 秦始皇·统一：花色命令（限至多两名）（v2.1：以知识考核替代弃牌） */
-const QSH_TY: SkillDef = {
+const QSH_TY: TalentDef = {
   id: 'qsh_ty',
   name: '统一',
   kind: 'active',
@@ -864,20 +864,20 @@ const QSH_TY: SkillDef = {
 };
 
 /** 秦始皇·焚书：锦囊免疫 */
-const QSH_FS: SkillDef = {
+const QSH_FS: TalentDef = {
   id: 'qsh_fs',
   name: '焚书',
   kind: 'passive',
   timing: 'passive',
   desc: '你不能成为锦囊牌的目标；你的手牌上限 +1。',
   effects: [
-    { kind: 'immune', scope: 'trick' },
+    { kind: 'immune', scope: 'skill' },
     { kind: 'handLimit', n: 1 },
   ],
 };
 
 /** 岳飞·精忠：无双 */
-const YF_JZ: SkillDef = {
+const YF_JZ: TalentDef = {
   id: 'yf_jz',
   name: '精忠',
   kind: 'passive',
@@ -887,7 +887,7 @@ const YF_JZ: SkillDef = {
 };
 
 /** 岳飞·莫须有：身份联动 */
-const YF_MXY: SkillDef = {
+const YF_MXY: TalentDef = {
   id: 'yf_mxy',
   name: '莫须有',
   kind: 'trigger',
@@ -900,7 +900,7 @@ const YF_MXY: SkillDef = {
 };
 
 /** 郑和·下西洋：贸易分配 */
-const ZH_XXY: SkillDef = {
+const ZH_XXY: TalentDef = {
   id: 'zh_xxy',
   name: '下西洋',
   kind: 'active',
@@ -913,7 +913,7 @@ const ZH_XXY: SkillDef = {
 };
 
 /** 郑和·航海图：距离 -1 + 顺手牵羊无距离限制 + 马政（v2.1：舟楫之利） */
-const ZH_HHT: SkillDef = {
+const ZH_HHT: TalentDef = {
   id: 'zh_hht',
   name: '航海图',
   kind: 'passive',
@@ -927,7 +927,7 @@ const ZH_HHT: SkillDef = {
 };
 
 /** 林则徐·虎门销烟：群体销毁（收益封顶）（v2.1：以知识考核替代弃牌） */
-const LZX_HMXY: SkillDef = {
+const LZX_HMXY: TalentDef = {
   id: 'lzx_hmxy',
   name: '虎门销烟',
   kind: 'active',
@@ -940,7 +940,7 @@ const LZX_HMXY: SkillDef = {
 };
 
 /** 林则徐·海防：点数对抗免伤 */
-const LZX_HF: SkillDef = {
+const LZX_HF: TalentDef = {
   id: 'lzx_hf',
   name: '海防',
   kind: 'trigger',
@@ -951,7 +951,7 @@ const LZX_HF: SkillDef = {
 };
 
 /** 司马迁·史笔：控顶 */
-const SMQ_SB: SkillDef = {
+const SMQ_SB: TalentDef = {
   id: 'smq_sb',
   name: '史笔',
   kind: 'active',
@@ -965,7 +965,7 @@ const SMQ_SB: SkillDef = {
 };
 
 /** 司马迁·忍辱负重：觉醒技 */
-const SMQ_RRFZ: SkillDef = {
+const SMQ_RRFZ: TalentDef = {
   id: 'smq_rrfz',
   name: '忍辱负重',
   kind: 'awaken',
@@ -977,7 +977,7 @@ const SMQ_RRFZ: SkillDef = {
 };
 
 /** 司马迁觉醒后·成一家之言 */
-const SMQ_CYJZYZY: SkillDef = {
+const SMQ_CYJZYZY: TalentDef = {
   id: 'smq_cyjzyzy',
   name: '成一家之言',
   kind: 'passive',
@@ -990,7 +990,7 @@ const SMQ_CYJZYZY: SkillDef = {
 };
 
 /** 诸葛亮·观星（三国杀原版） */
-const ZGL_GX: SkillDef = {
+const ZGL_GX: TalentDef = {
   id: 'zgl_gx',
   name: '观星',
   kind: 'active',
@@ -1000,7 +1000,7 @@ const ZGL_GX: SkillDef = {
 };
 
 /** 诸葛亮·空城（三国杀原版） */
-const ZGL_KC: SkillDef = {
+const ZGL_KC: TalentDef = {
   id: 'zgl_kc',
   name: '空城',
   kind: 'passive',
@@ -1010,7 +1010,7 @@ const ZGL_KC: SkillDef = {
 };
 
 /** 诸葛亮·出师表（新增第三技能）：军令状博弈 */
-const ZGL_CSB: SkillDef = {
+const ZGL_CSB: TalentDef = {
   id: 'zgl_csb',
   name: '出师表',
   kind: 'active',
@@ -1034,7 +1034,7 @@ const ZGL_CSB: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 徐霞客·游记：牌堆底 */
-const XXK_YJ: SkillDef = {
+const XXK_YJ: TalentDef = {
   id: 'xxk_yj',
   name: '游记',
   kind: 'active',
@@ -1044,7 +1044,7 @@ const XXK_YJ: SkillDef = {
 };
 
 /** 徐霞客·探险：距离 -1 + 无视 +1 马 + 距离陷阱（v2.1：游记所至，远敌难近） */
-const XXK_TX: SkillDef = {
+const XXK_TX: TalentDef = {
   id: 'xxk_tx',
   name: '探险',
   kind: 'passive',
@@ -1058,7 +1058,7 @@ const XXK_TX: SkillDef = {
 };
 
 /** 张衡·地动仪：改判 */
-const ZH_DDY: SkillDef = {
+const ZH_DDY: TalentDef = {
   id: 'zh_ddy',
   name: '地动仪',
   kind: 'trigger',
@@ -1068,7 +1068,7 @@ const ZH_DDY: SkillDef = {
 };
 
 /** 张衡·浑天说 */
-const ZH_HTS: SkillDef = {
+const ZH_HTS: TalentDef = {
   id: 'zh_hts',
   name: '浑天说',
   kind: 'passive',
@@ -1081,7 +1081,7 @@ const ZH_HTS: SkillDef = {
 };
 
 /** 郦道元·水经注：花色筛选（v2.1：以知识考核替代弃牌） */
-const LDY_SJZ: SkillDef = {
+const LDY_SJZ: TalentDef = {
   id: 'ldy_sjz',
   name: '水经注',
   kind: 'active',
@@ -1094,7 +1094,7 @@ const LDY_SJZ: SkillDef = {
 };
 
 /** 郦道元·舆地 */
-const LDY_YD: SkillDef = {
+const LDY_YD: TalentDef = {
   id: 'ldy_yd',
   name: '舆地',
   kind: 'passive',
@@ -1107,7 +1107,7 @@ const LDY_YD: SkillDef = {
 };
 
 /** 李四光·地质勘探：掘底（限量版） */
-const LSG_DZKT: SkillDef = {
+const LSG_DZKT: TalentDef = {
   id: 'lsg_dzkt',
   name: '地质勘探',
   kind: 'active',
@@ -1117,7 +1117,7 @@ const LSG_DZKT: SkillDef = {
 };
 
 /** 李四光·构造体系：枭姬双向 + 地质锤（v2.1：装备牌可当【杀】使用） */
-const LSG_GZTX: SkillDef = {
+const LSG_GZTX: TalentDef = {
   id: 'lsg_gztx',
   name: '构造体系',
   kind: 'passive',
@@ -1136,7 +1136,7 @@ const LSG_GZTX: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 孔子·论语：反转抉择 */
-const KZ_LY: SkillDef = {
+const KZ_LY: TalentDef = {
   id: 'kz_ly',
   name: '论语',
   kind: 'active',
@@ -1156,7 +1156,7 @@ const KZ_LY: SkillDef = {
 };
 
 /** 孔子·有教无类：限定技 */
-const KZ_YJWL: SkillDef = {
+const KZ_YJWL: TalentDef = {
   id: 'kz_yjwl',
   name: '有教无类',
   kind: 'limit',
@@ -1170,7 +1170,7 @@ const KZ_YJWL: SkillDef = {
 };
 
 /** 韩非子·法不阿贵 */
-const HFZ_FBAG: SkillDef = {
+const HFZ_FBAG: TalentDef = {
   id: 'hfz_fbag',
   name: '法不阿贵',
   kind: 'active',
@@ -1188,7 +1188,7 @@ const HFZ_FBAG: SkillDef = {
 };
 
 /** 韩非子·术势 */
-const HFZ_SS: SkillDef = {
+const HFZ_SS: TalentDef = {
   id: 'hfz_ss',
   name: '术势',
   kind: 'trigger',
@@ -1201,7 +1201,7 @@ const HFZ_SS: SkillDef = {
 };
 
 /** 孟子·仁政：身份联动 */
-const MZ_RZ: SkillDef = {
+const MZ_RZ: TalentDef = {
   id: 'mz_rz',
   name: '仁政',
   kind: 'active',
@@ -1215,7 +1215,7 @@ const MZ_RZ: SkillDef = {
 };
 
 /** 孟子·王道：据守翻面 */
-const MZ_WD: SkillDef = {
+const MZ_WD: TalentDef = {
   id: 'mz_wd',
   name: '王道',
   kind: 'passive',
@@ -1228,7 +1228,7 @@ const MZ_WD: SkillDef = {
 };
 
 /** 墨子·非攻：免疫群体 AOE + 敌人装备失效（v2.1：反对不义之战，收缴兵器） */
-const MZ_FG: SkillDef = {
+const MZ_FG: TalentDef = {
   id: 'mozi_fg',
   name: '非攻',
   kind: 'passive',
@@ -1241,18 +1241,18 @@ const MZ_FG: SkillDef = {
 };
 
 /** 墨子·兼爱：成为锦囊目标时可转移给另一名角色（v2.1：替人承受） */
-const MZ_JA: SkillDef = {
+const MZ_JA: TalentDef = {
   id: 'mozi_ja',
   name: '兼爱',
   kind: 'trigger',
   timing: 'passive',
   limit: 'perTurn',
   desc: '当你成为锦囊牌的目标时，你可将此牌转移给另一名角色（每回合限一次）。',
-  effects: [{ kind: 'trickRedirect' }],
+  effects: [{ kind: 'skillRedirect' }],
 };
 
 /** 孙子·兵法：突袭 */
-const SZ_BF: SkillDef = {
+const SZ_BF: TalentDef = {
   id: 'sz_bf',
   name: '兵法',
   kind: 'trigger',
@@ -1262,7 +1262,7 @@ const SZ_BF: SkillDef = {
 };
 
 /** 孙子·虚实：杀闪互换（各限一次） */
-const SZ_XS: SkillDef = {
+const SZ_XS: TalentDef = {
   id: 'sz_xs',
   name: '虚实',
   kind: 'convert',
@@ -1284,7 +1284,7 @@ const SZ_XS: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 屈原·离骚：红色判定 → 摸 3；黑色 → 其失去 1 体力 */
-const QY_LS: SkillDef = {
+const QY_LS: TalentDef = {
   id: 'qy_ls',
   name: '离骚',
   kind: 'active',
@@ -1302,7 +1302,7 @@ const QY_LS: SkillDef = {
 };
 
 /** 屈原·九歌：上限 +2 + 锦囊连锁 */
-const QY_JG: SkillDef = {
+const QY_JG: TalentDef = {
   id: 'qy_jg',
   name: '九歌',
   kind: 'passive',
@@ -1310,12 +1310,12 @@ const QY_JG: SkillDef = {
   desc: '你的手牌上限 +2；你使用锦囊牌后摸一张牌。',
   effects: [
     { kind: 'handLimit', n: 2 },
-    { kind: 'trickDraw', n: 1, at: 'onUseTrick' },
+    { kind: 'skillDraw', n: 1, at: 'onUseSkill' },
   ],
 };
 
 /** 苏轼·赤壁赋：拼点，赢则摸 2 并令其弃 1 */
-const SS_CB: SkillDef = {
+const SS_CB: TalentDef = {
   id: 'ss_cb',
   name: '赤壁赋',
   kind: 'active',
@@ -1331,7 +1331,7 @@ const SS_CB: SkillDef = {
 };
 
 /** 苏轼·旷达：受伤后摸 1，体力最低时再回 1（与达尔文·适者生存以「体力最低」条件区分） */
-const SS_KD: SkillDef = {
+const SS_KD: TalentDef = {
   id: 'ss_kd',
   name: '旷达',
   kind: 'trigger',
@@ -1344,7 +1344,7 @@ const SS_KD: SkillDef = {
 };
 
 /** 曹雪芹·石头记：窥牌 + 夺取 + 摸牌 */
-const CXQ_ST: SkillDef = {
+const CXQ_ST: TalentDef = {
   id: 'cxq_st',
   name: '石头记',
   kind: 'active',
@@ -1354,7 +1354,7 @@ const CXQ_ST: SkillDef = {
 };
 
 /** 曹雪芹·群芳谱：回合内出牌数量连锁 */
-const CXQ_QF: SkillDef = {
+const CXQ_QF: TalentDef = {
   id: 'cxq_qf',
   name: '群芳谱',
   kind: 'passive',
@@ -1371,7 +1371,7 @@ const CXQ_QF: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 康托尔·集合论：牌堆顶三取二 */
-const KTE_JH: SkillDef = {
+const KTE_JH: TalentDef = {
   id: 'kte_jh',
   name: '集合论',
   kind: 'active',
@@ -1381,7 +1381,7 @@ const KTE_JH: SkillDef = {
 };
 
 /** 康托尔·一一对应：上限 +2 + 每回合多摸 1 */
-const KTE_YY: SkillDef = {
+const KTE_YY: TalentDef = {
   id: 'kte_yy',
   name: '一一对应',
   kind: 'passive',
@@ -1394,7 +1394,7 @@ const KTE_YY: SkillDef = {
 };
 
 /** 傅里叶·三角级数：偶 → 摸 2；奇 → 其弃 2 */
-const FLY_SJ: SkillDef = {
+const FLY_SJ: TalentDef = {
   id: 'fly_sj',
   name: '三角级数',
   kind: 'active',
@@ -1412,7 +1412,7 @@ const FLY_SJ: SkillDef = {
 };
 
 /** 傅里叶·热传导：受伤后展示红牌回血 */
-const FLY_RD: SkillDef = {
+const FLY_RD: TalentDef = {
   id: 'fly_rd',
   name: '热传导',
   kind: 'passive',
@@ -1425,7 +1425,7 @@ const FLY_RD: SkillDef = {
 };
 
 /** 帕斯卡·概率论：奇 → 2 伤；偶 → 摸 2 */
-const PSK_GL: SkillDef = {
+const PSK_GL: TalentDef = {
   id: 'psk_gl',
   name: '概率论',
   kind: 'active',
@@ -1443,7 +1443,7 @@ const PSK_GL: SkillDef = {
 };
 
 /** 帕斯卡·帕斯卡三角：受伤后反制手牌最多者 */
-const PSK_SJJ: SkillDef = {
+const PSK_SJJ: TalentDef = {
   id: 'psk_sjj',
   name: '帕斯卡三角',
   kind: 'passive',
@@ -1456,7 +1456,7 @@ const PSK_SJJ: SkillDef = {
 };
 
 /** 贝叶斯·条件概率：交 1 摸 3 */
-const BYS_TJ: SkillDef = {
+const BYS_TJ: TalentDef = {
   id: 'bys_tj',
   name: '条件概率',
   kind: 'active',
@@ -1466,7 +1466,7 @@ const BYS_TJ: SkillDef = {
 };
 
 /** 贝叶斯·先验修正：受伤后摸 2，来源手牌多则回 1 */
-const BYS_XY: SkillDef = {
+const BYS_XY: TalentDef = {
   id: 'bys_xy',
   name: '先验修正',
   kind: 'trigger',
@@ -1479,7 +1479,7 @@ const BYS_XY: SkillDef = {
 };
 
 /** 黎曼·素数定理：质数 → 2 伤；否则其弃 1（未命中亦有收益，R3 保底） */
-const LM_SS: SkillDef = {
+const LM_SS: TalentDef = {
   id: 'lm_ss',
   name: '素数定理',
   kind: 'active',
@@ -1496,7 +1496,7 @@ const LM_SS: SkillDef = {
 };
 
 /** 黎曼·度量：上限 +2 + 距离 −1 */
-const LM_DL: SkillDef = {
+const LM_DL: TalentDef = {
   id: 'lm_dl',
   name: '度量',
   kind: 'passive',
@@ -1513,7 +1513,7 @@ const LM_DL: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 简·奥斯汀·傲慢与偏见：反转抉择 + 自摸 1 */
-const AST_AJ: SkillDef = {
+const AST_AJ: TalentDef = {
   id: 'ast_aj',
   name: '傲慢与偏见',
   kind: 'active',
@@ -1529,7 +1529,7 @@ const AST_AJ: SkillDef = {
 };
 
 /** 简·奥斯汀·理智与情感：受伤后手牌少则回血 */
-const AST_LZ: SkillDef = {
+const AST_LZ: TalentDef = {
   id: 'ast_lz',
   name: '理智与情感',
   kind: 'trigger',
@@ -1542,7 +1542,7 @@ const AST_LZ: SkillDef = {
 };
 
 /** 海明威·老人与海：拼点，赢则 2 伤摸 1 */
-const HMW_LR: SkillDef = {
+const HMW_LR: TalentDef = {
   id: 'hmw_lr',
   name: '老人与海',
   kind: 'active',
@@ -1558,7 +1558,7 @@ const HMW_LR: SkillDef = {
 };
 
 /** 海明威·冰山原则：据守式回合末回血 */
-const HMW_BS: SkillDef = {
+const HMW_BS: TalentDef = {
   id: 'hmw_bs',
   name: '冰山原则',
   kind: 'passive',
@@ -1571,7 +1571,7 @@ const HMW_BS: SkillDef = {
 };
 
 /** 马丁·路德·金·我有一个梦：群体增益（人均 ≤1 张，收益封顶） */
-const MLD_YGM: SkillDef = {
+const MLD_YGM: TalentDef = {
   id: 'mld_ygm',
   name: '我有一个梦',
   kind: 'active',
@@ -1581,7 +1581,7 @@ const MLD_YGM: SkillDef = {
 };
 
 /** 马丁·路德·金·非暴力：本回合未出杀则受伤回血 */
-const MLD_FB: SkillDef = {
+const MLD_FB: TalentDef = {
   id: 'mld_fb',
   name: '非暴力',
   kind: 'passive',
@@ -1594,7 +1594,7 @@ const MLD_FB: SkillDef = {
 };
 
 /** 萧伯纳·卖花女：反间，猜错则 1 伤 + 自摸 1 */
-const XBN_MH: SkillDef = {
+const XBN_MH: TalentDef = {
   id: 'xbn_mh',
   name: '卖花女',
   kind: 'active',
@@ -1610,7 +1610,7 @@ const XBN_MH: SkillDef = {
 };
 
 /** 萧伯纳·讽刺：上限 +2 + 免疫【决斗】 */
-const XBN_FC: SkillDef = {
+const XBN_FC: TalentDef = {
   id: 'xbn_fc',
   name: '讽刺',
   kind: 'passive',
@@ -1627,7 +1627,7 @@ const XBN_FC: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 开普勒·椭圆轨道：控顶 + 摸 2 */
-const KPL_TY: SkillDef = {
+const KPL_TY: TalentDef = {
   id: 'kpl_ty',
   name: '椭圆轨道',
   kind: 'active',
@@ -1637,7 +1637,7 @@ const KPL_TY: SkillDef = {
 };
 
 /** 开普勒·天空立法者：咆哮变体（每回合额外 1 张，需先弃 1 张） */
-const KPL_TK: SkillDef = {
+const KPL_TK: TalentDef = {
   id: 'kpl_tk',
   name: '天空立法者',
   kind: 'passive',
@@ -1650,7 +1650,7 @@ const KPL_TK: SkillDef = {
 };
 
 /** 麦克斯韦·电磁场理论：黑 → 2 雷伤；红 → 摸 2 */
-const MKSW_DC: SkillDef = {
+const MKSW_DC: TalentDef = {
   id: 'mksw_dc',
   name: '电磁场理论',
   kind: 'active',
@@ -1668,7 +1668,7 @@ const MKSW_DC: SkillDef = {
 };
 
 /** 麦克斯韦·位移电流：上限 +1 + 出闪摸 1 */
-const MKSW_WY: SkillDef = {
+const MKSW_WY: TalentDef = {
   id: 'mksw_wy',
   name: '位移电流',
   kind: 'passive',
@@ -1681,7 +1681,7 @@ const MKSW_WY: SkillDef = {
 };
 
 /** 玻尔·互补原理：反间，猜错自摸 2 */
-const BO_HB: SkillDef = {
+const BO_HB: TalentDef = {
   id: 'bo_hb',
   name: '互补原理',
   kind: 'active',
@@ -1697,7 +1697,7 @@ const BO_HB: SkillDef = {
 };
 
 /** 玻尔·不相容原理：受伤后强制反制 */
-const BO_BR: SkillDef = {
+const BO_BR: TalentDef = {
   id: 'bo_br',
   name: '不相容原理',
   kind: 'passive',
@@ -1710,7 +1710,7 @@ const BO_BR: SkillDef = {
 };
 
 /** 费曼·费曼图：牌堆顶四取二 */
-const FM_FMT: SkillDef = {
+const FM_FMT: TalentDef = {
   id: 'fm_fmt',
   name: '费曼图',
   kind: 'active',
@@ -1720,7 +1720,7 @@ const FM_FMT: SkillDef = {
 };
 
 /** 费曼·曼哈顿计划：★限定技，3 雷伤自损 1 */
-const FM_MHD: SkillDef = {
+const FM_MHD: TalentDef = {
   id: 'fm_mhd',
   name: '曼哈顿计划',
   kind: 'limit',
@@ -1735,7 +1735,7 @@ const FM_MHD: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 侯德榜·侯氏制碱：弃牌换治疗（双向） */
-const HDB_HS: SkillDef = {
+const HDB_HS: TalentDef = {
   id: 'hdb_hs',
   name: '侯氏制碱',
   kind: 'active',
@@ -1745,7 +1745,7 @@ const HDB_HS: SkillDef = {
 };
 
 /** 侯德榜·联合制碱：受伤后手牌不落下风则反制 */
-const HDB_LH: SkillDef = {
+const HDB_LH: TalentDef = {
   id: 'hdb_lh',
   name: '联合制碱',
   kind: 'trigger',
@@ -1758,7 +1758,7 @@ const HDB_LH: SkillDef = {
 };
 
 /** 阿伏加德罗·分子假说：≤6 → 摸 2 并令其弃 1；否则自摸 1 */
-const AFD_FZ: SkillDef = {
+const AFD_FZ: TalentDef = {
   id: 'afd_fz',
   name: '分子假说',
   kind: 'active',
@@ -1777,7 +1777,7 @@ const AFD_FZ: SkillDef = {
 };
 
 /** 阿伏加德罗·气体定律：空手受伤则摸 2 */
-const AFD_QT: SkillDef = {
+const AFD_QT: TalentDef = {
   id: 'afd_qt',
   name: '气体定律',
   kind: 'passive',
@@ -1790,7 +1790,7 @@ const AFD_QT: SkillDef = {
 };
 
 /** 勒夏特列·平衡移动：令其选择（自摸 2 / 其弃 2） */
-const LXTL_PH: SkillDef = {
+const LXTL_PH: TalentDef = {
   id: 'lxtl_ph',
   name: '平衡移动',
   kind: 'active',
@@ -1805,7 +1805,7 @@ const LXTL_PH: SkillDef = {
 };
 
 /** 勒夏特列·勒夏特列原理：残血受伤回血 */
-const LXTL_YL: SkillDef = {
+const LXTL_YL: TalentDef = {
   id: 'lxtl_yl',
   name: '勒夏特列原理',
   kind: 'passive',
@@ -1818,7 +1818,7 @@ const LXTL_YL: SkillDef = {
 };
 
 /** 鲍林·电负性：黑牌当雷杀 */
-const BL_DFX: SkillDef = {
+const BL_DFX: TalentDef = {
   id: 'bl_dfx',
   name: '电负性',
   kind: 'convert',
@@ -1828,7 +1828,7 @@ const BL_DFX: SkillDef = {
 };
 
 /** 鲍林·共振论：上限 +2 + 火/雷减伤 */
-const BL_GZL: SkillDef = {
+const BL_GZL: TalentDef = {
   id: 'bl_gzl',
   name: '共振论',
   kind: 'passive',
@@ -1845,7 +1845,7 @@ const BL_GZL: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 施旺·细胞学说：摸 4 交 1（分裂增殖） */
-const SW_XB: SkillDef = {
+const SW_XB: TalentDef = {
   id: 'sw_xb',
   name: '细胞学说',
   kind: 'active',
@@ -1855,7 +1855,7 @@ const SW_XB: SkillDef = {
 };
 
 /** 施旺·显微观察：受伤后摸 1 */
-const SW_XW: SkillDef = {
+const SW_XW: TalentDef = {
   id: 'sw_xw',
   name: '显微观察',
   kind: 'passive',
@@ -1868,7 +1868,7 @@ const SW_XW: SkillDef = {
 };
 
 /** 巴甫洛夫·条件反射：令其弃 2 并自摸 1 */
-const BFLF_TJ: SkillDef = {
+const BFLF_TJ: TalentDef = {
   id: 'bflf_tj',
   name: '条件反射',
   kind: 'active',
@@ -1878,17 +1878,17 @@ const BFLF_TJ: SkillDef = {
 };
 
 /** 巴甫洛夫·抑制：回合内未用锦囊则回血 */
-const BFLF_YZ: SkillDef = {
+const BFLF_YZ: TalentDef = {
   id: 'bflf_yz',
   name: '抑制',
   kind: 'trigger',
   timing: 'onTurnEnd',
   desc: '回合结束阶段，若你本回合未使用过锦囊牌，你回复 1 点体力。',
-  effects: [{ kind: 'selfHeal', n: 1, cond: { k: 'noTrickThisTurn' } }],
+  effects: [{ kind: 'selfHeal', n: 1, cond: { k: 'noSkillThisTurn' } }],
 };
 
 /** 袁隆平·禾下乘凉：群体摸牌（人均 ≤1 张） */
-const YLP_HX: SkillDef = {
+const YLP_HX: TalentDef = {
   id: 'ylp_hx',
   name: '禾下乘凉',
   kind: 'active',
@@ -1898,7 +1898,7 @@ const YLP_HX: SkillDef = {
 };
 
 /** 袁隆平·一稻济世：★限定技群体治疗 */
-const YLP_YD: SkillDef = {
+const YLP_YD: TalentDef = {
   id: 'ylp_yd',
   name: '一稻济世',
   kind: 'limit',
@@ -1913,7 +1913,7 @@ const YLP_YD: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 康熙·平定三藩：令其选择（自摸 2 / 其失 1 体力） */
-const KXI_PDSF: SkillDef = {
+const KXI_PDSF: TalentDef = {
   id: 'kxi_pdsf',
   name: '平定三藩',
   kind: 'active',
@@ -1928,7 +1928,7 @@ const KXI_PDSF: SkillDef = {
 };
 
 /** 康熙·康乾盛世：★限定技爆发补牌 */
-const KXI_KQSS: SkillDef = {
+const KXI_KQSS: TalentDef = {
   id: 'kxi_kqss',
   name: '康乾盛世',
   kind: 'limit',
@@ -1939,7 +1939,7 @@ const KXI_KQSS: SkillDef = {
 };
 
 /** 拿破仑·奥斯特里茨：2 伤 + 自损 1 */
-const NPL_OST: SkillDef = {
+const NPL_OST: TalentDef = {
   id: 'npl_ost',
   name: '奥斯特里茨',
   kind: 'active',
@@ -1949,7 +1949,7 @@ const NPL_OST: SkillDef = {
 };
 
 /** 拿破仑·滑铁卢：☆觉醒技 */
-const NPL_HLL: SkillDef = {
+const NPL_HLL: TalentDef = {
   id: 'npl_hll',
   name: '滑铁卢',
   kind: 'awaken',
@@ -1961,7 +1961,7 @@ const NPL_HLL: SkillDef = {
 };
 
 /** 拿破仑觉醒后·重整旗鼓：据守咆哮 */
-const NPL_CQ: SkillDef = {
+const NPL_CQ: TalentDef = {
   id: 'npl_cq',
   name: '重整旗鼓',
   kind: 'passive',
@@ -1974,7 +1974,7 @@ const NPL_CQ: SkillDef = {
 };
 
 /** 甘地·食盐进军：反间，猜错则失 1 体力并弃 1 */
-const GD_SYJZ: SkillDef = {
+const GD_SYJZ: TalentDef = {
   id: 'gd_syjz',
   name: '食盐进军',
   kind: 'active',
@@ -1990,7 +1990,7 @@ const GD_SYJZ: SkillDef = {
 };
 
 /** 甘地·苦行：回合内未造成伤害则摸 1 */
-const GD_KX: SkillDef = {
+const GD_KX: TalentDef = {
   id: 'gd_kx',
   name: '苦行',
   kind: 'passive',
@@ -2003,7 +2003,7 @@ const GD_KX: SkillDef = {
 };
 
 /** 俾斯麦·铁血政策：失 2 体力 + 自损 1 */
-const BSM_TX: SkillDef = {
+const BSM_TX: TalentDef = {
   id: 'bsm_tx',
   name: '铁血政策',
   kind: 'active',
@@ -2013,7 +2013,7 @@ const BSM_TX: SkillDef = {
 };
 
 /** 俾斯麦·关税同盟：反伤 */
-const BSM_GS: SkillDef = {
+const BSM_GS: TalentDef = {
   id: 'bsm_gs',
   name: '关税同盟',
   kind: 'passive',
@@ -2026,7 +2026,7 @@ const BSM_GS: SkillDef = {
 };
 
 /** 罗斯福·新政：换牌 + 自愈 */
-const LSFU_XZ: SkillDef = {
+const LSFU_XZ: TalentDef = {
   id: 'lsfu_xz',
   name: '新政',
   kind: 'active',
@@ -2036,7 +2036,7 @@ const LSFU_XZ: SkillDef = {
 };
 
 /** 罗斯福·炉边谈话：受伤后来源手牌多则回血 */
-const LSFU_LB: SkillDef = {
+const LSFU_LB: TalentDef = {
   id: 'lsfu_lb',
   name: '炉边谈话',
   kind: 'passive',
@@ -2053,7 +2053,7 @@ const LSFU_LB: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 魏格纳·泛大陆：摸 3 控顶 */
-const WGN_FDL: SkillDef = {
+const WGN_FDL: TalentDef = {
   id: 'wgn_fdl',
   name: '泛大陆',
   kind: 'active',
@@ -2063,7 +2063,7 @@ const WGN_FDL: SkillDef = {
 };
 
 /** 魏格纳·大陆漂移：距离 −1 + 顺手牵羊无距离限制 */
-const WGN_DLPY: SkillDef = {
+const WGN_DLPY: TalentDef = {
   id: 'wgn_dlpy',
   name: '大陆漂移',
   kind: 'passive',
@@ -2076,7 +2076,7 @@ const WGN_DLPY: SkillDef = {
 };
 
 /** 竺可桢·物候学：≤6 回血；否则摸 2 */
-const ZKZ_WH: SkillDef = {
+const ZKZ_WH: TalentDef = {
   id: 'zkz_wh',
   name: '物候学',
   kind: 'active',
@@ -2094,7 +2094,7 @@ const ZKZ_WH: SkillDef = {
 };
 
 /** 竺可桢·气候变迁：上限 +2 + 火减伤 */
-const ZKZ_QH: SkillDef = {
+const ZKZ_QH: TalentDef = {
   id: 'zkz_qh',
   name: '气候变迁',
   kind: 'passive',
@@ -2107,7 +2107,7 @@ const ZKZ_QH: SkillDef = {
 };
 
 /** 洪堡·自然之图：降序观星（与门捷列夫·周期律 asc 对称） */
-const HB_ZRZT: SkillDef = {
+const HB_ZRZT: TalentDef = {
   id: 'hb_zrzt',
   name: '自然之图',
   kind: 'active',
@@ -2117,7 +2117,7 @@ const HB_ZRZT: SkillDef = {
 };
 
 /** 洪堡·等温线：回合内多出牌则补牌 */
-const HB_DWX: SkillDef = {
+const HB_DWX: TalentDef = {
   id: 'hb_dwx',
   name: '等温线',
   kind: 'passive',
@@ -2130,7 +2130,7 @@ const HB_DWX: SkillDef = {
 };
 
 /** 哥伦布·发现新大陆：摸 2 交 1 */
-const GLB_FX: SkillDef = {
+const GLB_FX: TalentDef = {
   id: 'glb_fx',
   name: '发现新大陆',
   kind: 'active',
@@ -2140,7 +2140,7 @@ const GLB_FX: SkillDef = {
 };
 
 /** 哥伦布·新航路：距离陷阱 + 敌人难近 */
-const GLB_XHL: SkillDef = {
+const GLB_XHL: TalentDef = {
   id: 'glb_xhl',
   name: '新航路',
   kind: 'passive',
@@ -2157,7 +2157,7 @@ const GLB_XHL: SkillDef = {
 /* ------------------------------------------------------------------ */
 
 /** 马克思·资本论：摸牌 */
-const MKS_ZBL: SkillDef = {
+const MKS_ZBL: TalentDef = {
   id: 'mks_zbl',
   name: '资本论',
   kind: 'active',
@@ -2167,7 +2167,7 @@ const MKS_ZBL: SkillDef = {
 };
 
 /** 马克思·实践：受伤后反制 */
-const MKS_SJ: SkillDef = {
+const MKS_SJ: TalentDef = {
   id: 'mks_sj',
   name: '实践',
   kind: 'trigger',
@@ -2180,7 +2180,7 @@ const MKS_SJ: SkillDef = {
 };
 
 /** 亚当·斯密·国富论：群体增益 + 自摸 2 */
-const YDSM_GFL: SkillDef = {
+const YDSM_GFL: TalentDef = {
   id: 'ydsm_gfl',
   name: '国富论',
   kind: 'active',
@@ -2194,7 +2194,7 @@ const YDSM_GFL: SkillDef = {
 };
 
 /** 亚当·斯密·分工：受伤后摸 1 */
-const YDSM_FG: SkillDef = {
+const YDSM_FG: TalentDef = {
   id: 'ydsm_fg',
   name: '分工',
   kind: 'passive',
@@ -2207,7 +2207,7 @@ const YDSM_FG: SkillDef = {
 };
 
 /** 王阳明·知行合一：摸 2 */
-const WYM_ZXHY: SkillDef = {
+const WYM_ZXHY: TalentDef = {
   id: 'wym_zxhy',
   name: '知行合一',
   kind: 'active',
@@ -2217,7 +2217,7 @@ const WYM_ZXHY: SkillDef = {
 };
 
 /** 王阳明·致良知：空手受伤则回血 */
-const WYM_ZLZ: SkillDef = {
+const WYM_ZLZ: TalentDef = {
   id: 'wym_zlz',
   name: '致良知',
   kind: 'passive',
@@ -2233,41 +2233,41 @@ const WYM_ZLZ: SkillDef = {
 /* 主公技（沿用旧 id，保证 factions.ts 与联机兼容）                     */
 /* ------------------------------------------------------------------ */
 
-const LORD_SHISHU: SkillDef = {
+const LORD_SHISHU: TalentDef = {
   id: 'shishu', name: '诗书', kind: 'lord', timing: 'active',
   desc: '主公技：你摸一张牌。', effects: [{ kind: 'selfDraw', n: 1 }],
 };
-const LORD_TUIYAN: SkillDef = {
+const LORD_TUIYAN: TalentDef = {
   id: 'tuiyan', name: '推演', kind: 'lord', timing: 'active',
   desc: '主公技：令一名角色判定，黑色其受到 1 点伤害，红色其摸一张牌。',
   effects: [{ kind: 'judgeIf', test: 'black', hit: [{ kind: 'targetDamage', n: 1 }], miss: [{ kind: 'targetDraw', n: 1 }] }],
 };
-const LORD_YISHU: SkillDef = {
+const LORD_YISHU: TalentDef = {
   id: 'yishu', name: '译述', kind: 'lord', timing: 'active',
   desc: '主公技：你获得一名角色的一张手牌。', effects: [{ kind: 'gainHand', n: 1 }],
 };
-const LORD_YINLI: SkillDef = {
+const LORD_YINLI: TalentDef = {
   id: 'yinli', name: '引力', kind: 'lord', timing: 'active',
   desc: '主公技：对一名角色造成 1 点伤害。', effects: [{ kind: 'targetDamage', n: 1 }],
 };
-const LORD_CUIHUA: SkillDef = {
+const LORD_CUIHUA: TalentDef = {
   id: 'cuihua', name: '催化', kind: 'lord', timing: 'active',
   desc: '主公技：令一名角色回复 1 点体力（已满则改为摸一张牌）。', effects: [{ kind: 'targetHeal', n: 1 }],
 };
-const LORD_JINHUALUN: SkillDef = {
+const LORD_JINHUALUN: TalentDef = {
   id: 'jinhualun', name: '进化', kind: 'lord', timing: 'active',
   desc: '主公技：你摸两张牌，然后弃置一张牌。',
   effects: [{ kind: 'selfDraw', n: 2 }, { kind: 'costCard', n: 1 }],
 };
-const LORD_MINGJIAN: SkillDef = {
+const LORD_MINGJIAN: TalentDef = {
   id: 'mingjian', name: '明鉴', kind: 'lord', timing: 'active',
   desc: '主公技：令一名角色弃置一张牌。', effects: [{ kind: 'targetDiscard', n: 1 }],
 };
-const LORD_TANSUO: SkillDef = {
+const LORD_TANSUO: TalentDef = {
   id: 'tansuo', name: '探索', kind: 'lord', timing: 'active',
   desc: '主公技：所有角色各摸一张牌。', effects: [{ kind: 'allDraw', n: 1 }],
 };
-const LORD_XUNJIE: SkillDef = {
+const LORD_XUNJIE: TalentDef = {
   id: 'xunjie', name: '训诫', kind: 'lord', timing: 'active',
   desc: '主公技：令一名角色选择：交给你一张手牌 / 弃置一张手牌。',
   effects: [{ kind: 'targetChoose', options: [[{ kind: 'gainHand', n: 1 }], [{ kind: 'targetDiscard', n: 1 }]] }],
@@ -2277,17 +2277,17 @@ const LORD_XUNJIE: SkillDef = {
 /* 学科主题技（沿用旧 id，保证 packets.ts 与联机兼容）                  */
 /* ------------------------------------------------------------------ */
 
-const SUB_BEISONG: SkillDef = {
+const SUB_BEISONG: TalentDef = {
   id: 'beisong', name: '背诵', kind: 'active', timing: 'active',
   desc: '弃一张手牌，摸两张牌（背诵默写，积累素材）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }],
 };
-const SUB_WENYAN: SkillDef = {
+const SUB_WENYAN: TalentDef = {
   id: 'wenyan', name: '文言', kind: 'active', timing: 'active',
   desc: '弃两张手牌，摸三张牌（文言积累，厚积薄发）。',
   effects: [{ kind: 'costCard', n: 2 }, { kind: 'selfDraw', n: 3 }],
 };
-const SUB_YOUSHU: SkillDef = {
+const SUB_YOUSHU: TalentDef = {
   id: 'youshu', name: '有理数', kind: 'active', timing: 'active',
   desc: '弃一张手牌，令一名角色判定：红色其摸一张牌，黑色其弃一张牌。',
   effects: [
@@ -2295,81 +2295,81 @@ const SUB_YOUSHU: SkillDef = {
     { kind: 'judgeIf', test: 'red', hit: [{ kind: 'targetDraw', n: 1 }], miss: [{ kind: 'targetDiscard', n: 1 }] },
   ],
 };
-const SUB_DAOSHU: SkillDef = {
+const SUB_DAOSHU: TalentDef = {
   id: 'daoshu', name: '导数', kind: 'active', timing: 'active',
   desc: '弃一张手牌，令一名角色弃置两张手牌（求导取极值）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'targetDiscard', n: 2 }],
 };
-const SUB_TINGXIE: SkillDef = {
+const SUB_TINGXIE: TalentDef = {
   id: 'tingxie', name: '听写', kind: 'active', timing: 'active',
   desc: '弃一张手牌，获得一名角色的一张手牌（听写抽查）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'gainHand', n: 1 }],
 };
-const SUB_ZHEXUE: SkillDef = {
+const SUB_ZHEXUE: TalentDef = {
   id: 'zhexue', name: '哲学', kind: 'active', timing: 'active',
   desc: '弃一张手牌，获得一名角色的一张手牌（思辨论证）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'gainHand', n: 1 }],
 };
-const SUB_YUFA: SkillDef = {
+const SUB_YUFA: TalentDef = {
   id: 'yufa', name: '语法', kind: 'active', timing: 'active',
   desc: '展示牌堆顶三张，获得其中的一张，其余置入弃牌堆（语法填空）。',
   effects: [{ kind: 'deckPeek', n: 3, then: 'pickOne' }],
 };
-const SUB_DIANCI: SkillDef = {
+const SUB_DIANCI: TalentDef = {
   id: 'dianci', name: '电磁', kind: 'active', timing: 'active',
   desc: '弃一张手牌，对一名角色造成 1 点伤害（电磁感应）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'targetDamage', n: 1 }],
 };
-const SUB_YOUJIHUAXUE: SkillDef = {
+const SUB_YOUJIHUAXUE: TalentDef = {
   id: 'youjihuaxue', name: '有机', kind: 'active', timing: 'active',
   desc: '弃两张手牌，回复 1 点体力并摸一张牌（有机合成）。',
   effects: [{ kind: 'costCard', n: 2 }, { kind: 'selfHeal', n: 1 }, { kind: 'selfDraw', n: 1 }],
 };
-const SUB_CHAODAI: SkillDef = {
+const SUB_CHAODAI: TalentDef = {
   id: 'chaodai', name: '朝代', kind: 'active', timing: 'active',
   desc: '弃一张手牌，令所有其他角色各弃置一张手牌（改朝换代）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'allDiscard', n: 1 }],
 };
-const SUB_SHILIAO: SkillDef = {
+const SUB_SHILIAO: TalentDef = {
   id: 'shiliao', name: '史料', kind: 'active', timing: 'active',
   desc: '弃一张手牌，所有存活角色各摸一张牌（史料共享）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'allDraw', n: 1 }],
 };
-const SUB_FAZHI: SkillDef = {
+const SUB_FAZHI: TalentDef = {
   id: 'fazhi', name: '法治', kind: 'active', timing: 'active',
   desc: '弃一张手牌，令一名角色回复 1 点体力（法治保障）。',
   effects: [{ kind: 'costCard', n: 1 }, { kind: 'targetHeal', n: 1 }],
 };
-const SUB_FULI: SkillDef = {
+const SUB_FULI: TalentDef = {
   id: 'fuli', name: '浮力', kind: 'passive', timing: 'passive',
   desc: '你计算与其他角色的距离 −1（浮力托举）。', effects: [{ kind: 'distMod', delta: -1 }],
 };
-const SUB_JINGWEI: SkillDef = {
+const SUB_JINGWEI: TalentDef = {
   id: 'jingwei', name: '经纬', kind: 'passive', timing: 'passive',
   desc: '你计算与其他角色的距离 −1（经纬定位）。', effects: [{ kind: 'distMod', delta: -1 }],
 };
-const SUB_FANGCHENGSHI: SkillDef = {
+const SUB_FANGCHENGSHI: TalentDef = {
   id: 'fangchengshi', name: '方程式', kind: 'passive', timing: 'passive',
   desc: '你的手牌上限 +1（配平储备）。', effects: [{ kind: 'handLimit', n: 1 }],
 };
-const SUB_YICHUAN: SkillDef = {
+const SUB_YICHUAN: TalentDef = {
   id: 'yichuan', name: '遗传', kind: 'passive', timing: 'passive',
   desc: '你的手牌上限 +2（遗传信息承载）。', effects: [{ kind: 'handLimit', n: 2 }],
 };
-const SUB_GUANGHE: SkillDef = {
+const SUB_GUANGHE: TalentDef = {
   id: 'guanghe', name: '光合', kind: 'trigger', timing: 'onDraw',
   desc: '摸牌阶段你额外摸一张牌（光合作用产能）。', effects: [{ kind: 'extraDraw', n: 1 }],
 };
-const SUB_QUWEI: SkillDef = {
-  id: 'quwei', name: '区位', kind: 'trigger', timing: 'onUseTrick',
-  desc: '你使用锦囊牌后摸一张牌（区位分析）。', effects: [{ kind: 'trickDraw', n: 1 }],
+const SUB_QUWEI: TalentDef = {
+  id: 'quwei', name: '区位', kind: 'trigger', timing: 'onUseSkill',
+  desc: '你使用锦囊牌后摸一张牌（区位分析）。', effects: [{ kind: 'skillDraw', n: 1 }],
 };
 
 /* ------------------------------------------------------------------ */
 /* 登记表                                                              */
 /* ------------------------------------------------------------------ */
 
-export const SKILL_DEFS: Record<string, SkillDef> = Object.fromEntries(
+export const TALENT_DEFS: Record<string, TalentDef> = Object.fromEntries(
   [
     // 语文
     LUXUN_NAH,
@@ -2586,47 +2586,47 @@ export const SKILL_DEFS: Record<string, SkillDef> = Object.fromEntries(
     SUB_GUANGHE,
     SUB_QUWEI,
     // 掌门路原著角色技能（48 人，词条全部取自 docs/）
-    ...ZML_SKILL_LIST,
+    ...ZML_TALENT_LIST,
   ].map((d) => [d.id, d]),
 );
 
-/** 运行时注册的技能定义（自定义扩展包通过 registerSkillDef 注入，零编译期改动） */
-const RUNTIME_SKILL_DEFS: Record<string, SkillDef> = {};
+/** 运行时注册的技能定义（自定义扩展包通过 registerTalentDef 注入，零编译期改动） */
+const RUNTIME_TALENT_DEFS: Record<string, TalentDef> = {};
 
 /** 注册一条自定义技能定义（覆盖同名内置定义） */
-export function registerSkillDef(d: SkillDef): void {
-  RUNTIME_SKILL_DEFS[d.id] = d;
+export function registerTalentDef(d: TalentDef): void {
+  RUNTIME_TALENT_DEFS[d.id] = d;
 }
 /** 注销一条运行时技能定义 */
-export function unregisterSkillDef(id: string): void {
-  delete RUNTIME_SKILL_DEFS[id];
+export function unregisterTalentDef(id: string): void {
+  delete RUNTIME_TALENT_DEFS[id];
 }
 /** 列出当前所有运行时注册的技能 id（用于整体重建时清理） */
-export function runtimeSkillIds(): string[] {
-  return Object.keys(RUNTIME_SKILL_DEFS);
+export function runtimeTalentIds(): string[] {
+  return Object.keys(RUNTIME_TALENT_DEFS);
 }
 
 /**
  * 按 id 取定义。
  * 运行时注册优先于内置，便于自定义扩展包覆盖同名技能。
- * 自定义角色技能经此注册后，即可由 src/game/skillEngine.ts 用全套 SkillE 原语执行。
+ * 自定义角色技能经此注册后，即可由 src/game/talentEngine.ts 用全套 SkillE 原语执行。
  */
-export function defOf(id: string): SkillDef | undefined {
-  return RUNTIME_SKILL_DEFS[id] ?? SKILL_DEFS[id];
+export function defOf(id: string): TalentDef | undefined {
+  return RUNTIME_TALENT_DEFS[id] ?? TALENT_DEFS[id];
 }
 
 /**
- * 由登记表派生角色挂载的 Skill（单一数据源）。
+ * 由登记表派生角色挂载的 Talent（单一数据源）。
  * 未登记的技能（扩展包自定义 id）回退为主动技，保证扩展包数据零改动可用。
  */
-export function skillOf(id: string): Skill {
+export function talentOf(id: string): Talent {
   const d = defOf(id);
   if (!d) return { id, name: id, type: 'active', desc: '' };
   return { id: d.id, name: d.name, type: skillTypeOf(d), desc: d.desc };
 }
 
 /** 技能在指定时机是否生效（含「效果自带 at 时机」的情况） */
-export function matchesTiming(d: SkillDef, t: SkillTiming): boolean {
+export function matchesTiming(d: TalentDef, t: SkillTiming): boolean {
   if (d.timing === t) return true;
   return (d.effects as SkillE[]).some((e) => e.at === t);
 }

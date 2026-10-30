@@ -1,6 +1,6 @@
 // 本文件由 scripts/build-expansion.mjs 生成，请勿手改。
 // 单一事实来源：scripts/build-expansion.mjs 的 SEED（12 学期 × 9 学科 = 108 名角色）。
-import type { Character, EquipSlot, ItemDef, Skill, SkillEffect } from '../core/types';
+import type { Character, EquipSlot, ItemDef, Talent, SkillEffect } from '../core/types';
 
 export interface EquipDef {
   id: string;
@@ -16,7 +16,7 @@ export interface EquipDef {
 
 export const EXPANSION_CHARS: Character[] = [];
 
-export const EXPANSION_SKILLS: Skill[] = [];
+export const EXPANSION_SKILLS: Talent[] = [];
 
 export const EXPANSION_EQUIPS: EquipDef[] = [
   {

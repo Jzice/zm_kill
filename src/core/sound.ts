@@ -91,7 +91,7 @@ export const Sound = {
         S([523, 784, 1046], 0.06, 0.22, 'square', 0.06);
         break;
       /* --- 锦囊牌 --- */
-      case 'trick':
+      case 'skill':
         S([784, 1046, 1318], 0.06, 0.24, 'triangle', 0.09);
         break;
       case 'trick_aoe':
@@ -145,6 +145,13 @@ export const Sound = {
       case 'turn':
         N(587, 0.16, 'sine', 0.06);
         N(784, 0.14, 'sine', 0.05, 0.09);
+        break;
+      /* --- 境界突破 --- */
+      case 'breakthrough':
+        // 低音轰鸣 + 上行五声琶音 + 长尾泛音
+        N(110, 0.9, 'sine', 0.18);
+        S([392, 523, 587, 784, 880], 0.11, 0.45, 'sine', 0.1);
+        S([1046, 1318, 1568], 0.16, 0.6, 'triangle', 0.07);
         break;
       case 'win':
         S([523, 659, 784, 1046], 0.12, 0.5, 'triangle', 0.1);

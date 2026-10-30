@@ -3,8 +3,20 @@ import { FACTIONS } from '../data/factions';
 import { allTrickDefs } from '../data/knowledgeTricks';
 import type { FactionId } from '../core/types';
 import { CHARACTERS } from '../data/characters';
-import { ACHIEVEMENTS, PROFILE } from '../profile/profile';
-import { defOf } from '../data/skilldefs';
+import {
+  ACHIEVEMENTS,
+  EXP_LORD_BONUS,
+  EXP_LOSE,
+  EXP_PER_ACH,
+  EXP_PER_KILL,
+  EXP_SPY_BONUS,
+  EXP_STREAK_MAX_STEP,
+  EXP_STREAK_STEP,
+  EXP_WIN,
+  PROFILE,
+} from '../profile/profile';
+import { REALM_TIERS } from '../profile/realm';
+import { defOf } from '../data/talentdefs';
 import { CARD_PACKS } from '../data/cardPacks';
 import { CARD_CATALOG } from '../data/cardCatalog';
 
@@ -123,11 +135,12 @@ function renderRulesContent(tab: string): void {
       <li><b>角色池随年级累加</b>：选择较高年级时，低年级角色同样可选</li>
       <li>可通过「题库管理」导入外部题库（本地文件或 URL）</li>
     </ul></div>
-    <div class="rule-section"><h4>🏅 积分与成就</h4><ul>
-      <li>每局结算：胜利 +120，败北 +40，每答对1题 +6，解锁成就 +30</li>
-      <li>积分达到阈值自动提升等级：蒙童→学童→秀才→…→宗师</li>
+    <div class="rule-section"><h4>☯ 修为与境界</h4><ul>
+      <li>每局结算得<b>修为</b>：胜利 +${EXP_WIN}，败北 +${EXP_LOSE}；每击杀 1 名角色 +${EXP_PER_KILL}；连胜每级 +${EXP_STREAK_STEP}（最多 +${EXP_STREAK_STEP * EXP_STREAK_MAX_STEP}）；主公获胜额外 +${EXP_LORD_BONUS}，内奸独赢额外 +${EXP_SPY_BONUS}；每解锁 1 个成就 +${EXP_PER_ACH}</li>
+      <li>修为达阈值即<b>突破境界</b>：${REALM_TIERS.map((t) => `${t.name}(${t.min})`).join(' → ')}</li>
+      <li>高阶设<b>瓶颈</b>：除修为外还需胜场 / 连胜 / 成就达标，未达标时修为继续累积，达成后自动突破</li>
       <li>档案保存在浏览器本地，换设备不会同步</li>
-      <li>联机房间中点击成员即可查看其成就</li>
+      <li>联机房间中点击成员即可查看其境界与成就</li>
     </ul></div>
     <div class="rule-section"><h4>⚰️ 阵亡与身份公开</h4><ul>
       <li>角色阵亡后，其身份自动公开，所有玩家均可看到</li>
@@ -167,7 +180,7 @@ function renderRulesContent(tab: string): void {
         const cf = FACTIONS[c.faction];
         html += `<div style="padding:7px;background:rgba(0,0,0,.25);border-radius:6px;border-left:3px solid ${cf.color};margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:19px">${c.avatar}</span><span style="color:${cf.color};font-weight:700;font-size:13px">${c.name}</span><span style="font-size:11px;color:var(--muted)">${c.title} · ${cf.name} · 体力${c.hp}</span></div>
-          <div style="font-size:11px;margin-top:3px">${c.skills.map((s) => {
+          <div style="font-size:11px;margin-top:3px">${c.talents.map((s) => {
             const d = defOf(s.id);
             const tag = d
               ? d.kind === 'limit'

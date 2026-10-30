@@ -1,5 +1,5 @@
 /* ==================== 渲染 ==================== */
-import type { Player } from '../core/types';
+import type { EquipSlot, Player } from '../core/types';
 import { G } from '../game/state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_ICON, EQUIP_SHORT } from '../data/characters';
@@ -19,23 +19,15 @@ const EQUIP_ICON: Record<string, string> = {
   armor: '🛡️',
   horsePlus: '🐎',
   horseMinus: '🐎',
-  treasure: '🎒',
 };
 const EQUIP_LABEL: Record<string, string> = {
   weapon: '武器',
   armor: '防具',
-  horsePlus: '+1马',
-  horseMinus: '-1马',
-  treasure: '宝物',
+  horsePlus: '+1载具',
+  horseMinus: '-1载具',
 };
-/** 装备槽展示顺序（宝物为扩展槽，旧存档无此字段时渲染为空槽） */
-const EQUIP_SLOTS: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] = [
-  'weapon',
-  'armor',
-  'horsePlus',
-  'horseMinus',
-  'treasure',
-];
+/** 装备槽展示顺序（掌门路四槽制；法宝按攻防特性落在武器槽或防具槽，不单独设槽） */
+const EQUIP_SLOTS: EquipSlot[] = ['weapon', 'armor', 'horsePlus', 'horseMinus'];
 const JUDGE_ICON: Record<string, string> = { lebu: '🎋', shandian: '⚡', bingliang: '📝' };
 
 function buildPlayerCard(p: Player, i: number): string {
@@ -320,8 +312,10 @@ export function render(): void {
           cardCls = 'clickable ' + cardClickHint(c);
           onclick = `onclick="clickHandCard(${c.id})"`;
         } else if (G.handClickable) cardCls = 'disabled';
-        const typeCls = c.type === 'trick' ? ' trick-tag' : c.type === 'equip' ? ' equip-tag' : '';
-        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${c.type === 'basic' ? '基本' : c.type === 'trick' ? '锦囊' : '装备'}</span></div>`;
+        const typeCls = c.type === 'skill' ? ' trick-tag' : c.type === 'equip' ? ' equip-tag' : '';
+        // 掌门路模式下「锦囊」改称「技能」（经典模式仍沿用三国杀原版术语）
+        const typeName = c.type === 'basic' ? '基本' : c.type === 'skill' ? (isZml(G.mode) ? '技能' : '锦囊') : '装备';
+        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${typeName}</span></div>`;
       })
       .join('') || '<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
 

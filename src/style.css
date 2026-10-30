@@ -427,7 +427,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .si-ans{margin-top:5px;font-size:10.5px;color:var(--gold-dim)}
 .si-mark{margin-top:6px;width:100%}
 .si-toggle{margin-bottom:4px}
-/* 档案弹窗标题栏徽章（等级/积分，仅自我视图） */
+/* 档案弹窗标题栏徽章（境界/修为，仅自我视图） */
 .pm-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#2a1a06;background:var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.4);vertical-align:1px}
 
 /* ==================== 一局结束结算 ==================== */
@@ -448,11 +448,22 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .si-result{font-size:11px;padding:2px 8px;border-radius:10px}
 .si-result.win{background:rgba(95,224,138,.16);color:#5fe08a}
 .si-result.lose{background:rgba(231,76,60,.16);color:#e88b7f}
-.settle-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.settle-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
 .ss-cell{background:rgba(0,0,0,.24);border:1px solid var(--border);border-radius:7px;padding:7px 4px;text-align:center}
 .ss-cell b{display:block;font-size:16px;color:var(--gold)}
 .ss-cell span{font-size:9.5px;color:var(--muted)}
 .settle-score{text-align:center;font-size:12px;color:#8fd0ff;margin-bottom:8px}
+.settle-detail{text-align:center;font-size:10.5px;color:var(--muted);margin-bottom:8px}
+/* 结算：境界突破横幅 */
+.settle-bt{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 10px;padding:9px 10px;border-radius:8px;
+  background:linear-gradient(90deg,rgba(245,197,66,.08),rgba(245,197,66,.28),rgba(245,197,66,.08));
+  border:1px solid var(--gold-dim);animation:btGlow 1.6s ease-in-out infinite}
+.settle-bt .sbt-icon{font-size:18px}
+.settle-bt .sbt-text{font-size:14px;font-weight:700;color:#ffe9a8;letter-spacing:1px}
+@keyframes btGlow{0%,100%{box-shadow:0 0 6px rgba(245,197,66,.25)}50%{box-shadow:0 0 18px rgba(245,197,66,.6)}}
+/* 结算：瓶颈未破提示 */
+.settle-bottleneck{text-align:center;font-size:11px;color:#ffb648;background:rgba(255,182,72,.1);
+  border:1px dashed rgba(255,182,72,.5);border-radius:7px;padding:6px 8px;margin-bottom:10px}
 .settle-ach{display:flex;flex-wrap:wrap;gap:6px}
 .sd-ach{font-size:11px;padding:3px 9px;border-radius:12px;background:rgba(245,197,66,.16);color:var(--gold);border:1px solid var(--gold-dim)}
 .settle-table{width:100%;border-collapse:collapse;font-size:11px}
@@ -663,11 +674,11 @@ sub{bottom:-.16em}
 @keyframes deathAnim{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.4) rotate(-8deg)}100%{opacity:0;transform:scale(.8) rotate(-15deg) translateY(-80px)}}
 
 /* 锦囊牌特效 */
-.trick-fx{position:fixed;pointer-events:none;z-index:1001}
-.trick-ring{position:absolute;width:120px;height:120px;border-radius:50%;border:3px solid #b57fff;box-shadow:0 0 30px currentColor;transform:translate(-50%,-50%)}
-.trick-card{position:absolute;transform:translate(-50%,-50%);width:56px;height:80px;border-radius:6px;border:2px solid #b57fff;background:linear-gradient(160deg,var(--parch),var(--parch2));display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(181,127,255,.6)}
-.trick-card .tc-icon{font-size:22px}
-.trick-card .tc-name{font-size:9px;color:#2a1f0f;font-weight:700;margin-top:2px}
+.skill-fx{position:fixed;pointer-events:none;z-index:1001}
+.skill-ring{position:absolute;width:120px;height:120px;border-radius:50%;border:3px solid #b57fff;box-shadow:0 0 30px currentColor;transform:translate(-50%,-50%)}
+.skill-card{position:absolute;transform:translate(-50%,-50%);width:56px;height:80px;border-radius:6px;border:2px solid #b57fff;background:linear-gradient(160deg,var(--parch),var(--parch2));display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(181,127,255,.6)}
+.skill-card .tc-icon{font-size:22px}
+.skill-card .tc-name{font-size:9px;color:#2a1f0f;font-weight:700;margin-top:2px}
 
 /* 群攻冲击波 */
 .aoe-wave{position:fixed;width:80px;height:80px;border-radius:50%;border:4px solid #e74c3c;box-shadow:0 0 24px currentColor;transform:translate(-50%,-50%);pointer-events:none;z-index:1000}
@@ -693,8 +704,8 @@ sub{bottom:-.16em}
 @keyframes cardPulse{0%,100%{box-shadow:0 0 6px rgba(245,197,66,.35)}50%{box-shadow:0 0 16px rgba(245,197,66,.75)}}
 .card.disabled{opacity:.55;filter:grayscale(.5)}
 /* 锦囊牌 / 装备牌特殊外观 */
-.card.trick-tag{background:linear-gradient(160deg,#2b1c3a,#150d20);border-color:#b57fff}
-.card.trick-tag .cname{color:#d9b6ff}
+.card.skill-tag{background:linear-gradient(160deg,#2b1c3a,#150d20);border-color:#b57fff}
+.card.skill-tag .cname{color:#d9b6ff}
 .card.equip-tag{background:linear-gradient(160deg,#1c2b3a,#0d1520);border-color:#5ec8ff}
 .card.equip-tag .cname{color:#a8dcff}
 
@@ -872,7 +883,7 @@ sub{bottom:-.16em}
 .tb-avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--avatar-bg);box-shadow:0 0 10px rgba(245,197,66,.4);flex-shrink:0}
 .tb-user-meta{display:flex;flex-direction:column;line-height:1.15;min-width:0}
 .tb-uname{font-size:13px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px}
-/* 等级 / 积分（含升级进度条）：宽屏由 margin-left:auto 推到右侧、紧贴按钮组左缘（即"按钮区左侧"）；
+/* 境界 / 修为（含突破进度条）：宽屏由 margin-left:auto 推到右侧、紧贴按钮组左缘（即"按钮区左侧"）；
    窄屏两行模式（tb-mode2）下移到第一行靠右显示 */
 .tb-stats{display:flex;align-items:center;gap:8px;white-space:nowrap;margin-top:1px;margin-left:auto;flex-shrink:0}
 .tb-stat{display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--muted);font-weight:600}
@@ -880,12 +891,19 @@ sub{bottom:-.16em}
 .tb-stat #tbLevel, .tb-stat #tbScore{color:var(--gold-dim)}
 .tb-progress{display:inline-block;width:42px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;vertical-align:middle;margin-left:3px}
 .tb-progress-bar{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#ffe9a8);transition:width .3s}
+/* 卡瓶颈：进度条满格并转为橙色警示 */
+.tb-progress-bar.bottleneck{background:linear-gradient(90deg,#ff9f43,#ffb648);animation:btPulse 1.2s ease-in-out infinite}
+@keyframes btPulse{0%,100%{opacity:.65}50%{opacity:1}}
+/* 顶栏境界名：高阶配色（由 JS 写入 data-realm） */
+#tbLevel[data-realm="yuanying"],#tbLevel[data-realm="huashen"]{color:#8fd0ff}
+#tbLevel[data-realm="lianxu"],#tbLevel[data-realm="heti"]{color:#c79bff}
+#tbLevel[data-realm="dacheng"],#tbLevel[data-realm="dujie"]{color:#ff9f43;text-shadow:0 0 8px rgba(255,159,67,.5)}
 /* 行包装：宽屏（单行模式）下完全透明，子元素直接参与 #topBar 的单行 flex 布局 */
 .tb-row{display:contents}
 /* 布局模式（JS 实测切换）：tb-mode2 = 窄屏恒定两行，更窄时整栏横向滚动（含第一行），
    绝不出现第三行、也不回落单行
    第一行：品牌（左） · 个人信息（右）
-   第二行：等级+积分+进度（左） · 按钮组（右）
+   第二行：境界+修为+进度（左） · 按钮组（右）
    用 grid 显式定位四块：HTML 顺序与单行模式布局完全不动，仅在两行模式下重排位置 */
 #topBar.tb-mode2{display:grid;grid-template-columns:minmax(max-content,1fr) max-content;align-items:center;
   row-gap:5px;column-gap:10px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -926,7 +944,7 @@ sub{bottom:-.16em}
 @media (max-width:400px){
   .tb-title{font-size:13px;letter-spacing:1px}
 }
-/* 超窄屏（≤360px）：压缩品牌与等级积分宽度，保证第一行「品牌 + 等级积分」仍放得下、维持两行 */
+/* 超窄屏（≤360px）：压缩品牌与境界修为宽度，保证第一行「品牌 + 境界修为」仍放得下、维持两行 */
 @media (max-width:360px){
   .tb-logo{font-size:18px}
   .tb-brand-text{gap:5px}
@@ -1055,7 +1073,7 @@ sub{bottom:-.16em}
 .rcp-title{font-size:9.5px;color:var(--muted);margin-top:1px}
 .rcp-label{flex:0 0 auto;font-size:9.5px;color:var(--gold);background:rgba(245,197,66,.1);border:1px solid var(--gold-dim);border-radius:20px;padding:2px 9px}
 .rcp-meta{font-size:11px;font-weight:600;margin:6px 0 5px}
-.rcp-skills{border-top:1px solid var(--border);padding-top:5px}
+.rcp-talents{border-top:1px solid var(--border);padding-top:5px}
 .rcp-skill{font-size:10px;color:#b8a888;line-height:1.55}
 .rcp-skill b{color:var(--gold);font-size:10.5px}
 .rcp-type{display:inline-block;font-size:8px;color:#1a1206;background:var(--gold-dim);border-radius:4px;padding:0 4px;margin:0 3px;vertical-align:1px}
@@ -1139,6 +1157,37 @@ sub{bottom:-.16em}
 .kp-pit{margin-top:3px;font-size:10.5px;color:#e8c07f}
 .kp-rels{margin-top:4px;font-size:10px}
 .kp-rel{margin-right:6px}
+
+/* ==================== 修真境界（档案 / 顶栏 / 突破演出） ==================== */
+/* 档案弹窗内的境界进度条 */
+.pm-realmbar{position:relative;height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;margin-top:6px}
+.pm-realmbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#ffe9a8);transition:width .3s}
+/* 突破演出：全屏金光 + 境界跨越 */
+.bt-fx{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(255,224,150,.34),rgba(0,0,0,.86) 62%);
+  animation:btFade .45s ease-out}
+.bt-fx .bt-rays{position:absolute;width:150vmax;height:150vmax;top:50%;left:50%;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,224,150,.34) 0deg 6deg,transparent 6deg 18deg);
+  animation:btSpin 3.4s linear infinite;opacity:.75}
+.bt-fx .bt-halo{position:absolute;width:min(80vw,520px);height:min(80vw,520px);border-radius:50%;
+  background:radial-gradient(circle,rgba(255,236,190,.9),rgba(255,200,90,.28) 45%,transparent 70%);
+  animation:btBreath 1.5s ease-in-out infinite}
+.bt-fx .bt-pair{position:relative;display:flex;align-items:center;gap:14px;font-size:clamp(20px,5vw,34px);font-weight:800;letter-spacing:3px}
+.bt-fx .bt-from{color:var(--muted);text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.bt-fx .bt-arrow{color:var(--gold);animation:btArrow .9s ease-in-out infinite}
+.bt-fx .bt-to{color:#ffe9a8;text-shadow:0 0 18px rgba(245,197,66,.95),0 0 42px rgba(245,197,66,.6)}
+.bt-fx .bt-title{position:relative;margin-top:14px;font-size:clamp(13px,3vw,18px);letter-spacing:8px;color:var(--gold);
+  animation:btRise .8s cubic-bezier(.3,1.4,.5,1) both}
+.bt-fx .bt-word{position:relative;margin-top:8px;font-size:clamp(11px,2.6vw,15px);letter-spacing:2px;color:#ffe9c0;opacity:.95;
+  animation:btRise .9s cubic-bezier(.3,1.4,.5,1) .18s both}
+@keyframes btFade{from{opacity:0}to{opacity:1}}
+@keyframes btSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes btBreath{0%,100%{transform:scale(.82);opacity:.75}50%{transform:scale(1.06);opacity:1}}
+@keyframes btArrow{0%,100%{transform:translateY(2px);opacity:.6}50%{transform:translateY(-4px);opacity:1}}
+@keyframes btRise{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .bt-fx .bt-rays,.bt-fx .bt-halo,.bt-fx .bt-arrow,.settle-bt{animation:none}
+}
 .kp-ops{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
 .kp-map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0;font-size:10px;color:var(--muted)}
 .kp-map-hint{opacity:.8}

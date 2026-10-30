@@ -5,7 +5,7 @@ import { FX } from '../core/fx';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
 import { trickDefOf } from '../data/knowledgeTricks';
-import { DELAY_TRICK_SUBS, ONE_TARGET_TRICKS, RESPONSE_ONLY_TRICKS } from '../data/cardCatalog';
+import { DELAY_TRICK_SUBS, ONE_TARGET_TRICKS, RESPONSE_ONLY_SKILLS } from '../data/cardCatalog';
 import { addLog, addPlayLog } from './log';
 import {
   canUseCard,
@@ -14,7 +14,7 @@ import {
   distBetween,
   inRange,
   handLimit,
-  treasureSkillOf,
+  fabaoSkillOf,
 } from './rules';
 import { Sound } from '../core/sound';
 import { equipFx } from '../core/fx';
@@ -27,9 +27,9 @@ import { demoteLlmSeat } from '../llm/agent';
 import { AIPOLICY } from './aipolicy';
 import { pickDiscardCard } from './aieval';
 import { dealDamage, onLoseArmor } from './damage';
-import { useActiveSkill } from './skills';
-import { useSha, useTao, useJiu, useTrick } from './actions';
-import { defOf } from '../data/skilldefs';
+import { useActiveTalent } from './skills';
+import { useSha, useTao, useJiu, useSkill } from './actions';
+import { defOf } from '../data/talentdefs';
 import { GROUND_CLAIM_COST, MARKET_COST, REALM_LABEL, isZml } from '../core/mode';
 import {
   canMarket,
@@ -60,7 +60,8 @@ import {
   shunshouNoDist,
   tryReplaceDraw,
   tryReplaceJudge,
-} from './skillEngine';
+  cleanupCopiedTalents,
+} from './talentEngine';
 import { NET, scheduleSync } from '../net/network';
 import { llmChooseAction, llmPlanActions, llmReady } from '../llm/agent';
 import { llmDebug } from '../llm/config';
@@ -116,7 +117,7 @@ export async function runTurn(idx: number): Promise<void> {
   zmlTurnStart(idx);
   // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
   // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
-  const bonusDraw = extraDrawOf(p) + (treasureSkillOf(p) === 'muyu' ? 1 : 0);
+  const bonusDraw = extraDrawOf(p) + (fabaoSkillOf(p) === 'muyu' ? 1 : 0);
   const raid = await tryReplaceDraw(idx);
   const baseDraw = p.flags.skipDraw ? 0 : 2;
   const drawN = raid ? bonusDraw : baseDraw + bonusDraw;
@@ -131,6 +132,8 @@ export async function runTurn(idx: number): Promise<void> {
     // 回合结束：据守翻面 / 荷塘月色 / 军令状结算
     await fire('onTurnEnd', { idx });
     await resolvePledge(idx);
+    // 掌门路：清理本回合到期的诡代复制天赋
+    cleanupCopiedTalents(idx);
   }
   render();
 }
@@ -238,7 +241,7 @@ export async function playPhase(idx: number): Promise<void> {
       if (SHA_SUBS.includes(c.sub) && canSha) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
       else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【桃】`, value: 'tao_' + c.id });
       else if (c.sub === 'jiu' && !p.flags.jiuUsed) opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
-      else if (c.type === 'trick' && c.sub !== 'wuxie' && !RESPONSE_ONLY_TRICKS.includes(c.sub))
+      else if (c.type === 'skill' && c.sub !== 'wuxie' && !RESPONSE_ONLY_SKILLS.includes(c.sub))
         opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
       else if (c.type === 'equip') opts.push({ label: `【${c.name}】`, value: 'equip_' + c.id });
     }
@@ -256,10 +259,10 @@ export async function playPhase(idx: number): Promise<void> {
         if (c.sub !== 'tao' && canUseCard(p, c) && canConvertAs(p, c, 'tao', false))
           opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【桃】`, value: `conv_${c.id}_tao` });
     for (const c of p.hand)
-      if (c.type !== 'trick' && canUseCard(p, c) && canConvertAs(p, c, 'guohe', false))
+      if (c.type !== 'skill' && canUseCard(p, c) && canConvertAs(p, c, 'guohe', false))
         opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【过河拆桥】`, value: `conv_${c.id}_guohe` });
     if (!p.flags.skillUsed) {
-      p.skills.forEach((s) => {
+      p.talents.forEach((s) => {
         // 观星 / 周期律 / 行医等「非出牌阶段」技能不出现在出牌按钮里
         const sd = defOf(s.id);
         if (sd && sd.timing !== 'active') return;
@@ -325,7 +328,7 @@ export async function playPhase(idx: number): Promise<void> {
       continue;
     }
     if (String(ch).startsWith('skill_')) {
-      await useActiveSkill(idx, String(ch).slice(6));
+      await useActiveTalent(idx, String(ch).slice(6));
       continue;
     }
     if (String(ch).startsWith('conv_')) {
@@ -369,7 +372,7 @@ export async function playPhase(idx: number): Promise<void> {
           const targets: ChoiceOption[] = [];
           for (let i = 0; i < G.players.length; i++) {
             if (i === idx || !G.players[i].alive) continue;
-            if (!canBeTarget(i, 'trick')) continue;
+            if (!canBeTarget(i, 'skill')) continue;
             targets.push({ label: G.players[i].name, value: i });
           }
           if (!targets.length) {
@@ -379,8 +382,8 @@ export async function playPhase(idx: number): Promise<void> {
             const t = await waitChoice(idx, targets, 'target');
             if (Number(t) >= 0) {
               discardCard(p, card);
-              const synth = C('过河拆桥', 'trick', 'guohe', card.suit, card.num);
-              await useTrick(idx, synth, t as number);
+              const synth = C('过河拆桥', 'skill', 'guohe', card.suit, card.num);
+              await useSkill(idx, synth, t as number);
             }
           }
         }
@@ -455,7 +458,7 @@ export async function playPhase(idx: number): Promise<void> {
       discardCard(p, card);
       await noteCardPlayed(idx, card);
       await useJiu(idx);
-    } else if (kind === 'trick') {
+    } else if (kind === 'skill') {
       let tgt: number | null = null;
       let second: number | null = null;
       // 铁索连环：可重铸（弃此牌摸一张）
@@ -493,7 +496,7 @@ export async function playPhase(idx: number): Promise<void> {
           // 郑和【航海图】：使用【顺手牵羊】无距离限制
           if (card.sub === 'shunshou' && !shunshouNoDist(p) && distBetween(idx, i) > 1) continue;
           // 焚书（锦囊免疫）/ 空城（杀与决斗免疫）
-          if (!canBeTarget(i, card.sub === 'juedou' ? 'juedou' : 'trick')) continue;
+          if (!canBeTarget(i, card.sub === 'juedou' ? 'juedou' : 'skill')) continue;
           targets.push({ label: G.players[i].name, value: i });
         }
         if (!targets.length) {
@@ -510,7 +513,7 @@ export async function playPhase(idx: number): Promise<void> {
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
           const w = G.players[i].equip.weapon;
-          if (!w || !canBeTarget(i, 'trick')) continue;
+          if (!w || !canBeTarget(i, 'skill')) continue;
           holders.push({ label: `借刀：${G.players[i].name}（${w.name}）`, value: i });
         }
         if (!holders.length) {
@@ -538,7 +541,7 @@ export async function playPhase(idx: number): Promise<void> {
       }
       discardCard(p, card);
       await noteCardPlayed(idx, card);
-      await useTrick(idx, card, tgt, second);
+      await useSkill(idx, card, tgt, second);
     } else if (kind === 'equip') {
       discardCard(p, card, false);
       showPlayCard(card, p.name, FACTIONS[p.faction].color);
@@ -563,10 +566,16 @@ export async function playPhase(idx: number): Promise<void> {
         replaced = p.equip.horseMinus;
         if (p.equip.horseMinus) G.discard.push(p.equip.horseMinus);
         p.equip.horseMinus = card;
-      } else if (card.sub === 'treasure') {
-        replaced = p.equip.treasure || null;
-        if (p.equip.treasure) G.discard.push(p.equip.treasure);
-        p.equip.treasure = card;
+      } else if (card.sub === 'fabao') {
+        // 法宝不是独立槽位：按 equipSlot 装备进武器槽（进攻型）或防具槽（防守型）
+        const slot: 'weapon' | 'armor' = card.equipSlot ?? 'armor';
+        const old = p.equip[slot];
+        replaced = old;
+        if (old) {
+          if (slot === 'armor') onLoseArmor(p, old);
+          G.discard.push(old);
+        }
+        p.equip[slot] = card;
       }
       await noteCardPlayed(idx, card);
       addLog(`${p.name} 装备【${card.name}】`);

@@ -1,14 +1,14 @@
 /* ==================== 主动技能（薄封装） ====================
  * 分派顺序：
  *   1. 声明式技能（46 名基础角色 93 个技能 + 9 主公技 + 18 学科主题技）
- *      → 交 src/game/skillEngine.ts 统一执行（答题门槛 + 费用 + 原语）
+ *      → 交 src/game/talentEngine.ts 统一执行（答题门槛 + 费用 + 原语）
  *   2. 扩展包技能（带 SkillEffect 原语）→ 交 src/game/skillfx.ts 执行
  * 本文件不再包含任何按技能 id 的 switch 分支。
  */
 import { G } from './state';
 import { FX, floatTextFx } from '../core/fx';
 import { FACTIONS } from '../data/factions';
-import { defOf } from '../data/skilldefs';
+import { defOf } from '../data/talentdefs';
 import { addLog, addPlayLog } from './log';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
@@ -16,12 +16,12 @@ import { showPlayHint } from '../ui/hint';
 import { aiSpeak } from './ai';
 import { NET, syncStateToClients } from '../net/network';
 import { isExpansionActive, runSkillEffects } from './skillfx';
-import { invokeActive } from './skillEngine';
+import { invokeActive } from './talentEngine';
 
-export async function useActiveSkill(idx: number, skillId: string): Promise<void> {
+export async function useActiveTalent(idx: number, skillId: string): Promise<void> {
   const p = G.players[idx];
   if (!p) return;
-  const sk = p.skills.find((s) => s.id === skillId);
+  const sk = p.talents.find((s) => s.id === skillId);
   if (!sk) return;
   if (p.flags.skillUsed) {
     addLog('本回合已使用过主动技能');
@@ -39,10 +39,10 @@ export async function useActiveSkill(idx: number, skillId: string): Promise<void
     render();
     addPlayLog(p.name, 'skill', sk.name, '');
     addLog(`📘 玩法·【${sk.name}】：${sk.desc || '（暂无说明）'}`, 'explain');
-    showPlayHint('技能', sk.name, sk.desc || '');
+    showPlayHint('天赋', sk.name, sk.desc || '');
     aiSpeak(p, 'skill');
     FX.skillWave(idx);
-    showPlayCard({ name: sk.name, suit: '✦', num: '', type: 'trick' }, p.name, FACTIONS[p.faction].color);
+    showPlayCard({ name: sk.name, suit: '✦', num: '', type: 'skill' }, p.name, FACTIONS[p.faction].color);
     await runSkillEffects(idx, p, sk.effects!);
     return;
   }

@@ -4,7 +4,7 @@ import type { PacketId } from '../data/packets';
 import type { CardPackId } from '../data/cardPacks';
 
 export type Suit = '♠' | '♥' | '♣' | '♦';
-export type CardType = 'basic' | 'trick' | 'equip';
+export type CardType = 'basic' | 'skill' | 'equip';
 export type Role = 'lord' | 'loyal' | 'rebel' | 'spy';
 /** 修真势力（首版以楚秦门为主，其余为后续扩展预留骨架） */
 export type FactionId =
@@ -16,7 +16,8 @@ export type FactionId =
   | 'qinglian'       // 青莲剑宗
   | 'nanlin'         // 南林寺
   | 'waihai'         // 外海
-  | 'tianli';        // 天理门
+  | 'tianli'         // 天理门
+  | 'manhuang';      // 蛮荒（醒狮谷 / 蛮牛荒原等化神古兽领地，非人类宗门）
 export type SkillType = 'active' | 'trigger';
 export type PendingType = 'list' | 'play' | 'discard' | 'rescue' | 'shan' | 'target';
 export type LogAction =
@@ -31,8 +32,13 @@ export type LogAction =
   | 'sys';
 export type ChatKind = 'ai' | 'self' | 'sys';
 export type NetMode = 'single' | 'host' | 'join';
-/** 装备槽位；'treasure' 为【木牛流马】等宝物槽（可选，旧存档解包为 undefined） */
-export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure';
+/**
+ * 装备槽位（掌门路四槽制）：
+ *   weapon 武器（进攻） / armor 防具（防守，含阵法）
+ *   horsePlus +1 载具（载具法宝或灵兽） / horseMinus -1 载具
+ * 法宝不是独立槽位：法宝卡按攻防特性装备进 weapon 或 armor 槽（见 Card.equipSlot）。
+ */
+export type EquipSlot = 'weapon' | 'armor' | 'horsePlus' | 'horseMinus';
 /** 玩家自选性别（仅用于个性化展示，不影响玩法） */
 export type Gender = 'male' | 'female' | 'hidden';
 
@@ -45,9 +51,9 @@ export interface PlayerIdentity {
   moodIcon: string;
 }
 
-/* ---------------- 声明式技能（SkillDef） ----------------
+/* ---------------- 声明式技能（TalentDef） ----------------
  * 46 名基础角色共 93 个技能全部由「时机 + 费用 + 限制 + 效果原语」声明，
- * 由 src/game/skillEngine.ts 统一分派，避免 skills.ts 出现上百个 switch 分支。
+ * 由 src/game/talentEngine.ts 统一分派，避免 talents.ts 出现上百个 switch 分支。
  * 新增字段全部可选：108 个扩展包角色（纯 SkillEffect 原语制）零改动继续工作。
  */
 
@@ -64,8 +70,8 @@ export type SkillTiming =
   | 'onTargetSha' // 成为【杀】的目标时：点数对抗免伤
   | 'onUseShan' // 使用或打出【闪】后
   | 'onShaHit' // 使用【杀】造成伤害后
-  | 'onUseTrick' // 使用锦囊牌后
-  | 'onTrickCountered' // 自己的锦囊被【无懈可击】抵消后
+  | 'onUseSkill' // 使用锦囊牌后
+  | 'onSkillCountered' // 自己的锦囊被【无懈可击】抵消后
   | 'onLoseHand' // 失去最后一张手牌时
   | 'onEquip' // 装备一张装备牌后
   | 'onLoseEquip' // 失去装备区的牌后
@@ -100,8 +106,8 @@ export type SkillCond =
   | { k: 'playedNothingThisTurn' }
   | { k: 'noShaThisTurn' }
   | { k: 'noDamageDealtThisTurn' }
-  | { k: 'noTrickThisTurn' }
-  | { k: 'lastCardIsTrick' }
+  | { k: 'noSkillThisTurn' }
+  | { k: 'lastCardIsSkill' }
   | { k: 'hasNumPair' }
   | { k: 'handAtMost'; n: number }
   | { k: 'outsideTurn' }
@@ -128,7 +134,7 @@ export type SkillCond =
  */
 export type SkillE = SkillEffect & { at?: SkillTiming };
 
-export interface SkillDef {
+export interface TalentDef {
   id: string;
   name: string;
   kind: SkillKind;
@@ -140,24 +146,28 @@ export interface SkillDef {
   effects: SkillE[];
 }
 
-export interface Skill {
+export interface Talent {
   id: string;
   name: string;
   type: SkillType;
   desc: string;
-  /** 扩展包技能的原语组合（仅扩展包技能有；基础技能走 skills.ts 的 switch 分发） */
+  /** 扩展包技能的原语组合（仅扩展包技能有；基础技能走 talents.ts 的 switch 分发） */
   effects?: SkillEffect[];
-  /** 声明式扩展（基础角色技能）：与 SkillDef 同构，由 skillEngine 分派 */
+  /** 声明式扩展（基础角色技能）：与 TalentDef 同构，由 talentEngine 分派 */
   kind?: SkillKind;
   timing?: SkillTiming;
   cost?: SkillCost;
   limit?: SkillLimit;
   cond?: SkillCond;
+  /** 由【诡代】/【神傀化身】/【本命代征】复制而来（回合结束清理用） */
+  copied?: boolean;
+  /** 复制来的天赋持续时间：'turn' 持到本回合结束，'game' 持到本局结束 */
+  copiedUntil?: 'turn' | 'game';
 }
 
 /**
  * 技能效果原语：技能均由有限原语组合声明，避免上百个独立分支。
- * 由 src/game/skillEngine.ts 统一分派执行；
+ * 由 src/game/talentEngine.ts 统一分派执行；
  * 扩展包角色沿用旧的 14 个原语，由 src/game/skillfx.ts 分派，两者加法式共存。
  */
 export type SkillEffect =
@@ -286,7 +296,7 @@ export type SkillEffect =
   | { kind: 'discardSuitMatch'; n: number; suit?: string }
   /** 使用锦囊后摸牌：minSeq / blackOnly 限定触发范围，redExtra / richestExtra 为额外摸牌 */
   | {
-      kind: 'trickDraw';
+      kind: 'skillDraw';
       n: number;
       /** 本回合第 minSeq 张及之后的锦囊牌才触发 */
       minSeq?: number;
@@ -304,7 +314,7 @@ export type SkillEffect =
   /** 军令状：目标本回合结束时若未使用过【杀】则执行 onTurnEnd */
   | { kind: 'pledge'; onTurnEnd: SkillEffect[] }
   /** 免疫：不能成为某类牌的目标 */
-  | { kind: 'immune'; scope: 'trick' | 'shaAndJuedou' | 'equip' }
+  | { kind: 'immune'; scope: 'skill' | 'shaAndJuedou' | 'equip' }
   /** 空城：没有手牌时不能成为【杀】或【决斗】的目标 */
   | { kind: 'noHandImmune' }
   /** 指定牌名免疫：不能成为这些牌的目标（诸葛亮·东风 免疫万箭齐发；法拉第 免疫闪电；墨子·非攻 免疫万箭/南蛮） */
@@ -314,11 +324,11 @@ export type SkillEffect =
   /** 距离陷阱：计算距离大于 min 的角色不能对你使用【杀】 */
   | { kind: 'distTrap'; min: number }
   /** 转移锦囊：你成为锦囊牌目标时，可将其转移给另一名角色（墨子·兼爱） */
-  | { kind: 'trickRedirect' }
+  | { kind: 'skillRedirect' }
   /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
   | { kind: 'shaRedirect' }
   /** 装备失效：其他角色装备区中指定槽位的牌对你无效（墨子·非攻：收缴兵器） */
-  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus' | 'treasure')[] }
+  | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] }
   /** 马政：装备区每有一张马，你计算距离额外 −n（郑和·航海图） */
   | { kind: 'horseDist'; n: number }
   | { kind: 'reduceDamage'; types: DamageType[]; n: number }
@@ -345,7 +355,24 @@ export type SkillEffect =
   /** 计算距离时无视其他角色的 +1 马 */
   | { kind: 'ignoreHorsePlus' }
   /** 使用【顺手牵羊】无距离限制 */
-  | { kind: 'shunshouNoDist' };
+  | { kind: 'shunshouNoDist' }
+  /* ---- 掌门路原著机制（齐休 / 楚无影 / 玉鹤 / 姜炎 / 南宫木 / 沙诺 / 醒狮 等共用） ---- */
+  /**
+   * 诡代 / 神傀化身 / 本命代征：获得目标的一个天赋。
+   * duration='turn' 持续到你的下个回合开始；'game' 持续到本局结束。
+   * 出处：L-诡代法.md（楚秦门核心传承）、L-本命代征.md（御兽门玉鹤所悟）、白山密宗神傀化身。
+   */
+  | { kind: 'copyTalent'; duration: 'turn' | 'game' }
+  /**
+   * 必杀十人 / 追缉：令目标获得一枚标记，你对其造成的伤害 +dmgBonus。
+   * 出处：姜炎「山都山刻必杀十人名单」、南宫木追捕何玉数十年。
+   */
+  | { kind: 'markBonus'; mark: string; dmgBonus: number }
+  /**
+   * 散魂棺 / 嗅魂 / 鬼幡：摄魂。on='kill' 你击杀目标时触发；on='death' 任意角色阵亡时触发。
+   * 出处：沙诺散魂棺、醒狮昏睡中一嗅吸魂、赵瑶鬼幡（内含霍虎魂魄）。
+   */
+  | { kind: 'soulSeize'; on: 'kill' | 'death'; draw?: number; heal?: number };
 
 /** 消耗类道具定义（局末清空，不进牌堆，不可被顺手牵羊等卡牌影响） */
 export interface ItemDef {
@@ -372,7 +399,7 @@ export interface Faction {
   color: string;
   icon: string;
   desc: string;
-  lordSkill: Skill;
+  lordSkill: Talent;
   /** 预留修真机制扩展点（首版不实现，仅占位） */
   cultivation?: string;
   benming?: string;
@@ -386,7 +413,7 @@ export interface Character {
   faction: FactionId;
   hp: number;
   avatar: string;
-  skills: Skill[];
+  talents: Talent[];
   /** 预留修真机制扩展点（首版不实现，仅占位） */
   cultivation?: '练气' | '筑基' | '金丹' | '元婴' | '化神';
   /** 本命之物（可多个：本命越多灵根越杂，修炼越慢但天赋更强） */
@@ -406,8 +433,22 @@ export type DamageType = 'normal' | 'fire' | 'thunder';
 /** 对局模式：classic=经典（原版三国杀，零改动）；zml=掌门路身份局；war=开辟战争 */
 export type GameMode = 'classic' | 'zml' | 'war';
 
-/** 修真境界：练气 → 筑基 → 金丹 → 元婴 → 化神 */
-export type Realm = 'lianqi' | 'zhuji' | 'jindan' | 'yuanying' | 'huashen';
+/**
+ * 修真境界（唯一序列，两套成长线共用）：
+ *   练气 → 筑基 → 金丹 → 元婴 → 化神 → 炼虚 → 合体 → 大乘 → 渡劫
+ * - 局内（Player.cult.realm）：开放至「炼虚」封顶（见 core/mode.ts REALM_NEXT）
+ * - 账号档案（Profile.realm）：走满 9 阶（见 profile/realm.ts REALM_TIERS）
+ */
+export type Realm =
+  | 'lianqi'
+  | 'zhuji'
+  | 'jindan'
+  | 'yuanying'
+  | 'huashen'
+  | 'lianxu'
+  | 'heti'
+  | 'dacheng'
+  | 'dujie';
 
 /** 灵地：开局布置在场上，可开辟 / 攻夺，按阶产灵石 */
 export interface SpiritGround {
@@ -456,6 +497,13 @@ export interface Card {
   subtitle?: string;
   /** 掌门路模式：法器器灵层数（兵器法宝累积战果成长） */
   qiling?: number;
+  /**
+   * 法宝卡（sub === 'fabao'）装备进哪个槽：进攻型 → 'weapon'，防守型 → 'armor'。
+   * 法宝不是独立槽位，必须靠本字段复用四槽之一；仅 fabao 有意义。
+   */
+  equipSlot?: 'weapon' | 'armor';
+  /** 子类标签，供规则书分组展示：'fabao' 法宝 / 'fulu' 符箓 / 'zai ju' 载具 … */
+  category?: string;
 }
 
 /** 出牌区展示用的轻量卡牌视图（允许 num 为 '?' 等占位） */
@@ -471,8 +519,6 @@ export interface Equips {
   armor: Card | null;
   horsePlus: Card | null;
   horseMinus: Card | null;
-  /** 宝物槽（【木牛流马】等）：可选字段，保证旧存档 / 旧客户端可正常解包 */
-  treasure?: Card | null;
 }
 
 export interface PlayerFlags {
@@ -494,9 +540,9 @@ export interface PlayerFlags {
   /** 本回合是否造成过伤害（孟子·王道「据守」判据），回合初清零 */
   dealtDamage?: boolean;
   /** 本回合是否使用过锦囊（墨子·兼爱判据），回合初清零 */
-  usedTrick?: boolean;
+  usedSkill?: boolean;
   /** 本回合已使用的锦囊张数（李白·诗成「第二张及之后」判据），回合初清零 */
-  trickCount?: number;
+  skillCount?: number;
   /** 本回合使用的最后一张牌类型（朱自清·荷塘月色判据） */
   lastCardType?: CardType | null;
   /** 【兵粮寸断】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
@@ -528,7 +574,7 @@ export interface Player {
   isAI: boolean;
   /** 决策提供者：'heuristic' = 原启发式 AI；'llm' = 由大模型接管（仅当 isAI 时生效） */
   aiMode?: 'heuristic' | 'llm';
-  skills: Skill[];
+  talents: Talent[];
   peerId: string | null;
   flags: PlayerFlags;
   /** 铁索连环·横置：处于连环状态，受到属性伤害时传导给所有连环角色并各自重置 */
@@ -614,9 +660,29 @@ export interface ChatMessage {
   mood?: string;
 }
 
-export interface Level {
-  n: string;
+/** 账号境界阶位：修为阈值 + 突破瓶颈（额外条件） */
+export interface RealmTier {
+  /** 境界 id */
+  id: Realm;
+  /** 境界名 */
+  name: string;
+  /** 踏入此境界所需的累计修为 */
   min: number;
+  /** 突破瓶颈：除修为外还需满足的条件（全部满足方可突破） */
+  req?: {
+    /** 累计胜场 */
+    wins?: number;
+    /** 最高连胜 */
+    bestStreak?: number;
+    /** 已解锁成就数 */
+    achievements?: number;
+  };
+  /** 瓶颈的「或」条件：任一满足即视为通过（与 req 并列，双方都要通过） */
+  reqAny?: {
+    wins?: number;
+    bestStreak?: number;
+    achievements?: number;
+  };
 }
 
 export interface Achievement {
@@ -628,7 +694,10 @@ export interface Achievement {
 
 export interface Profile {
   name: string;
-  score: number;
+  /** 累计修为（原「积分」） */
+  exp: number;
+  /** 当前境界（受瓶颈约束，突破成功时才推进） */
+  realm: Realm;
   games: number;
   wins: number;
   winStreak: number;
@@ -658,7 +727,10 @@ export interface Profile {
 }
 
 export interface PublicProfile extends PlayerIdentity {
-  score: number;
+  /** 累计修为 */
+  exp: number;
+  /** 当前境界；旧客户端可能缺省，取用时应兜底 */
+  realm?: Realm;
   games: number;
   wins: number;
   achievements: Record<string, number>;

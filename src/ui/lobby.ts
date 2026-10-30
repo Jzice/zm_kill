@@ -16,8 +16,7 @@ import {
   GENDER_OPTIONS,
   MOOD_ICON_OPTIONS,
   genderIcon,
-  levelOf,
-  nextLevelOf,
+  realmBarPct,
   PROFILE,
   refreshProfileUI,
   ACHIEVEMENTS,
@@ -25,6 +24,7 @@ import {
   setters,
   showAchievements,
 } from '../profile/profile';
+import { bottleneckText, currentTier, nextTier, realmNameOfPublic } from '../profile/realm';
 import {
   customCharsFor,
   getInstalledPacks,
@@ -324,7 +324,7 @@ export function renderCharPicker(): void {
       <div class="faction-badge" style="color:${f.color};">${f.icon}</div>
       <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
       <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
-      <div class="cskill">${c.skills.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+      <div class="cskill">${c.talents.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
       
     </div>`;
     })
@@ -474,7 +474,10 @@ export function renderExtraPackPicker(): void {
   const base = REMOTE_BASE_PACKET;
   const baseName = packetName(base);
   const baseFree = base === 'all';
+  // 年级扩展包（初中 / 高中）已移除，PACKETS 只保留 'all'；
+  // 此处必须过滤掉协议中仍可能出现的 junior / senior，否则 PACKETS.find 为 undefined 会抛错。
   const toggles = (['junior', 'senior', 'all'] as PacketId[])
+    .filter((id) => PACKETS.some((x) => x.id === id))
     .map((id) => {
       const on = SELECTED_EXTRA_PACKETS.includes(id);
       const enabled = canEnablePacket(id);
@@ -521,7 +524,7 @@ export function renderJoinPickers(): void {
           <div class="faction-badge" style="color:${f.color};">${f.icon}</div>
           <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
           <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
-          <div class="cskill">${c.skills.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+          <div class="cskill">${c.talents.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
           </div>`;
       })
       .join('');
@@ -742,8 +745,8 @@ export function editPackFromMenu(id?: string): void {
 
 /* ==================== 固定顶栏 / 个人成就 / 设置抽屉 ==================== */
 export function renderTopBar(): void {
-  const lv = levelOf(PROFILE.score);
-  const nx = nextLevelOf(PROFILE.score);
+  const lv = currentTier(PROFILE);
+  const nx = nextTier(PROFILE);
   const av = document.getElementById('tbAvatar');
   const nm = document.getElementById('tbName');
   const lvEl = document.getElementById('tbLevel');
@@ -751,17 +754,21 @@ export function renderTopBar(): void {
   const pg = document.getElementById('tbProgress');
   if (av) av.textContent = PROFILE.avatar || DEFAULT_AVATAR;
   if (nm) nm.textContent = PROFILE.name || '玩家';
-  if (lvEl) lvEl.textContent = lv.n;
-  if (sc) sc.textContent = `${PROFILE.score} 分`;
+  if (lvEl) {
+    lvEl.textContent = lv.name;
+    lvEl.dataset.realm = lv.id;
+  }
+  if (sc) sc.textContent = `${PROFILE.exp} 修为`;
   if (pg) {
-    let pct = 100;
-    let tip = '已满级 · 巅峰段位';
-    if (nx) {
-      const span = Math.max(1, nx.min - lv.min);
-      pct = Math.max(0, Math.min(100, Math.round(((PROFILE.score - lv.min) / span) * 100)));
-      tip = `距「${nx.n}」还需 ${Math.max(0, nx.min - PROFILE.score)} 分`;
-    }
+    const pct = realmBarPct(PROFILE);
+    const bt = bottleneckText(PROFILE);
+    const tip = !nx
+      ? '已至渡劫 · 羽化可期'
+      : bt
+        ? `⚠ 瓶颈未破：${bt}`
+        : `距「${nx.name}」还需 ${Math.max(0, nx.min - PROFILE.exp)} 修为`;
     pg.style.width = `${pct}%`;
+    pg.classList.toggle('bottleneck', !!bt);
     const prog = pg.parentElement as HTMLElement | null;
     if (prog) prog.title = tip;
   }
@@ -916,7 +923,7 @@ function memberListHtml(members: RoomStateLike['members'], currentCount: number,
     const tag = isHost ? '房主' : '玩家';
     const tc = isHost ? '' : 'guest';
     const pf = m.profile;
-    const lv = pf ? levelOf(pf.score || 0).n : '未同步';
+    const lv = pf ? realmNameOfPublic(pf) : '未同步';
     const safeName = escapeHtml(m.name || '玩家');
     // 个性化：头像 / 性别 / 心情（未同步档案时用默认）
     const av = pf?.avatar || DEFAULT_AVATAR;
@@ -1061,7 +1068,10 @@ export function viewMemberProfile(name: string, profile: PublicProfile | null): 
     alert(`【${name}】尚未同步档案`);
     return;
   }
-  const p = Object.assign({ name, score: 0, games: 0, wins: 0, achievements: {} }, profile) as PublicProfile;
+  const p = Object.assign(
+    { name, exp: 0, realm: 'lianqi' as const, games: 0, wins: 0, achievements: {} },
+    profile,
+  ) as PublicProfile;
   showAchievements(p, `${name} 的成就`);
 }
 

@@ -22,7 +22,7 @@ export interface CharCardOpts {
 /** 完整武将卡 HTML（设置界面预览与开局亮将弹窗共用） */
 export function charCardHtml(c: Character, opts: CharCardOpts): string {
   const f = FACTIONS[c.faction];
-  const skills = c.skills
+  const talents = c.talents
     .map(
       (s) =>
         `<div class="rcp-skill"><b>${escapeHtml(s.name)}</b><span class="rcp-type">${
@@ -40,7 +40,7 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
       <span class="rcp-label">${escapeHtml(opts.label)}</span>
     </div>
     <div class="rcp-meta" style="color:${f.color}">${f.icon} ${escapeHtml(f.name)} · 体力 ${c.hp}</div>
-    <div class="rcp-skills">${skills}</div>
+    <div class="rcp-talents">${talents}</div>
     <div class="rcp-lord">👑 主公技 <b>${escapeHtml(f.lordSkill.name)}</b>：${escapeHtml(f.lordSkill.desc)}</div>
     ${(opts.cardReroll ?? opts.random) ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}
   </div>`;

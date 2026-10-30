@@ -30,8 +30,7 @@ export function powerOf(j: number): number {
   if (p.equip.armor) eq++;
   if (p.equip.horsePlus) eq++;
   if (p.equip.horseMinus) eq++;
-  if (p.equip.treasure) eq++;
-  const active = p.skills.some((s) => s.type === 'active' && !p.flags.skillUsed);
+  const active = p.talents.some((s) => s.type === 'active' && !p.flags.skillUsed);
   return (
     p.hp +
     0.15 * p.maxHp +
@@ -187,7 +186,7 @@ function outputOf(j: number): number {
   const wskill = p.equip.weapon?.skill;
   const extraWeapon =
     wskill === 'qilin' ? 0.25 : wskill === 'yinyue' ? 0.3 : wskill === 'qixing' ? 0.25 : wskill === 'wuliu' ? 0.35 : wskill === 'zhuque' ? 0.15 : 0;
-  const active = p.skills.some((s) => s.type === 'active' && !p.flags.skillUsed) ? 0.4 : 0;
+  const active = p.talents.some((s) => s.type === 'active' && !p.flags.skillUsed) ? 0.4 : 0;
   return 1 + (range - 1) * 0.25 + liannu + extraWeapon + Math.min(p.hand.length, 8) * 0.12 + active;
 }
 

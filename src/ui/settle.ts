@@ -1,4 +1,4 @@
-/* ==================== 一局结束结算（战绩 / 积分 / 新成就 / 重开） ==================== */
+/* ==================== 一局结束结算（战绩 / 修为 / 突破 / 新成就 / 重开） ==================== */
 import { escapeHtml } from '../core/dom';
 import { Sound } from '../core/sound';
 import type { Player } from '../core/types';
@@ -13,11 +13,23 @@ import { refreshProfileUI } from '../profile/profile';
 
 export interface SettleInfo {
   win: boolean;
+  /** 本局获得修为 */
   gained: number;
-  correct: number;
-  total: number;
+  /** 修为来源明细（胜/负、斩敌、连胜、身份加成） */
+  detail: string[];
+  /** 累计修为 */
+  exp: number;
+  /** 当前境界名 */
+  realm: string;
+  /** 本局是否突破（from → to 境界名） */
+  breakthrough: { from: string; to: string } | null;
+  /** 卡瓶颈时的缺口说明 */
+  bottleneck: string | null;
+  /** 下一境界名（null = 已至渡劫） */
+  nextRealm: string | null;
+  /** 距下一境界还需修为 */
+  nextNeed: number;
   newAch: { icon: string; name: string }[];
-  score: number;
 }
 
 /** 获胜阵营（用于选择胜利动画）：主公 / 反贼 / 内奸；我方败北则为 lose */
@@ -57,7 +69,6 @@ export function showSettle(info: SettleInfo): void {
   const me = G.players[G.myPlayerIdx ?? 0];
   const camp = winnerCamp(info.win);
   const role = me ? ROLES[me.role] : null;
-  const rate = info.total > 0 ? Math.round((info.correct / info.total) * 100) : 0;
   const net = NET.mode === 'host' || NET.mode === 'join';
   const heroTitle = info.win ? '胜利！' : '败北';
   const heroSub = info.win
@@ -82,9 +93,21 @@ export function showSettle(info: SettleInfo): void {
     </div>
     <div class="settle-stats">
       <div class="ss-cell"><b>${info.win ? '胜' : '负'}</b><span>本局结果</span></div>
-      <div class="ss-cell"><b>+${info.gained}</b><span>本局积分</span></div>
+      <div class="ss-cell"><b>+${info.gained}</b><span>本局修为</span></div>
+      <div class="ss-cell"><b>${escapeHtml(info.realm)}</b><span>当前境界</span></div>
     </div>
-    <div class="settle-score">总积分 ${info.score} 分</div>
+    ${info.detail.length ? `<div class="settle-detail">修为明细：${escapeHtml(info.detail.join(' ｜ '))}</div>` : ''}
+    <div class="settle-score">总修为 ${info.exp} ${info.nextRealm ? `· 距「${escapeHtml(info.nextRealm)}」还需 ${info.nextNeed}` : '· 已至渡劫，羽化可期'}</div>
+    ${
+      info.breakthrough
+        ? `<div class="settle-bt"><span class="sbt-icon">🆙</span><span class="sbt-text">突破至【${escapeHtml(info.breakthrough.from)} ➜ ${escapeHtml(info.breakthrough.to)}】</span></div>`
+        : ''
+    }
+    ${
+      info.bottleneck
+        ? `<div class="settle-bottleneck">⚠ 瓶颈未破：${escapeHtml(info.bottleneck)}（修为继续累积，达成后自动突破）</div>`
+        : ''
+    }
     ${
       info.newAch.length
         ? `<div class="rule-section"><h4>🎉 本局解锁成就（${info.newAch.length}）</h4><div class="settle-ach">${info.newAch
@@ -153,7 +176,7 @@ function exitToLobby(): void {
   document.getElementById('topBar')?.classList.remove('in-game');
   document.getElementById('chatPanel')!.style.display = 'none';
   clearPlayZone();
-  // 主界面刷新：积分/等级（结算时已入账） + 设置摘要
+  // 主界面刷新：境界/修为（结算时已入账） + 设置摘要
   refreshProfileUI();
   renderSetupSummary();
 }

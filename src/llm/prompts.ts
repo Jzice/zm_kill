@@ -14,7 +14,7 @@
 import type { Card, ChoiceOption, LogEntry, Player } from '../core/types';
 import { G } from '../game/state';
 import { ROLES } from '../data/characters';
-import { defOf } from '../data/skilldefs';
+import { defOf } from '../data/talentdefs';
 import { FACTIONS } from '../data/factions';
 import { attackRange, distBetween, inRange } from '../game/rules';
 import { beliefProbs, favorOf, grudgeOf } from '../game/aibrain';
@@ -47,10 +47,9 @@ function selfView(idx: number): string {
   const eq: string[] = [];
   if (p.equip.weapon) eq.push('武器:' + p.equip.weapon.name + `(攻击范围${attackRange(p)})`);
   if (p.equip.armor) eq.push('防具:' + p.equip.armor.name);
-  if (p.equip.horsePlus) eq.push('+1马:' + p.equip.horsePlus.name);
-  if (p.equip.horseMinus) eq.push('-1马:' + p.equip.horseMinus.name);
-  if (p.equip.treasure) eq.push('宝物:' + p.equip.treasure.name);
-  const skills = p.skills.map((s) => s.name).join('、') || '无';
+  if (p.equip.horsePlus) eq.push('+1载具:' + p.equip.horsePlus.name);
+  if (p.equip.horseMinus) eq.push('-1载具:' + p.equip.horseMinus.name);
+  const talents = p.talents.map((s) => s.name).join('、') || '无';
   const roleTxt =
     p.roleRevealed || true // 玩家始终知道自己的身份
       ? ROLES[p.role].name + '（' + ROLE_OBJ[p.role] + '）'
@@ -60,7 +59,7 @@ function selfView(idx: number): string {
     `身份：${roleTxt}`,
     `体力：${p.hp}/${p.maxHp}　手牌数：${p.hand.length}`,
     `装备：${eq.length ? eq.join('，') : '无'}`,
-    `技能：${skills}`,
+    `技能：${talents}`,
     `手牌：${hand || '（空）'}`,
   ].join('\n');
 }
@@ -84,9 +83,8 @@ function othersView(idx: number): string {
     const eq: string[] = [];
     if (p.equip.weapon) eq.push('武器');
     if (p.equip.armor) eq.push('防具');
-    if (p.equip.horsePlus) eq.push('+1马');
-    if (p.equip.horseMinus) eq.push('-1马');
-    if (p.equip.treasure) eq.push('宝物');
+    if (p.equip.horsePlus) eq.push('+1载具');
+    if (p.equip.horseMinus) eq.push('-1载具');
     const role = p.roleRevealed ? `身份:${ROLES[p.role].name}` : '身份:隐藏';
     const dOut = distBetween(idx, i);
     const dIn = distBetween(i, idx);
@@ -201,7 +199,7 @@ function situationView(idx: number): string {
 /* 提示词增强层（详见 docs/AI机制.md §3.3 补充）：                       */
 /*   RULE_REF        精简规则速查（帮助模型「评估」选项，不取代引擎合法性）*/
 /*   EVAL_PRINCIPLES 稳定的决策评估准则（约束权衡偏好）                  */
-/*   deriveHint      按 value 前缀/查 skilldefs 给枚举选项生成一行语义   */
+/*   deriveHint      按 value 前缀/查 talentdefs 给枚举选项生成一行语义   */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -248,7 +246,7 @@ function cardById(id: number): Card | undefined {
   for (const p of G.players) {
     const inHand = p.hand.find((c) => c.id === id);
     if (inHand) return inHand;
-    for (const eq of [p.equip.weapon, p.equip.armor, p.equip.horsePlus, p.equip.horseMinus, p.equip.treasure]) {
+    for (const eq of [p.equip.weapon, p.equip.armor, p.equip.horsePlus, p.equip.horseMinus]) {
       if (eq && eq.id === id) return eq;
     }
   }
@@ -258,7 +256,7 @@ function cardById(id: number): Card | undefined {
 
 /**
  * 根据选项的 value 推导一句话语义注解（无需调用点显式填充）。
- * - 技能:直接复用 skilldefs 的 desc（现成中文描述,含「需答题」等提示）
+ * - 技能:直接复用 talentdefs 的 desc（现成中文描述,含「需答题」等提示）
  * - 卡牌:按 sub / 属性生成精简效果
  */
 function deriveHint(value: string | number, _label: string): string {

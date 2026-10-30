@@ -76,27 +76,28 @@ page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
 
-// 1. 登记表自检：48 名原著角色、技能 id 唯一、无缺失定义、齐休三技能
+// 1. 登记表自检：61 名原著角色、天赋 id 唯一、无缺失定义
 const audit = await page.evaluate(() => window.xtsSkillAudit());
-check('48 名原著角色全部加载', audit.chars === 48, `${audit.chars}`);
-check('技能定义数量充足（≥250）', audit.total >= 250, `${audit.total} 个`);
+check('61 名原著角色全部加载', audit.chars === 61, `${audit.chars}`);
+check('天赋定义数量充足（≥250）', audit.total >= 250, `${audit.total} 个`);
 check('所有角色 / 主公技均有定义', audit.missing.length === 0, audit.missing.join(','));
-check('技能 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
+check('天赋 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
 
-// 2. 齐休三技能（明己心 / 不在算中 / 命演术）为基准，核心 12 人各 3 技能
-check('齐休为三技能角色（明己心 / 不在算中 / 命演术）',
-  audit.qixiu.length === 3 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_buzai') && audit.qixiu.includes('zml_qixiu_mingyan'),
+// 2. 齐休三天赋（明己心 / 见人性 / 哼哈真言）—— 已避开牌堆中的「不在算中」「命演术」
+check('齐休为三天赋角色（明己心 / 见人性 / 哼哈真言）',
+  audit.qixiu.length === 3 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_jianrenxing') && audit.qixiu.includes('zml_qixiu_hengha'),
   audit.qixiu.join(','));
-check('核心 12 人为三技能角色', audit.multi.length === 12, `${audit.multi.length} 名：${audit.multi.join(',')}`);
+// 28 位主要角色重做后每人 2~3 个本命天赋，其余天赋已拆为通用技能 / 法宝卡
+check('多天赋角色数量合理（3~20 名）', audit.multi.length >= 3 && audit.multi.length <= 20, `${audit.multi.length} 名`);
 
-// 2.1 角色池（掌门路原著 48 人，不再有年级 / 学科分桶）
+// 2.1 角色池（掌门路原著 61 人，不再有年级 / 学科分桶）
 const pool = await page.evaluate(() => window.xtsSeniorPool());
-check('角色池全量加载', pool.count === 48, `${pool.count} 名`);
+check('角色池全量加载', pool.count === 61, `${pool.count} 名`);
 const factionNames = Object.keys(pool.byFaction || {});
-check('角色按势力分布', factionNames.length >= 9, `${factionNames.length} 个势力`);
-check('角色均为 1~3 技能', pool.chars.every((c) => c.skills.length >= 1 && c.skills.length <= 3), '');
-const allSkills = pool.chars.flatMap((c) => c.skills.map((s) => s.id));
-check('角色技能无缺失定义', pool.chars.every((c) => c.skills.every((s) => s.kind !== '')), `${allSkills.length} 个`);
+check('角色按势力分布', factionNames.length >= 10, `${factionNames.length} 个势力`);
+check('角色均为 1~3 个天赋', pool.chars.every((c) => c.talents.length >= 1 && c.talents.length <= 3), '');
+const allSkills = pool.chars.flatMap((c) => c.talents.map((s) => s.id));
+check('角色天赋无缺失定义', pool.chars.every((c) => c.talents.every((s) => s.kind !== '')), `${allSkills.length} 个`);
 
 // 3. 单局无头 AI 对战：从开局跑到 gameOver，无卡死、无 console error
 const one = await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);
