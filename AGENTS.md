@@ -56,3 +56,14 @@ npm run verify:dist    # 校验产物为自包含单文件 + CDN/bundled 双模�
 4. **Mutable shared state ownership**: `playLog` (log.ts), `chatMessages` (chat.ts), `ROLE_MARKS` (marks.ts), `SELECTED_*` (ui/lobby.ts), unread counters (ui/dock.ts) are `let`/objects owned by one module; other modules read via live bindings or call exported mutators. Do not assign to imported bindings.
 5. **Magic numbers are load-bearing**: 80ms sync debounce, 100/60 log caps, deck composition (30 sha / 15 shan / 8 tao / 5 jiu / tricks / equips), `xts-` peer ID prefix, 6-digit room codes, AI probabilities.
 6. `dist/掌门杀.html` must remain a drop-in single-file game — verify with `npm run verify:dist` and the smoke scripts above after any change.
+
+## Release Convention（发布规范）
+
+发版走「打 `vX.Y.Z` 标签 → 推送 → GitHub Actions 自动构建并发布 Release（含 Gitee 镜像）」流程（`.github/workflows/release.yml`）。**发布时 `package.json` 的 `version` 必须与标签号保持一致**：
+
+1. **发版前先把 `package.json` 的 `version` 改为目标版本号**（`0.1.2` → `0.1.3`），与即将打的 `v0.1.3` 标签完全对应（去掉 `v` 前缀）。
+2. 单独提交该版本号变更（`chore(release): 同步 package.json version 至 vX.Y.Z`），再合并 / 推到 `main`。
+3. 打标签并推送：`git tag -a vX.Y.Z -m "vX.Y.Z —— <一句话说明>" && git push origin main --tags`。
+4. CI 在发布流程中会自动校验并把 `package.json` 版本号同步到标签（若忘记手动改，CI 会回写并提交到 `main`，不会因此阻断发版）——但**人工发版仍应主动改对**，避免 `main` 上出现多余的回写提交。
+
+> 版本号是给用户 / 下游识别发布内容的唯一元数据；遗漏会导致「已发布」却显示旧版本。这是发布清单的硬性第一步，不可跳过。

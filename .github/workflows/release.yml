@@ -36,6 +36,24 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      # 发布规范：package.json 的 version 必须与标签一致。
+      # 若发版时遗漏手动修改，这里自动回写为标签号并提交到 main，确保「发布即同步版本号」。
+      - name: 同步 package.json 版本号到标签
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          VER="${TAG#v}"
+          node -e "const fs=require('fs');const p='package.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));if(j.version!=='$VER'){j.version='$VER';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');console.log('package.json 版本已回写为 '+'$VER');}else{console.log('package.json 版本已为 '+'$VER');}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          # 仅当确有修改时才提交，避免重复空提交
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): 同步 package.json version 至 ${TAG}"
+            git push origin HEAD:main
+          fi
+
       - name: TypeScript 严格模式检查
         run: npm run typecheck
 
