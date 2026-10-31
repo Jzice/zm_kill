@@ -41,7 +41,7 @@ export const ZML_POOL_TALENT_LIST: TalentDef[] = [
   /* 何玉（补 1：冰棱地刺 / 神傀化身 / 水土双本命 → 4） */
   { id: 'zml_heyu_tongcan', name: '同参流水', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名已受伤角色回复 1 点体力（同参流水菩提串，济度同门）。出处：docs/md/角色/散修/03.金丹/何玉.md', effects: [{ kind: 'targetHeal', n: 1 }] },
   /* 熊十四（补 2：北烈山 / 首位金丹 → 4） */
-  { id: 'zml_xiongshisi_zhongjia', name: '熊氏重甲', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：获得 2 点护盾（北烈山熊氏重甲，护体如城）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'shield', n: 2 }] },
+  { id: 'zml_xiongshisi_huti', name: '熊家护体', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：获得 2 点护盾（北烈山熊氏护体如城）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'shield', n: 2 }] },
   { id: 'zml_xiongshisi_fuyong', name: '附庸', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：将 1 张手牌交给一名其他角色（熊家附庸，结好同门）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'giveHand', n: 1 }] },
   /* 赵瑶（补 2：以杀证道 / 入魔 / 魔化 → 4） */
   { id: 'zml_zhaoyao_guifan', name: '鬼幡', kind: 'active', timing: 'active', limit: 'perTurn', cost: { hand: 1 }, desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点鬼物属性伤害（鬼幡内含霍虎魂魄）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', attr: 'guiwu', effects: [{ kind: 'targetDamage', n: 1, attr: 'guiwu' }] },
@@ -74,7 +74,7 @@ export const ZML_POOL_TALENT_LIST: TalentDef[] = [
   { id: 'zml_xingxi_zhifa2', name: '执法如山', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名其他角色弃置 1 张手牌（执法峰座主，铁面无私）。出处：docs/md/角色/齐云/05.化神/刑铣.md', effects: [{ kind: 'targetDiscard', n: 1 }] },
   { id: 'zml_xingxi_guiju', name: '规矩', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +1（「照规矩办就是公平」，依规而行）。出处：docs/md/角色/齐云/05.化神/刑铣.md', effects: [{ kind: 'handLimit', n: 1 }] },
   /* 天地峰座主（补 2：千丈法相 / 唯我独尊 → 4） */
-  { id: 'zml_tiandifeng_yizhang', name: '一掌', kind: 'active', timing: 'active', limit: 'perTurn', cost: { hand: 1 }, desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 2 点伤害（化神一掌，势不可挡）。出处：docs/md/角色/齐云/05.化神/天地峰座主.md', effects: [{ kind: 'costThenDamage', cost: 1, dmg: 2 }] },
+  { id: 'zml_tiandifeng_shibudang', name: '势不可挡', kind: 'active', timing: 'active', limit: 'perTurn', cost: { hand: 1 }, desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 2 点伤害（化神威势，势不可挡）。出处：docs/md/角色/齐云/05.化神/天地峰座主.md', effects: [{ kind: 'costThenDamage', cost: 1, dmg: 2 }] },
   { id: 'zml_tiandifeng_weiyan', name: '天地峰威压', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +1（天上天下唯我独尊，威压一界）。出处：docs/md/角色/齐云/05.化神/天地峰座主.md', effects: [{ kind: 'handLimit', n: 1 }] },
   /* 南宫木（补 2：青木为龙 / 追缉 → 4） */
   { id: 'zml_nangongmu_muda', name: '木之大道', kind: 'passive', timing: 'passive', desc: '你受到的雷属性伤害 -1（木之大道护持）。出处：docs/md/角色/齐云/05.化神/南宫木.md', effects: [{ kind: 'reduceDamage', types: ['thunder'], n: 1 }] },
@@ -83,7 +83,7 @@ export const ZML_POOL_TALENT_LIST: TalentDef[] = [
   { id: 'zml_nangongmeng_bihu', name: '碧湖', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名已受伤角色回复 1 点体力（碧湖共管，泽被同门）。出处：docs/md/角色/齐云/04.元婴/南宫梦.md', effects: [{ kind: 'targetHeal', n: 1 }] },
   { id: 'zml_nangongmeng_konggu', name: '空谷幽兰', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +1（空谷幽兰，静水深流）。出处：docs/md/角色/齐云/04.元婴/南宫梦.md', effects: [{ kind: 'handLimit', n: 1 }] },
   /* 南宫嫣然（补 2：联姻 / 护身项链 → 4） */
-  { id: 'zml_nangongyanran_weiliu', name: '伪六道', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名其他角色弃置 1 张手牌（黑河峰底伪六道空间，困敌于阵）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'targetDiscard', n: 1 }] },
+  { id: 'zml_nangongyanran_weiliu', name: '六道轮回', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名其他角色弃置 1 张手牌（黑河峰底六道轮回空间，困敌于阵）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'targetDiscard', n: 1 }] },
   { id: 'zml_nangongyanran_hulian', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，摸 1 张牌（护身项链护体，反噬未成）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'selfDraw', n: 1 }] },
   /* 刑剑（补 2：执法 / 追缉 → 4） */
   { id: 'zml_xingjian_zhifa2', name: '执法峰', kind: 'active', timing: 'active', limit: 'perTurn', desc: '出牌阶段限一次：令一名其他角色弃置 1 张手牌（执法峰弟子，依律行事）。出处：docs/md/角色/齐云/03.金丹/刑剑.md', effects: [{ kind: 'targetDiscard', n: 1 }] },

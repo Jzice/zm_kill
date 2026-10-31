@@ -69,7 +69,10 @@ export function blockedSuitOf(p: Player): string | null {
 /** 该角色当前能否使用 / 打出这张牌（花色封锁判定；弃置不受影响） */
 export function canUseCard(p: Player, c: Card): boolean {
   const b = blockedSuitOf(p);
-  return !b || c.suit !== b;
+  if (b && c.suit === b) return false;
+  // 【命演术】：每局限一次，且自损 1 点体力 → 已用过或体力不足 2 点时不可使用（手牌置灰）
+  if (c.sub === 'mingyan' && (p.skillGame?.['mingyan'] || p.hp <= 1)) return false;
+  return true;
 }
 
 /** 手牌中「可使用」且满足谓词的牌（统一过滤花色封锁，供出杀 / 出闪 / 响应 AOE 复用） */

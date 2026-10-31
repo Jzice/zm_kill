@@ -54,7 +54,9 @@ function ensure(o: number, t: number): Scores {
   if (!s) {
     s = blank();
     const tp = G.players[t];
-    if (tp?.roleRevealed) {
+    // 公开身份（roleRevealed）或【命演术】私有洞悉（roleKnownTo 含观察者）→ 直接锚定
+    const known = !!tp && (tp.roleRevealed || !!tp.roleKnownTo?.includes(o));
+    if (known && tp) {
       s = blank();
       s[tp.role as RoleKey] = CLAMP;
     }
@@ -69,6 +71,11 @@ export function beliefProbs(o: number, t: number): Scores {
   const out = blank();
   if (!tp) return out;
   if (tp.roleRevealed) {
+    out[tp.role as RoleKey] = 1;
+    return out;
+  }
+  // 【命演术】私有洞悉：只有洞悉者本人获得确定信念
+  if (tp.roleKnownTo?.includes(o)) {
     out[tp.role as RoleKey] = 1;
     return out;
   }

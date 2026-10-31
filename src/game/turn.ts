@@ -470,6 +470,17 @@ export async function playPhase(idx: number): Promise<void> {
     } else if (kind === 'skill') {
       let tgt: number | null = null;
       let second: number | null = null;
+      // 【命演术】：每局限一次，且自损 1 点体力（hp<=1 时禁用）—— 先拦截并给出明确提示
+      if (card.sub === 'mingyan') {
+        if (p.skillGame?.['mingyan']) {
+          addLog('【命演术】每局限使用一次，本局已问过天机', 'hl');
+          continue;
+        }
+        if (p.hp <= 1) {
+          addLog('【命演术】体力不足 2 点，强行推演将自损而亡', 'hl');
+          continue;
+        }
+      }
       // 混元剑狱：可重铸（弃此牌摸一张）
       if (card.sub === 'tiesuo') {
         const recast =
@@ -494,7 +505,7 @@ export async function playPhase(idx: number): Promise<void> {
         tgt = tgts[0];
         second = tgts[1] ?? null;
       } else if (
-        ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong'].includes(card.sub) ||
+        ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'mingyan'].includes(card.sub) ||
         ONE_TARGET_TRICKS.includes(card.sub) ||
         DELAY_TRICK_SUBS.includes(card.sub) ||
         trickDefOf(card.sub)?.target === 'one'

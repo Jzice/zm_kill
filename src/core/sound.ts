@@ -92,6 +92,7 @@ export const Sound = {
         break;
       /* --- 锦囊牌 --- */
       case 'skill':
+        // 锦囊 / 技能类牌（未细分到具体子类）的通用琶音
         S([784, 1046, 1318], 0.06, 0.24, 'triangle', 0.09);
         break;
       case 'trick_aoe':
@@ -115,10 +116,6 @@ export const Sound = {
         S([440, 494, 440, 494], 0.09, 0.22, 'square', 0.07);
         break;
       /* --- 技能 / 答题 --- */
-      case 'skill':
-        N(280, 0.45, 'sawtooth', 0.09);
-        N(560, 0.3, 'triangle', 0.05, 0.05);
-        break;
       case 'skill_fail':
         S([440, 330, 247], 0.08, 0.24, 'triangle', 0.08);
         break;

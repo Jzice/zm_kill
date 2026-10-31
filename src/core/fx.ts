@@ -68,7 +68,7 @@ export const FX = {
     this.hitShake(idx);
     const f = document.createElement('div');
     f.className = 'slash-fx';
-    f.textContent = '攻击';
+    f.textContent = '击';
     f.style.left = a.x - 35 + 'px';
     f.style.top = a.y - 40 + 'px';
     document.getElementById('fxLayer')!.appendChild(f);
@@ -82,7 +82,7 @@ export const FX = {
     r.style.left = a.x - 60 + 'px';
     r.style.top = a.y - 60 + 'px';
     document.getElementById('fxLayer')!.appendChild(r);
-    floatTextFx(idx, '防御', '#4af');
+    floatTextFx(idx, '守', '#4af');
     setTimeout(() => r.remove(), 720);
     await sleep(320);
   },

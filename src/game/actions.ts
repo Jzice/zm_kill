@@ -36,7 +36,9 @@ import {
   tryNumGuard,
   tryPreventShaDamage,
   tryReflect,
+  tryReplaceJudge,
 } from './talentEngine';
+import { dyingPhase } from './damage';
 import { isZml } from '../core/mode';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
@@ -502,7 +504,7 @@ export async function useSkill(
     'wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan',
     'jiedao', 'wugu', 'tiesuo', 'huogong',
     // 掌门路原著机制卡（可被【不在算中】抵消）
-    'guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi',
+    'guidai', 'daizheng', 'mingyan', 'guanding', 'tongshi', 'quanzhi',
     // 扩展包锦囊（应变篇 / 国战）；延时类 lebu / shandian / bingliang 不在此列，与既有口径一致
     ...COUNTERABLE_EXTRA_TRICKS,
   ];
@@ -988,6 +990,47 @@ export async function useSkill(
       break;
     }
     case 'mingyan': {
+      // 【命演术】指定一名其他角色：其翻判定牌，♥红桃则你查看其隐藏身份（仅你可见）。
+      // 代价：使用者失去 1 点体力；限制：每名角色每局只能使用一次（skillGame）。
+      if (targetIdx == null) break;
+      const mt = G.players[targetIdx];
+      if (!mt || !mt.alive) break;
+      if (!canBeTarget(targetIdx, 'skill', '命演术', card.suit)) {
+        addLog(`【命演术】${mt.name} 命数不可测（不在算中）`, 'hl');
+        break;
+      }
+      a.skillGame = a.skillGame || {};
+      if (a.skillGame['mingyan']) {
+        addLog(`【命演术】${a.name} 本局已问过天机，不可再问`, 'hl');
+        break;
+      }
+      a.skillGame['mingyan'] = 1;
+      // 代价：失去 1 点体力（非伤害，护甲 / 减伤不参与）
+      a.hp -= 1;
+      floatTextFx(attackerIdx, '-1', '#e74c3c');
+      addLog(`【命演术】${a.name} 折损 1 点体力，强推天机`, 'hl');
+      render();
+      if (a.hp <= 0 && a.alive) {
+        await dyingPhase(attackerIdx, -1);
+        break;
+      }
+      // 目标判定（目标可改判，与延时锦囊口径一致）
+      let mjc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+      mjc = await tryReplaceJudge(targetIdx, mjc);
+      addLog(`${mt.name} 判定：${mjc.suit}${mjc.num}`, 'hl');
+      await FX.judge(targetIdx, mjc);
+      G.discard.push(mjc);
+      if (mjc.suit === '♥') {
+        // 私有揭示：只记录「谁知道」，绝不置 roleRevealed（全场公开）
+        mt.roleKnownTo = [...(mt.roleKnownTo || []), attackerIdx];
+        addLog(`【命演术】${a.name} 洞悉了 ${mt.name} 的身份（仅其本人可见）`, 'hl');
+      } else {
+        addLog('【命演术】命数未显，未能洞悉', 'hl');
+      }
+      break;
+    }
+    case 'guanding': {
+      // 「观顶」旧效（原 mingyan）：观看牌堆顶 3 张，取 1 张入手，其余按原顺序放回
       const top: Card[] = [];
       for (let i = 0; i < 3 && G.deck.length; i++) {
         const c = G.deck.pop();
@@ -997,7 +1040,7 @@ export async function useSkill(
         const pick = top[0];
         a.hand.push(pick);
         for (let i = top.length - 1; i >= 1; i--) G.deck.push(top[i]);
-        addLog(`【命演术】${a.name} 推演天机，将【${pick.name}】纳入手中`, 'hl');
+        addLog(`【命演术·观顶】${a.name} 推演天机，将【${pick.name}】纳入手中`, 'hl');
       }
       break;
     }

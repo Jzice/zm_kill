@@ -84,21 +84,23 @@ await page.goto(url, { waitUntil: 'networkidle' });
 // 清空上次的开局记忆，保证卡包勾选状态从「仅基础包」开始
 await page.evaluate(() => localStorage.removeItem('xuetangsha_setup_v1'));
 await page.reload({ waitUntil: 'networkidle' });
+// 等待应用初始化完毕（main.ts 在模块末尾挂载 __xts* 调试接口）——避免 reload 后立刻取函数触发启动竞态
+await page.waitForFunction(() => typeof window.__xtsDeckStats === 'function', null, { timeout: 15000 });
 
-/* ---------- 1. 零回归：修真牌堆构成（237 张） ---------- */
+/* ---------- 1. 零回归：修真牌堆构成（229 张） ---------- */
 // 牌堆已统一为「全修真」牌堆（`buildDeck` → `buildZmlDeck`，经典扩展包卡不再投放）。
 // 下表是当前修真牌堆的各 sub 基线张数，用于回归比对。
 const BASE = {
   // 基本牌（攻击 / 防御 / 恢复 / 增益）
   sha: 20, huo: 5, lei: 5, shan: 15, tao: 8, jiu: 5,
   // 通用锦囊
-  wuzhong: 7, guohe: 8, shunshou: 5, juedou: 3, nanman: 7, wanjian: 3,
-  taoyuan: 2, wuxie: 4, lebu: 5, shandian: 2, jiedao: 3, wugu: 2,
+  wuzhong: 7, guohe: 8, shunshou: 5, juedou: 3, nanman: 6, wanjian: 2,
+  taoyuan: 2, wuxie: 4, lebu: 5, shandian: 2, jiedao: 2, wugu: 2,
   tiesuo: 6, huogong: 6, bingliang: 2,
-  // 角色专属 / 机制锦囊
-  mingyan: 6, tongshi: 2, guidai: 2, daizheng: 1, quanzhi: 1, dan: 3,
+  // 角色专属 / 机制锦囊（命演术改用 mingyan 新效；观顶三卡迁至 guanding）
+  mingyan: 1, guanding: 3, tongshi: 2, guidai: 2, daizheng: 1, quanzhi: 1, dan: 3,
   // 装备（兵器 / 防具 / 坐骑 / 法宝）
-  weapon: 11, armor: 7, 'horse+': 6, 'horse-': 5, fabao: 70,
+  weapon: 16, armor: 7, 'horse+': 6, 'horse-': 5, fabao: 62,
 };
 
 const baseStats = await page.evaluate(() => window.__xtsDeckStats([]));
@@ -112,7 +114,7 @@ for (const [sub, n] of Object.entries(BASE)) {
 }
 check('零回归·修真牌堆各子类张数与基线一致', baseOk, diffs.length ? diffs.join('；') : `${Object.keys(BASE).length} 个子类全部匹配`);
 const baseTotal = Object.values(baseStats).reduce((s, n) => s + n, 0);
-check('零回归·修真牌堆总量 = 237 张', baseTotal === 237, `共 ${baseTotal} 张`);
+check('零回归·修真牌堆总量 = 229 张', baseTotal === 229, `共 ${baseTotal} 张`);
 // 扩展包专属 sub 不应出现在基础牌堆中（经典扩展包卡尚未修真化，暂不投放）
 const EXTRA_ONLY = ['zhiji', 'shuishui', 'caomu', 'yuanjiao', 'yiyi', 'huoshao', 'diaohu', 'lianjun', 'chiling', 'wuxieguo', 'qilin', 'zhuque', 'yinyue', 'qixing', 'taiping', 'mingguang', 'wuliu', 'muyu'];
 const noExtra = EXTRA_ONLY.every((s) => !baseStats[s]);

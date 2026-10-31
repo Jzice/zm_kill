@@ -72,6 +72,16 @@ async function aiPlayExtraTricks(idx: number): Promise<void> {
     await useSkill(idx, c, tgt);
     await sleep(300);
   };
+  // 【命演术】：每局限一次且自损 1 点体力 → 仅在体力充裕时对尚未洞悉的高价值目标使用
+  if (p.hand.some((c) => c.sub === 'mingyan') && !p.skillGame?.['mingyan'] && p.hp > 2) {
+    const cands = alive()
+      .filter((q) => !q.roleKnownTo?.includes(idx))
+      .map((q) => G.players.indexOf(q));
+    if (cands.length) {
+      const best = cands.slice().sort((x, y) => targetScore(idx, y) - targetScore(idx, x))[0];
+      if (best >= 0) await play('mingyan', best);
+    }
+  }
   // 兵粮寸断：给敌方主力断补给（【太平要术】免疫延时锦囊，须排除）
   if (p.hand.some((c) => c.sub === 'bingliang')) {
     await play('bingliang', pickEnemy((q) => q.equip.armor?.skill !== 'taiping'));

@@ -602,7 +602,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
 
   /* ---- 南宫嫣然 ---- */
   { id: 'zml_nangongyanran_lianyin', name: '联姻', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色摸 1 张牌，然后你摸 1 张（南宫家以联姻换取楚秦门参与探宝）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', limit: 'perTurn', effects: [{ kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }] },
-  { id: 'zml_nangongyanran_hushen', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你被【攻击】造成伤害后，对伤害来源造成 1 点伤害（伪六道空间中护身项链反击，杀死秦思瑶）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }] },
+  { id: 'zml_nangongyanran_hushen', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你被【攻击】造成伤害后，对伤害来源造成 1 点伤害（六道轮回空间中护身项链反击，杀死秦思瑶）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }] },
 
   /* ---- 法引 ---- */
   { id: 'zml_fayin_xuncha', name: '巡察使', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色选择：弃置 1 张手牌，或令你观看其手牌（受齐休安置为楚秦巡察使，立誓震慑众家主）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'targetChoose', maxTargets: 1, options: [[{ kind: 'targetDiscard', n: 1 }], [{ kind: 'peekHand', then: 'toDeckTop' }]] }] },
@@ -616,11 +616,11 @@ export const ZML_TALENT_LIST: TalentDef[] = [
   { id: 'zml_xingshi_xiuhun', name: '嗅魂', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，令伤害来源失去 1 点体力（昏睡中凭鼻子一嗅即可吸走修士灵魂，潜意识扑击瞬杀元婴）。出处：docs/md/角色/蛮荒/05.化神/醒狮.md', effects: [{ kind: 'targetLoseHp', n: 1 }] },
 
   /* ==================== 十大门派主公技（掌门路） ==================== */
-  { id: 'zml_lord_chuqin', name: '开山立派', kind: 'lord', timing: 'passive', desc: '主公技：你的手牌上限 +2（楚秦门自白山北部开山立派，门人归附）。出处：L-大周书院宗法制.md · 开辟之功', effects: [{ kind: 'handLimit', n: 2 }] },
-  { id: 'zml_lord_qiyun', name: '天地峰令', kind: 'lord', timing: 'active', desc: '主公技：出牌阶段限一次，令一名其他角色弃置 1 张手牌（齐云天地峰座主号令诸派）。出处：势力·齐云条目', limit: 'perTurn', effects: [{ kind: 'targetDiscard', n: 1 }] },
+  { id: 'zml_lord_chuqin', name: '同生共死', kind: 'lord', timing: 'active', limit: 'perTurn', desc: '主公技：出牌阶段限一次，令一名其他角色回复 1 点体力，然后你摸 1 张牌（楚秦门诸家合流，同生共死）。出处：docs/md/势力/000.楚秦门/功法传承.md', effects: [{ kind: 'targetHeal', n: 1 }, { kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_lord_qiyun', name: '天地独尊', kind: 'lord', timing: 'passive', desc: '主公技：你的手牌上限 +2，攻击范围 +1（齐云天地峰座主，天上天下唯我独尊）。出处：势力·齐云条目', effects: [{ kind: 'handLimit', n: 2 }, { kind: 'rangePlus', n: 1 }] },
   { id: 'zml_lord_baishan', name: '转世轮回', kind: 'lord', timing: 'onDamaged', desc: '主公技：你受到伤害后，回复 1 点体力（白山之主双星化神，转世轮回）。出处：白山·贾长庚条目', effects: [{ kind: 'selfHeal', n: 1 }] },
   { id: 'zml_lord_yushou', name: '开辟特权', kind: 'lord', timing: 'onTurnStart', desc: '主公技：准备阶段，你可摸 1 张牌（御兽门可独立发动开辟战争之特权）。出处：势力·御兽门条目', effects: [{ kind: 'selfDraw', n: 1 }] },
-  { id: 'zml_lord_dazhou', name: '三代掌门制', kind: 'lord', timing: 'onDraw', desc: '主公技：摸牌阶段额外摸 1 张（大周书院三代掌门制，制度之利）。出处：L-大周书院宗法制.md', effects: [{ kind: 'extraDraw', n: 1 }] },
+  { id: 'zml_lord_dazhou', name: '宗法制', kind: 'lord', timing: 'active', limit: 'perTurn', desc: '主公技：摸牌阶段额外摸 1 张（分封三代，制度之利）；出牌阶段限一次，令一名其他角色弃置 1 张手牌（宗法森严）。出处：L-大周书院宗法制.md', effects: [{ kind: 'targetDiscard', n: 1 }, { kind: 'extraDraw', n: 1 }] },
   { id: 'zml_lord_qinglian', name: '剑心通明', kind: 'lord', timing: 'passive', desc: '主公技：你的攻击范围 +1（青莲剑宗，剑修圣地）。出处：青莲剑宗·聂疯子条目', effects: [{ kind: 'rangePlus', n: 1 }] },
   { id: 'zml_lord_nanlin', name: '枯荣禅意', kind: 'lord', timing: 'onDamaged', desc: '主公技：你受到伤害后，令来源弃置 1 张手牌（佛门禅意反震）。出处：南林寺·枯荣条目', effects: [{ kind: 'targetDiscard', n: 1 }] },
   { id: 'zml_lord_waihai', name: '海东军务', kind: 'lord', timing: 'passive', desc: '主公技：你造成的伤害 +1（外海芩家主持海东军务）。出处：势力/008.外海·芩熙照条目', effects: [{ kind: 'damageMod', delta: 1 }] },

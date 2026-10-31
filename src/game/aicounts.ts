@@ -15,7 +15,7 @@ import type { CardPackId } from '../data/cardPacks';
 
 /**
  * 基础牌堆构成（与 data/cards.ts::buildDeck 无参调用一一对应）。
- * 直接由修真牌堆定义派生，避免硬编码张数与实际牌堆漂移（当前 237 张）。
+ * 直接由修真牌堆定义派生，避免硬编码张数与实际牌堆漂移（当前 229 张）。
  */
 export const BASE_DECK_TOTAL: Record<string, number> = (() => {
   const m: Record<string, number> = {};
@@ -24,7 +24,7 @@ export const BASE_DECK_TOTAL: Record<string, number> = (() => {
 })();
 
 /**
- * 当前牌堆构成 = 修真牌堆构成（237 张）。
+ * 当前牌堆构成 = 修真牌堆构成（229 张）。
  * 由 game/setup.ts 在 buildDeck 之后调用 applyDeckComposition() 刷新，
  * 使 AI 的概率分母与实际牌堆严格一致。
  * 注：经典扩展包卡尚未修真化，`buildDeck` 不投放它们，故分母只取基础牌堆构成；

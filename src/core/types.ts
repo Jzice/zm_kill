@@ -634,6 +634,11 @@ export interface Player {
   skillUse?: Record<string, number>;
   /** 限定技 / 觉醒技整局使用记录（技能 id → 1），随 state_sync 下发 */
   skillGame?: Record<string, number>;
+  /**
+   * 已知该角色真实身份的观察者座位号（私有揭示，如【命演术】）。
+   * 只影响该观察者本地界面与 AI 信念，**不置 roleRevealed**（后者是全场公开）；联机随 Player 整体同步。
+   */
+  roleKnownTo?: number[];
   /** 自定义标记（居里夫人「辐射」等），回合开始结算 */
   marks?: Record<string, number>;
   /** 本回合已使用过的牌花色集合（门捷列夫·元素「三花色收集」判据），回合初清空 */

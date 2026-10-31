@@ -89,18 +89,18 @@ await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 check('进入对局设置子界面', await page.isVisible('#screenSetup.active'));
 
-// 2. 对局模式选择器：3 个模式，可切到掌门路
+// 2. 对局模式选择器：2 个模式（掌门路 / 开辟战争；经典模式已并入掌门路），可切到掌门路
 const modeBtns = await page.locator('#ruleModePicker .opt-btn').count();
-check('对局模式选择器渲染（经典 / 掌门路 / 开辟战争）', modeBtns === 3, `${modeBtns} 个`);
+check('对局模式选择器渲染（掌门路 / 开辟战争）', modeBtns === 2, `${modeBtns} 个`);
 await page.evaluate(() => window.setRuleMode('zml'));
 await page.waitForTimeout(200);
 const activeMode = await page.locator('#ruleModePicker .opt-btn.active').first().textContent();
 check('已切换到掌门路模式', (activeMode || '').includes('掌门路'), (activeMode || '').trim().slice(0, 10));
 
-// 3. 修真牌堆 234 张与关键卡名
+// 3. 修真牌堆 229 张与关键卡名
 const stats = await page.evaluate(() => (window.__xtsZmlDeckStats ? window.__xtsZmlDeckStats() : {}));
 const total = Object.values(stats).reduce((s, n) => s + n, 0);
-check('掌门路牌堆共 234 张', total === 234, `${total} 张`);
+check('掌门路牌堆共 229 张', total === 229, `${total} 张`);
 const mustHave = ['蔓藤符', '碧磷斩', '伏虎夺法', '黑炎凤凰符宝', '五雷焚心符', '遥及闪', '泼风盾舞', '灵猴身法', '回春丹', '大还丹', '真源丹', '豹胎玄极丹', '哼哈真言', '不在算中', '决斗', '魔灾泛起', '万剑钻心', '天劫', '三木回心阵', '七星定身阵', '混元剑狱', '极寒碧火诀', '趋吉避凶诀', '破阵符', '敛息诀', '银甲乐傀召唤符', '同参木阵', '诡代之法', '命演术', '通明身识', '全知天眼'];
 const missing = mustHave.filter((n) => !stats[n]);
 check('关键修真卡全部入池', missing.length === 0, missing.length ? `缺：${missing.join('、')}` : `${mustHave.length} 种`);

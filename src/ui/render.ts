@@ -1,5 +1,5 @@
 /* ==================== 渲染 ==================== */
-import type { EquipSlot, Player } from '../core/types';
+import type { Card, EquipSlot, Player } from '../core/types';
 import { G } from '../game/state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_ICON, EQUIP_SHORT } from '../data/characters';
@@ -38,7 +38,9 @@ function buildPlayerCard(p: Player, i: number): string {
   // 大模型接管座位正在「思考中」：显示呼吸式指示，随 state_sync 下发到联机客人端
   const isThinking = G.thinkingSeat === i;
   const mark = ROLE_MARKS[i];
-  const isMarked = !!mark && !isSelf && !p.roleRevealed;
+  // 【命演术】私有揭示：仅「我」已知该角色真实身份（且尚未全场公开）
+  const known = !isSelf && !p.roleRevealed && !!p.roleKnownTo?.includes(G.myPlayerIdx);
+  const isMarked = !!mark && !isSelf && !p.roleRevealed && !known;
   // 掌门路：角色道统徽标（经典模式无该字段，不渲染）
   const tao = isZml(G.mode) ? charTaoism(p.charId) : undefined;
   const taoTag = tao ? `<span class="taoism-tag taoism-${tao}" title="道统：${TAOISM_LABEL[tao]}">${TAOISM_LABEL[tao]}</span>` : '';
@@ -47,7 +49,7 @@ function buildPlayerCard(p: Player, i: number): string {
   const zl = (r: 'lord' | 'loyal' | 'rebel' | 'spy'): string => zmlRoleLabel(r, G.mode) || ROLES[r].name;
   let roleName: string;
   let roleColor: string;
-  if (isSelf || p.roleRevealed) {
+  if (isSelf || p.roleRevealed || known) {
     roleName = '【' + zl(p.role) + '】';
     roleColor = ROLES[p.role].color;
   } else if (mark) {
@@ -106,6 +108,7 @@ function buildPlayerCard(p: Player, i: number): string {
     : '';
   let badges = '';
   if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${zl(p.role)}</span>`;
+  if (known) badges += `<span class="badge badge-known" title="【命演术】洞悉其身份（仅你可见）">✦洞悉</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
   if (p.chained) badges += `<span class="badge badge-chain" title="混元剑狱·横置：受属性伤害时传导">🔗连环</span>`;
   if (p.turned) badges += `<span class="badge badge-turned" title="翻面：跳过下一个回合">🔄翻面</span>`;
@@ -217,6 +220,19 @@ function handNumVal(num: string | number): number {
 function handSuitVal(suit: string): number {
   return HAND_SUIT_ORDER[suit] ?? 9;
 }
+/**
+ * 手牌卡面「中间小字」：
+ * - 基本牌 → 功能副题（攻击 / 防御 / 烈火攻击 / 雷霆攻击 / 恢复 / 增益）
+ * - 符箓卡（category 'fulu'）→「符箓」
+ * - 法宝卡（category 'fabao'）→「法宝」
+ * - 功法 / 阵法 / 技能类 → 空（不重复卡名）
+ */
+function cardMiddleText(c: Card): string {
+  if (c.type === 'basic') return c.subtitle || '';
+  if (c.category === 'fulu') return '符箓';
+  if (c.category === 'fabao') return '法宝';
+  return '';
+}
 
 export function render(): void {
   // 无头模拟模式：跳过整屏重绘（scripts/balance.mjs 批量跑局用）
@@ -236,7 +252,7 @@ export function render(): void {
   } else if (G.pendingOptions && G.pendingPlayer === G.myPlayerIdx) {
     const type = G.pendingType;
     if (type === 'play') {
-      hintText = '💡 点击手牌出牌 · 点击技能 · 或结束出牌';
+      hintText = '💡 点击手牌出牌（攻击 / 防）· 点击技能 · 或结束出牌';
       hintClass = 'hint-play';
       const skillBtns = G.pendingOptions.filter((o) => typeof o.value === 'string' && o.value.startsWith('skill_'));
       skillBtns.forEach((o) => {
@@ -321,7 +337,10 @@ export function render(): void {
         const typeName = c.type === 'basic' ? '基本' : c.type === 'skill' ? '技能' : '装备';
         // 掌门路 / 开辟战争：卡面属性 / 道统徽标
         const chips = isZml(G.mode) ? cardChips(c) : '';
-        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}>${chips}<span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${typeName}</span></div>`;
+        // 卡面中间小字：基本牌功能 / 符箓 / 法宝
+        const mid = cardMiddleText(c);
+        const midHtml = mid ? `<span class="csub">${mid}</span>` : '';
+        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}>${chips}<span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span>${midHtml}<span class="ctype">${typeName}</span></div>`;
       })
       .join('') || '<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
 

@@ -1,4 +1,4 @@
-/* ==================== 掌门路修真牌堆（237 张） ====================
+/* ==================== 掌门路修真牌堆（229 张） ====================
  * 选词规则：所有卡名均出自 docs/（详见 docs/掌门路规则设计.md 的出处审计表）。
  *   - 基本牌按功能拆为修真变体（杀/火杀/雷杀/闪/桃/酒 各由功法、符箓、身法、丹药代替），sub 沿用引擎 key
  *   - 锦囊取自 功法(B) / 技能(K) / 符箓(C) / 本命天赋 / 原著灾劫
@@ -68,7 +68,7 @@ export const ZML_BASIC: ZmlCardDef[] = [
 export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'wuxie', name: '不在算中', type: 'skill', count: 4, desc: '抵消一张锦囊：对方推演落空、算计不着', src: 'docs/md/角色/楚秦门/03.金丹/齐休.md【不在算中】；docs/md/技能/命隐符.md' },
   { sub: 'wuzhong', name: '趋吉避凶诀', subtitle: '趋吉避凶诀', type: 'skill', count: 4, desc: '摸 2 张牌', src: 'docs/md/物事/功法.md · 趋吉避凶诀楚慧心改（一阶上品）' },
-  { sub: 'guohe', name: '破阵符', subtitle: '破阵符', type: 'skill', count: 6, desc: '弃置目标一张牌（装备优先）—— 破阵即破其护持', src: 'docs/md/物事/符篆.md · 一阶/二阶/高阶破阵符' },
+  { sub: 'guohe', name: '破阵符', subtitle: '破阵符', type: 'skill', count: 6, extra: { category: 'fulu' }, desc: '弃置目标一张牌（装备优先）—— 破阵即破其护持', src: 'docs/md/物事/符篆.md · 一阶/二阶/高阶破阵符' },
   { sub: 'shunshou', name: '敛息诀', subtitle: '敛息诀', type: 'skill', count: 5, desc: '获得距离 1 内目标一张牌 —— 敛息潜近、悄然取物', src: 'docs/md/物事/功法.md · 敛息诀（敛息术，楚夺、齐休所修）' },
   { sub: 'juedou', name: '决斗', subtitle: '金刚真言棒法', type: 'skill', count: 3, desc: '双方轮流打出【攻击】，败者受伤', src: 'docs/md/物事/功法.md · 金刚真言棒法（二阶下品佛门近战法术）' },
   { sub: 'nanman', name: '魔灾泛起', subtitle: '魔灾泛起', type: 'skill', count: 3, extra: { taoism: 'mo' }, desc: '群攻（魔物灾祸席卷），需打出【攻击】抵御', src: 'docs/raw 第022卷第557章「魔灾的全貌」；外海魔灾' },
@@ -77,14 +77,13 @@ export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'lebu', name: '七星定身阵', subtitle: '七星定身阵', type: 'skill', count: 3, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段', src: 'docs/md/技能/七星定身阵.md（七柄飞剑布阵锁定气机）' },
   { sub: 'bingliang', name: '哼哈真言', type: 'skill', count: 2, extra: { judgeType: 'bingliang' }, desc: '延时：判定若不为♣梅花，则跳过其摸牌阶段 —— 真言封喉、无从取物', src: 'docs/md/角色/楚秦门/03.金丹/齐休.md · 哼哈真言（真言破法）' },
   { sub: 'shandian', name: '天劫', subtitle: '天劫', type: 'skill', count: 2, extra: { judgeType: 'shandian', damageType: 'thunder' }, desc: '延时：判定若为♠黑桃 2~9，受到 3 点雷属性伤害', src: 'docs/md/设定/修行体系.md（九道雷劫 / 大道劫雷）；角色篇「天劫设定」' },
-  { sub: 'jiedao', name: '银甲乐傀召唤符', subtitle: '银甲乐傀召唤符', type: 'skill', count: 2, desc: '令一名角色对另一名角色打出【攻击】—— 驱傀儡代你出手', src: 'docs/md/物事/符篆.md · 银甲乐傀召唤符；docs/md/技能/银甲乐傀.md' },
+  { sub: 'jiedao', name: '银甲乐傀召唤符', subtitle: '银甲乐傀召唤符', type: 'skill', count: 2, extra: { category: 'fulu' }, desc: '令一名角色对另一名角色打出【攻击】—— 驱傀儡代你出手', src: 'docs/md/物事/符篆.md · 银甲乐傀召唤符；docs/md/技能/银甲乐傀.md' },
   { sub: 'wugu', name: '同参木阵', subtitle: '同参木阵', type: 'skill', count: 2, desc: '亮出若干张牌，存活者轮流各取 1 张 —— 同参共修、共享其利', src: 'docs/md/物事/功法.md · 同参木阵（一阶中品阵法，秦唯喻/阚缺/多罗森）' },
   { sub: 'tiesuo', name: '混元剑狱', subtitle: '混元剑狱', type: 'skill', count: 6, desc: '横置连环；属性伤害在所有连环角色间传导', src: 'docs/md/物事/功法.md · 混元剑狱（剑阵，齐妆）' },
   { sub: 'huogong', name: '极寒碧火诀', subtitle: '极寒碧火诀', type: 'skill', count: 3, extra: { damageType: 'fire', attr: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害', src: 'docs/md/物事/功法.md · 极寒碧火诀（二阶道书，斯温家）' },
   /* ---- 原著机制卡（新增 sub，由 actions.ts 专属 case 结算） ---- */
   { sub: 'guidai', name: '诡代之法', type: 'skill', count: 2, desc: '弃 1 张手牌，复制目标一个非限定技能直到你的下个回合开始', src: 'docs/md/设定/诡代法.md（楚秦门核心传承功法，以假代真）' },
   { sub: 'daizheng', name: '本命代征', type: 'skill', count: 1, desc: '弃 2 张手牌，本回合视为拥有目标的一个技能（超越代征物、显其本相）', src: 'docs/md/设定/本命代征.md（御兽门玉鹤所悟）' },
-  { sub: 'mingyan', name: '命演术', type: 'skill', count: 2, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'docs/md/技能/命演术.md（以十年阳寿推演命运之问）' },
   { sub: 'tongshi', name: '通明身识', type: 'skill', count: 2, desc: '本回合内你不能成为锦囊牌的目标', src: 'docs/md/技能/通明身识.md（融伪装、防御、隐匿为一体）' },
   { sub: 'quanzhi', name: '全知天眼', type: 'skill', count: 1, desc: '观看目标手牌并公开其本命；目标对你 +1 敌意（探听本命即结怨）', src: 'docs/md/物事/法器.md · 通明幻镜【全知天眼】；docs/md/设定/本命.md' },
   /* ---- 修为丹药（新增 sub 'dan'，服用后提升修为，可借此冲击境界突破） ---- */
@@ -94,9 +93,9 @@ export const ZML_TRICK: ZmlCardDef[] = [
 /** 新增修真锦囊的 sub（需在 actions.ts 中结算） */
 export const ZML_NEW_TRICK_SUBS: string[] = ['guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi', 'dan'];
 
-/* ---------------- 装备牌 31 张 ---------------- */
+/* ---------------- 装备牌 36 张 ---------------- */
 export const ZML_EQUIP: ZmlCardDef[] = [
-  /* 兵器法宝 10（品阶映射攻击范围；仅作装备） */
+  /* 兵器法宝 15（品阶映射攻击范围；仅作装备；含新增 5 把无形剑 / 七星斩元剑） */
   { sub: 'weapon', name: '灵狐剑匣', type: 'equip', count: 2, extra: { range: 1, skill: 'liannu' }, desc: '攻击范围 1；【匣中万剑】你使用【攻击】无次数限制', src: 'docs/md/物事/法宝/法宝列表.md（齐妆本命法宝）' },
   { sub: 'weapon', name: '伪无形剑', type: 'equip', count: 1, extra: { range: 4 }, desc: '攻击范围 4；【无形】不可被【破阵符】/【敛息诀】指定', src: 'docs/md/物事/法器.md（莫剑心冰源岛炼制三十年）' },
   { sub: 'weapon', name: '月影玄冰剑', type: 'equip', count: 1, extra: { range: 2, skill: 'hanbing' }, desc: '攻击范围 2；命中后改为弃置目标 2 张牌', src: 'docs/md/技能/月影玄冰剑.md（二阶上品，【冰封刃】）' },
@@ -107,6 +106,13 @@ export const ZML_EQUIP: ZmlCardDef[] = [
   { sub: 'weapon', name: '青铜长戟', type: 'equip', count: 1, extra: { range: 3, skill: 'guanshi' }, desc: '攻击范围 3；【沉重】可弃 2 张牌令【攻击】强制命中', src: 'docs/md/物事/法宝/法宝列表.md（英伯本命法宝）' },
   { sub: 'weapon', name: '一剑碧环星', type: 'equip', count: 1, extra: { range: 3, skill: 'guding' }, desc: '攻击范围 3；目标无手牌时伤害 +1', src: 'docs/md/技能/一剑碧环星.md' },
   { sub: 'weapon', name: '七剑斩元星', type: 'equip', count: 1, extra: { range: 2, skill: 'zhangba' }, desc: '攻击范围 2；可弃 2 张牌当【攻击】使用', src: 'docs/md/技能/七剑斩元星.md' },
+
+  /* 幻日 / 幻月 / 幻星 / 幻影四剑与七星斩元剑（四阶无形剑，属性见 docs/md/物事/法器.md） */
+  { sub: 'weapon', name: '幻日无形剑', type: 'equip', count: 1, extra: { range: 4, skill: 'qinggang' }, desc: '攻击范围 4；【破甲】你使用的【攻击】无视目标护身法器；【无形】不可被【破阵符】/【敛息诀】指定（四阶主剑，幻日照耀方入无形）', src: 'docs/md/物事/法器.md · 四阶法器（幻日无形）' },
+  { sub: 'weapon', name: '幻月无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'hanbing' }, desc: '攻击范围 3；命中后改为弃置目标 2 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻月无形）' },
+  { sub: 'weapon', name: '幻星无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'cixiong' }, desc: '攻击范围 3；命中后可令目标弃 1 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻星无形）' },
+  { sub: 'weapon', name: '幻影无形剑', type: 'equip', count: 1, extra: { range: 2, skill: 'qinglong' }, desc: '攻击范围 2；目标打出【防御】后你可再出【攻击】；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻影无形）' },
+  { sub: 'weapon', name: '七星斩元剑', type: 'equip', count: 1, extra: { range: 2, skill: 'guding' }, desc: '攻击范围 2；目标无手牌时伤害 +1（七星剑诀·斩元星）', src: 'docs/md/角色/齐云/04.元婴/楚问.md（斩元剑）；docs/md/技能/七剑斩元星.md' },
 
   /* 护身法器 6（法袍 / 法像 / 阵法） */
   { sub: 'armor', name: '猴面金身法像', type: 'equip', count: 1, extra: { skill: 'bagua', attr: 'metal' }, desc: '护身：手中无【防御】时判定，红色视为打出【防御】（【极坚固】+ 三花防御罩）', src: 'docs/md/技能/猴面金身法像.md（三阶成对，抵挡飞剑）' },
@@ -142,25 +148,22 @@ export const ZML_EQUIP: ZmlCardDef[] = [
  */
 export const ZML_SKILL_EXTRA: ZmlCardDef[] = [
   { sub: 'wuzhong', name: '心血来潮', type: 'skill', count: 1, desc: '摸 2 张牌（心有所感，福至心灵）', src: 'K-齐休本命天赋【心血来潮】' },
-  { sub: 'mingyan', name: '料敌机先', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'K-齐休本命天赋【料敌机先】' },
+  { sub: 'guanding', name: '料敌机先', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'K-齐休本命天赋【料敌机先】' },
   { sub: 'wanjian', name: '心生蜂云剑', type: 'skill', count: 1, desc: '群攻（三十六柄飞剑攒刺），需打出【防御】抵御', src: 'K-心生蜂云剑；docs/md/角色/楚秦门/03.金丹/齐妆.md' },
   { sub: 'huogong', name: '幻影夺心刺', type: 'skill', count: 1, extra: { damageType: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害（幻影迷惑、一刺夺心）', src: 'K-幻影夺心刺；docs/md/角色/楚秦门/02.筑基/莫剑心.md' },
-  { sub: 'mingyan', name: '明月高悬', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回（幻月高悬，照见前路）', src: 'K-明月高悬；docs/md/角色/楚秦门/02.筑基/莫剑心.md' },
+  { sub: 'guanding', name: '明月高悬', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回（幻月高悬，照见前路）', src: 'K-明月高悬；docs/md/角色/楚秦门/02.筑基/莫剑心.md' },
   { sub: 'taoyuan', name: '万影渡生', type: 'skill', count: 1, desc: '所有存活角色各回复 1 点体力（三千分身渡同门于危难）', src: 'K-万影渡生；docs/md/角色/楚秦门/03.金丹/楚无影.md' },
   { sub: 'wuzhong', name: '明心见性诀', type: 'skill', count: 1, desc: '摸 2 张牌（明心见性，佛门手段）', src: 'B-明心见性诀楚慧心改；docs/md/角色/楚秦门/03.金丹/明真.md' },
-  { sub: 'mingyan', name: '通明剑诀并注', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'B-通明剑诀并注；docs/md/角色/楚秦门/03.金丹/秦长风.md' },
-  { sub: 'jiedao', name: '驱虎吞狼', type: 'skill', count: 1, desc: '令一名角色对另一名角色打出【攻击】—— 谋主借力打力', src: 'docs/md/角色/楚秦门/03.金丹/顾叹.md（献计借黑手搅乱陵梁宗）' },
+  { sub: 'guanding', name: '通明剑诀并注', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'B-通明剑诀并注；docs/md/角色/楚秦门/03.金丹/秦长风.md' },
   { sub: 'nanman', name: '魔化', type: 'skill', count: 1, desc: '群攻（堕入魔道，魔气席卷），需打出【攻击】抵御', src: 'docs/md/角色/楚秦门/03.金丹/沙诺.md（逃入魔井遇元婴魔蛇）' },
   { sub: 'guohe', name: '传送阵', type: 'skill', count: 1, desc: '弃置目标一张牌（装备优先）—— 传送阵法截断其护持', src: 'docs/md/角色/散修/03.金丹/何玉.md（北丁申山传送遁走）' },
   { sub: 'nanman', name: '楚秦军阵', type: 'skill', count: 1, desc: '群攻（楚秦军阵压境），需打出【攻击】抵御', src: 'docs/md/角色/楚秦门/02.筑基/展剑锋.md（总理楚秦军阵）' },
   { sub: 'lebu', name: '楚秦门规', type: 'skill', count: 1, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段（五级身份制，门规森严）', src: 'docs/md/角色/楚秦门/02.筑基/白晓生.md（定楚秦五级身份制）' },
   { sub: 'wuzhong', name: '明心见性诀楚慧心改', type: 'skill', count: 1, desc: '摸 2 张牌（楚慧心改版，南楚传承）', src: 'B-明心见性诀楚慧心改；docs/md/角色/齐云/04.元婴/楚红裳.md' },
-  { sub: 'nanman', name: '七元婴合围', type: 'skill', count: 1, desc: '群攻（七位元婴合围之势），需打出【攻击】抵御', src: 'docs/md/角色/齐云/04.元婴/楚神通.md（参与七元婴围攻战）' },
   { sub: 'guohe', name: '本家孤女', type: 'skill', count: 1, desc: '弃置目标一张牌（装备优先）—— 以「本家孤女」名义掩人耳目', src: 'docs/md/角色/齐云/03.金丹/楚夺.md（盗婴案掩饰手法）' },
   { sub: 'huogong', name: '业火焚心', type: 'skill', count: 1, extra: { damageType: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害', src: 'docs/md/角色/齐云/03.金丹/姜炎.md（红莲业火焚心）' },
-  { sub: 'wanjian', name: '一掌', type: 'skill', count: 1, desc: '群攻（化神一掌，势不可挡），需打出【防御】抵御', src: 'docs/md/角色/齐云/05.化神/天地峰座主.md（一掌击开聂疯子飞剑）' },
-  { sub: 'mingyan', name: '命演借力', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回（借赤尻马猴施命演术）', src: 'docs/md/角色/齐云/05.化神/南宫木.md' },
-  { sub: 'lebu', name: '伪六道', type: 'skill', count: 1, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段（黑河峰底伪六道空间）', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md' },
+  { sub: 'mingyan', name: '命演术', type: 'skill', count: 1, desc: '指定一名其他角色：该角色判定，♥红桃则你查看其隐藏身份（仅你可见）；你失去 1 点体力，每局限使用一次', src: 'docs/md/技能/命演术.md；docs/md/角色/齐云/05.化神/南宫木.md（借赤尻马猴施命演术）' },
+  { sub: 'lebu', name: '六道轮回', type: 'skill', count: 1, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段（黑河峰底六道轮回空间）', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md' },
   { sub: 'huogong', name: '星陨火球', type: 'skill', count: 1, extra: { damageType: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害（大火星陨）', src: 'K-星陨火球；docs/md/角色/白山/05.化神/贾长庚.md' },
   { sub: 'nanman', name: '潜意识扑击', type: 'skill', count: 1, desc: '群攻（昏睡中的本能扑击，瞬杀元婴），需打出【攻击】抵御', src: 'docs/md/角色/蛮荒/05.化神/醒狮.md' },
 ];
@@ -191,7 +194,6 @@ export const ZML_FABAO_ATK: ZmlCardDef[] = [
   { sub: 'fabao', name: '斩元星', type: 'equip', count: 1, extra: { range: 2, skill: 'guding', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 2；目标无手牌时伤害 +1', src: 'docs/md/角色/齐云/04.元婴/楚问.md（七星剑诀·斩元星）' },
   { sub: 'fabao', name: '执法峰令', type: 'equip', count: 1, extra: { range: 2, skill: 'zhangba', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 2；你可弃 2 张牌当【攻击】使用', src: 'docs/md/角色/齐云/05.化神/刑铣.md' },
   { sub: 'fabao', name: '青木龙珠', type: 'equip', count: 1, extra: { range: 3, skill: 'cixiong', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 3；命中后可令目标弃 1 张牌', src: 'docs/md/角色/齐云/05.化神/南宫木.md（青木为龙）' },
-  { sub: 'fabao', name: '南宫聘礼', type: 'equip', count: 1, extra: { range: 2, skill: 'zhangba', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 2；你可弃 2 张牌当【攻击】使用', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md（南宫家联姻聘礼）' },
   { sub: 'fabao', name: '长庚星光柱', type: 'equip', count: 1, extra: { range: 1, skill: 'liannu', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 1；【光柱分化】你使用【攻击】无次数限制（一化二、二化四）', src: 'docs/md/角色/白山/05.化神/贾长庚.md' },
   { sub: 'fabao', name: '大火星陨', type: 'equip', count: 1, extra: { range: 2, skill: 'zhuque', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 2；可将一张普通【攻击】当【烈火攻击】使用', src: 'docs/md/角色/白山/05.化神/贾长庚.md（前世本命大火星）' },
   { sub: 'fabao', name: '八音祛邪佛光仗', type: 'equip', count: 1, extra: { range: 2, skill: 'guanshi', equipSlot: 'weapon', category: 'fabao' }, desc: '法宝·进攻：攻击范围 2；【沉重】可弃 2 张牌令【攻击】强制命中（二阶极品禅杖）', src: 'docs/md/角色/白山/03.金丹/法引.md（齐休所赠）' },
@@ -208,13 +210,9 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
   { sub: 'fabao', name: '影遁', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效（影遁身法）', src: 'docs/md/角色/楚秦门/03.金丹/楚无影.md' },
   { sub: 'fabao', name: '牛毛金针', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（一囊御群针）', src: 'docs/md/角色/楚秦门/03.金丹/明真.md（破【血罟根】）' },
   { sub: 'fabao', name: '流水菩提串', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（同参之物）', src: 'docs/md/角色/散修/03.金丹/何玉.md（同参流水菩提串）' },
-  { sub: 'fabao', name: '星闪', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（自遥及闪悟出）', src: 'docs/md/角色/楚秦门/03.金丹/秦长风.md（星闪→星遁）' },
   { sub: 'fabao', name: '星雪秘蛇胸针', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1', src: 'J-星雪秘蛇胸针；docs/md/角色/楚秦门/03.金丹/秦长风.md' },
   { sub: 'fabao', name: '谋主', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（运筹帷幄）', src: 'docs/md/角色/楚秦门/03.金丹/顾叹.md（楚秦谋主）' },
   { sub: 'fabao', name: '甘家灵药', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（灵药阁甘家）', src: 'docs/md/角色/楚秦门/03.金丹/沙诺.md（妻甘舞儿、甘怜儿）' },
-  { sub: 'fabao', name: '白沙帮令', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效', src: 'docs/md/角色/楚秦门/03.金丹/沙诺.md（白沙帮主）' },
-  { sub: 'fabao', name: '水土双本命', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效（水土护持）', src: 'docs/md/角色/散修/03.金丹/何玉.md（本命）' },
-  { sub: 'fabao', name: '熊氏重甲', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（北烈山熊氏）', src: 'docs/md/角色/楚秦门/03.金丹/熊十四.md' },
   { sub: 'fabao', name: '五烟绮罗纱', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao', taoism: 'mo' }, desc: '法宝·防守：黑色【攻击】对你无效（魔修纱衣，雷法难容）', src: 'docs/md/角色/楚秦门/02.筑基/赵瑶.md' },
   { sub: 'fabao', name: '小红', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao', taoism: 'mo' }, desc: '法宝·防守：普通【攻击】与群攻技能对你无效；受到火属性伤害 +1（魔化之躯）', src: 'docs/md/角色/楚秦门/02.筑基/赵瑶.md（化名小红）' },
   { sub: 'fabao', name: '藏经阁钥匙', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效', src: 'docs/md/角色/楚秦门/02.筑基/白晓生.md（管藏经阁数十年）' },
@@ -222,19 +220,16 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
   { sub: 'fabao', name: '万丈天火', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：普通【攻击】与群攻技能对你无效；受到火属性伤害 +1', src: 'K-万丈天火；docs/md/角色/齐云/04.元婴/楚红裳.md' },
   { sub: 'fabao', name: '元婴威压', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效（元婴后期威压）', src: 'docs/md/角色/齐云/04.元婴/楚震.md' },
   { sub: 'fabao', name: '楚云峰令', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效', src: 'docs/md/角色/齐云/04.元婴/楚神通.md' },
-  { sub: 'fabao', name: '七星剑鞘', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（曾硬抗司空宙星空大道）', src: 'docs/md/角色/齐云/04.元婴/楚问.md' },
   { sub: 'fabao', name: '七星剑阵', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1', src: 'docs/md/角色/齐云/04.元婴/楚问.md' },
   { sub: 'fabao', name: '楚家玉简', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效', src: 'docs/md/角色/齐云/03.金丹/楚夺.md（赐齐休玉简）' },
   { sub: 'fabao', name: '万骨共生', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao', taoism: 'gui' }, desc: '法宝·防守：你每次受到的伤害 -1（与金丹鬼修万骨共生）', src: 'docs/md/角色/齐云/03.金丹/姜炎.md' },
   { sub: 'fabao', name: '空间束缚', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效', src: 'K-空间束缚之力；docs/md/角色/齐云/03.金丹/姜炎.md' },
   { sub: 'fabao', name: '照规矩办', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（「照规矩办就是公平」）', src: 'docs/md/角色/齐云/05.化神/刑铣.md' },
   { sub: 'fabao', name: '天地峰威压', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1', src: 'docs/md/角色/齐云/05.化神/天地峰座主.md' },
-  { sub: 'fabao', name: '木之大道', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效（木之大道护持）', src: 'docs/md/角色/齐云/05.化神/南宫木.md（本命）' },
   { sub: 'fabao', name: '南宫家令', type: 'equip', count: 1, extra: { skill: 'renwang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：黑色【攻击】对你无效', src: 'docs/md/角色/齐云/05.化神/南宫木.md（南宫家）' },
   { sub: 'fabao', name: '空谷幽兰', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（空谷幽兰之美）', src: 'docs/md/角色/齐云/02.筑基/南宫湘.md（相貌与南宫梦相像）' },
   { sub: 'fabao', name: '玉屏风', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（效仿芩老祖的玉屏风）', src: 'docs/md/角色/齐云/04.元婴/南宫止.md；docs/md/势力/008.外海/人物/05.化神/芩老祖.md' },
-  { sub: 'fabao', name: '护身项链', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：普通【攻击】与群攻技能对你无效；受到火属性伤害 +1', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md（伪六道空间反击杀秦思瑶）' },
-  { sub: 'fabao', name: '人祭强化', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（人祭强化双星）', src: 'docs/md/角色/白山/05.化神/贾长庚.md' },
+  { sub: 'fabao', name: '护身项链', type: 'equip', count: 1, extra: { skill: 'tengjia', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：普通【攻击】与群攻技能对你无效；受到火属性伤害 +1', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md（六道轮回空间反击杀秦思瑶）' },
   { sub: 'fabao', name: '多宝眩光袈裟', type: 'equip', count: 1, extra: { skill: 'mingguang', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：你每次受到的伤害 -1（三阶下品，诸宝石各有妙用）', src: 'docs/md/角色/白山/03.金丹/法引.md（齐休所赠）' },
   { sub: 'fabao', name: '精华内敛', type: 'equip', count: 1, extra: { skill: 'bagua', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：手中无【防御】时判定，红色视为打出【防御】（酆水战后判若两人）', src: 'docs/md/角色/白山/03.金丹/法引.md' },
   { sub: 'fabao', name: '水滴形玉玦', type: 'equip', count: 1, extra: { skill: 'xuanshui', equipSlot: 'armor', category: 'fabao' }, desc: '法宝·防守：雷属性伤害对你无效', src: 'docs/md/角色/御兽门/04.元婴/玉鹤.md' },
@@ -244,7 +239,7 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
 
 export const ZML_ALL: ZmlCardDef[] = [...ZML_BASIC, ...ZML_TRICK, ...ZML_EQUIP, ...ZML_FABAO_ATK, ...ZML_FABAO_DEF, ...ZML_SKILL_EXTRA];
 
-/** 掌门路牌堆总张数（237，含新增 3 张筑基丹） */
+/** 掌门路牌堆总张数（229，含新增 3 张筑基丹） */
 export const ZML_DECK_TOTAL: number = ZML_ALL.reduce((s, d) => s + d.count, 0);
 
 /** 按 sub 取首条定义（锦囊 / 基本牌文案兜底） */
