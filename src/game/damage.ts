@@ -1,15 +1,29 @@
 /* ==================== 伤害 & 濒死 ==================== */
-import type { Card, ChoiceOption, DamageType, Player } from '../core/types';
+import type { Attr, Card, ChoiceOption, DamageType, Player, Taoism } from '../core/types';
 import { G } from './state';
 import { FX, floatTextFx, resultBanner } from '../core/fx';
 import { Sound } from '../core/sound';
 import { localPlayerWin } from '../profile/profile';
 import { ROLES } from '../data/characters';
+import { C } from '../data/cards';
 import { addLog, addPlayLog } from './log';
 import { discardCard } from './rules';
 import { aiShouldSave, noteAttack, noteSave } from './aibrain';
 import { llmChooseAction, llmShouldSave } from '../llm/agent';
 import { llmReady } from '../llm/config';
+import {
+  ATTR_LABEL,
+  TAOISM_LABEL,
+  attrRelation,
+  cardAttr,
+  cardLingshou,
+  cardTaoism,
+  charLingshou,
+  charTaoism,
+  isElementAttr,
+  isEvilTaoism,
+  taoismRelation,
+} from '../data/zml/attr';
 
 /** 某 AI 是否愿意救援 idx：大模型接管座位走 llmShouldSave，否则用原启发式（意愿>0 视为救） */
 async function saveWillingness(i: number, idx: number): Promise<boolean> {
@@ -31,12 +45,13 @@ export async function dealDamage(
   amount: number,
   type: DamageType = 'normal',
   ignoreArmor = false,
+  atkAttr?: Attr,
 ): Promise<boolean> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return false;
   // AI 信念事件：谁攻击了谁（所有存活 AI 观察，受害者记仇）
   if (srcIdx >= 0) noteAttack(srcIdx, tgtIdx);
-  const dealt = await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor);
+  const dealt = await applyDamage(tgtIdx, amount, type, true, srcIdx, ignoreArmor, atkAttr);
   // 掌门路：造成伤害积累修为
   if (dealt && srcIdx >= 0) onDamageGain(srcIdx, amount);
   render();
@@ -44,8 +59,108 @@ export async function dealDamage(
   return dealt;
 }
 
+/* ---------------- 掌门路属性攻防（道统 + 卡牌属性） ----------------
+ * 仅掌门路 / 开辟战争生效；经典模式属性字段缺省，且外层有 isZml 守卫，双重隔离。
+ * 只调整伤害数值与战报，不改既有减伤 / 护盾 / 铁索逻辑。
+ */
+
+/** 属性判定：翻一张判定牌（红 redDelta / 黑 blackDelta），入弃牌堆并记录战报 */
+async function attrJudge(tgtIdx: number, label: string, redDelta: number, blackDelta: number): Promise<number> {
+  if (!G.deck.length && G.discard.length) {
+    G.deck = G.discard;
+    G.discard = [];
+  }
+  const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
+  const red = jc.suit === '♥' || jc.suit === '♦';
+  G.discard.push(jc);
+  const delta = red ? redDelta : blackDelta;
+  addLog(`${label} 判定 ${jc.suit}${jc.num}（${red ? '红' : '黑'}）${delta >= 0 ? '+' + delta : delta}`, delta < 0 ? 'dmg' : 'hl');
+  await FX.judge(tgtIdx, jc);
+  return delta;
+}
+
+/** 目标是否为雷法所克之躯（魔 / 鬼道统；护身法器上的道统标签同样计入） */
+function tgtIsEvil(tgt: Player, ignoreArmor: boolean): boolean {
+  if (isEvilTaoism(charTaoism(tgt.charId))) return true;
+  return !ignoreArmor && isEvilTaoism(cardTaoism(tgt.equip.armor));
+}
+
+/** 目标是否为兽性所制（灵兽之躯 / 灵兽法器 / 任意载具） */
+function tgtIsBeast(tgt: Player, ignoreArmor: boolean): boolean {
+  if (charLingshou(tgt.charId)) return true;
+  if (!ignoreArmor && cardLingshou(tgt.equip.armor)) return true;
+  return !!(tgt.equip.horsePlus || tgt.equip.horseMinus);
+}
+
+/** 战报前缀：按攻防两端属性所属族系区分五行 / 道德 / 风毒 */
+function attrPrefix(atk: Attr, def: Attr): string {
+  if (isElementAttr(atk) && isElementAttr(def)) return '五行';
+  if (atk === 'daode' || def === 'daode' || atk === 'guiwu' || def === 'guiwu') return '道德';
+  if (atk === 'feng' || def === 'feng' || atk === 'du' || def === 'du') return '风毒';
+  return '属性';
+}
+
 /**
- * 实际扣血结算：防具修正 → 护盾/学识吸收 → 扣血 → 铁索连环传导。
+ * 属性攻防加成：道统相克（正负 1）+ 卡牌属性相克（正负 1 或判定）。
+ * @param atkAttr 攻击牌属性（杀卡 / 武器 / 天赋效果透传；缺省则不结算卡牌属性）
+ */
+async function zmlAttrDelta(
+  srcIdx: number,
+  tgtIdx: number,
+  atkAttr: Attr | undefined,
+  ignoreArmor: boolean,
+): Promise<number> {
+  const src = G.players[srcIdx];
+  const tgt = G.players[tgtIdx];
+  if (!src || !tgt) return 0;
+  let delta = 0;
+  // 1) 道统相克：角色对角色（无来源伤害在调用处已排除）
+  const atkTao = charTaoism(src.charId);
+  const defTao = charTaoism(tgt.charId);
+  const tRel = taoismRelation(atkTao, defTao);
+  if (tRel === 'win') {
+    delta += 1;
+    addLog(
+      `【道统】${TAOISM_LABEL[atkTao!]}克${TAOISM_LABEL[defTao!]}：${src.name} 对 ${tgt.name} 伤害 +1`,
+      'dmg',
+    );
+  } else if (tRel === 'lose') {
+    delta -= 1;
+    addLog(
+      `【道统】${TAOISM_LABEL[atkTao!]}被${TAOISM_LABEL[defTao!]}克：${src.name} 对 ${tgt.name} 伤害 -1`,
+      'heal',
+    );
+  }
+  if (!atkAttr) return delta;
+  // 2) 雷克魔 / 鬼：判定，红 +1 / 黑 +0
+  if (atkAttr === 'lei') {
+    if (tgtIsEvil(tgt, ignoreArmor)) delta += await attrJudge(tgtIdx, '【雷】雷法击魔 / 鬼之躯', 1, 0);
+    return delta;
+  }
+  // 3) 兽克灵兽 / 载具：判定，红 +1 / 黑 +0
+  if (atkAttr === 'shou') {
+    if (tgtIsBeast(tgt, ignoreArmor)) delta += await attrJudge(tgtIdx, '【兽】兽性扑击灵兽 / 载具', 1, 0);
+    return delta;
+  }
+  // 4) 五行 / 道德 ↔ 鬼物 / 风 ↔ 毒：与目标护身法器属性比对
+  const defAttr = ignoreArmor ? undefined : cardAttr(tgt.equip.armor);
+  const rel = attrRelation(atkAttr, defAttr);
+  if (rel === 'win' || rel === 'lose') {
+    const prefix = attrPrefix(atkAttr, defAttr!);
+    const up = rel === 'win';
+    delta += up ? 1 : -1;
+    addLog(
+      `【${prefix}】${ATTR_LABEL[atkAttr]}攻${up ? '克制' : '被'}${ATTR_LABEL[defAttr!]}防${up ? '' : '克制'}：${tgt.name} 伤害 ${up ? '+1' : '-1'}`,
+      up ? 'dmg' : 'heal',
+    );
+  } else if (rel === 'judge') {
+    delta += await attrJudge(tgtIdx, `【五行】${ATTR_LABEL[atkAttr]}攻同${ATTR_LABEL[defAttr!]}防`, 0, -1);
+  }
+  return delta;
+}
+
+/**
+ * 实际扣血结算：防具修正 → 属性攻防（道统 / 卡牌属性，仅掌门路）→ 护盾/学识吸收 → 扣血 → 铁索连环传导。
  * allowChain=false 用于传导伤害本身，避免连环互相触发形成死循环。
  */
 /**
@@ -59,6 +174,7 @@ async function applyDamage(
   allowChain: boolean,
   srcIdx: number,
   ignoreArmor = false,
+  atkAttr?: Attr,
 ): Promise<boolean> {
   const tgt = G.players[tgtIdx];
   if (!tgt || !tgt.alive) return false;
@@ -116,6 +232,15 @@ async function applyDamage(
     const cut = Math.min(dmg, tgt.flags.dmgReduce);
     dmg -= cut;
     addLog(`【护甲】${tgt.name} 减伤 ${cut}`, 'heal');
+  }
+  // 掌门路【属性攻防】：道统相克 + 卡牌属性相克，叠加在既有减伤之后、护盾之前。
+  // 经典模式无道统 / 属性字段，isZml 双保险；无来源伤害（天劫 / 传导）不参与道统结算。
+  if (isZml(G.mode) && srcIdx >= 0 && dmg > 0 && G.players[srcIdx]) {
+    const delta = await zmlAttrDelta(srcIdx, tgtIdx, atkAttr, ignoreArmor);
+    if (delta !== 0) {
+      dmg = Math.max(0, dmg + delta);
+      if (dmg === 0) addLog(`【属性】${tgt.name} 的伤害被属性 / 道统加成完全抵消`, 'heal');
+    }
   }
   while (dmg > 0 && (tgt.shield || 0) > 0) {
     tgt.shield--;

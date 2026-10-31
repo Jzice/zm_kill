@@ -445,7 +445,7 @@ export async function playPhase(idx: number): Promise<void> {
       await noteCardPlayed(idx, card);
       for (let k = 0; k < picked.length; k++) {
         if (!G.players[picked[k]].alive) continue;
-        await useSha(idx, picked[k], { suit: card.suit, num: card.num, damageType: dmgType, fromFangtian: k > 0, cardName: card.name });
+        await useSha(idx, picked[k], { suit: card.suit, num: card.num, damageType: dmgType, fromFangtian: k > 0, cardName: card.name, attr: card.attr });
       }
     } else if (kind === 'tao') {
       discardCard(p, card);

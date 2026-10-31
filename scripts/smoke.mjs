@@ -149,6 +149,8 @@ await page.fill('#countSlider', '4'); // 复位为 4 人局以便后续断言
 await page.waitForTimeout(200);
 
 // 2. 开始单机对局（随机模式：先亮将确认）
+// 显式指定掌门路模式：本地记忆可能残留经典模式，属性 / 道统徽标仅掌门路渲染
+await page.evaluate(() => window.setRuleMode('zml'));
 await page.click('#startBtn');
 await page.waitForSelector('#revealModal.show', { timeout: 3000 });
 check('开局亮将弹窗（随机模式）', await page.isVisible('#revealModal.show'));
@@ -167,6 +169,10 @@ await page.click('#rulesModal .rules-close');
 
 const seats = await page.locator('#seatRing .p-card').count();
 check('座位渲染（4人局）', seats === 4, `${seats} 个座位`);
+
+// 掌门路：每名角色显示道统徽标（经典模式无该字段，不渲染）
+const taoTags = await page.locator('#seatRing .taoism-tag').count();
+check('座位道统徽标（掌门路 61 人全员标注）', taoTags === seats, `${taoTags}/${seats}`);
 
 // 4. 手牌渲染
 const cards = await page.locator('#handRow .card').count();

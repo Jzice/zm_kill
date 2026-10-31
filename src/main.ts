@@ -8,7 +8,8 @@ import { G } from './game/state';
 import { dealDamage, checkWin } from './game/damage';
 import { useSkill } from './game/actions';
 
-import type { FactionId, GameMode } from './core/types';
+import type { Element, FactionId, GameMode, Taoism } from './core/types';
+import { ELEMENT_KE, TAOISM_KE, attrRelation, taoismRelation } from './data/zml/attr';
 import { setSim, sleep, togglePanel } from './core/dom';
 import { CHARACTERS } from './data/characters';
 import { renderRuleModePicker, setRuleMode } from './ui/lobby';
@@ -190,6 +191,41 @@ window.__xtsDeckStats = (packs?: string[]): Record<string, number> => {
   const out: Record<string, number> = {};
   for (const c of deck) out[c.sub] = (out[c.sub] || 0) + 1;
   return out;
+};
+/**
+ * 冒烟测试专用：属性攻防体系自检（scripts/smoke-cards.mjs）。
+ * 返回角色道统分布、卡牌属性统计与相克环，供断言「61 人全有道统」「五行 / 道统环闭环」。
+ */
+window.__xtsAttrInfo = () => {
+  const deck = buildDeck({ mode: 'zml' });
+  const taoism: Record<string, number> = {};
+  const attrs: Record<string, number> = {};
+  let missingTaoism = 0;
+  for (const c of CHARACTERS) {
+    if (c.taoism) taoism[c.taoism] = (taoism[c.taoism] || 0) + 1;
+    else missingTaoism++;
+  }
+  for (const c of deck) if (c.attr) attrs[c.attr] = (attrs[c.attr] || 0) + 1;
+  return {
+    characters: CHARACTERS.length,
+    missingTaoism,
+    taoism,
+    attrs,
+    lingshou: CHARACTERS.filter((c) => c.lingshou).map((c) => c.name),
+    taoismRing: (Object.keys(TAOISM_KE) as Taoism[]).map((t) => `${t}>${TAOISM_KE[t]}`),
+    elementRing: (Object.keys(ELEMENT_KE) as Element[]).map((e) => `${e}>${ELEMENT_KE[e]}`),
+    sample: {
+      foVsMo: taoismRelation('fo', 'mo'),
+      moVsFo: taoismRelation('mo', 'fo'),
+      woodVsEarth: attrRelation('wood', 'earth'),
+      earthVsWood: attrRelation('earth', 'wood'),
+      sameMetal: attrRelation('metal', 'metal'),
+      daodeVsGuiwu: attrRelation('daode', 'guiwu'),
+      duVsFeng: attrRelation('du', 'feng'),
+      woodVsMetal: attrRelation('wood', 'metal'),
+      noneAttr: attrRelation(undefined, 'metal'),
+    },
+  };
 };
 window.requestSeatMove = requestSeatMove;
 window.pickSeatMember = pickSeatMember;

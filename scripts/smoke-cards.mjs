@@ -109,6 +109,55 @@ check('零回归·基础牌堆总量 = 125 + 知识点锦囊', baseTotal >= 125,
 const noExtra = ['bingliang', 'qilin', 'zhuque', 'zhiji', 'wuxieguo', 'fabao'].every((s) => !baseStats[s]);
 check('零回归·未启用时牌堆不含任何扩展卡', noExtra);
 
+/* ---------- 1.5 属性攻防体系（仅掌门路）：数据自检 ---------- */
+const att = await page.evaluate(() => window.__xtsAttrInfo());
+check(
+  '61 名角色全部有道统',
+  att.characters === 61 && att.missingTaoism === 0,
+  `${att.characters} 人 / 缺失 ${att.missingTaoism}`,
+);
+const WANT_TAO = { dao: 46, fo: 4, ru: 5, mo: 2, gui: 2, waidao: 2 };
+const badTao = Object.entries(WANT_TAO).filter(([k, n]) => (att.taoism[k] || 0) !== n);
+check(
+  '道统分布与设定一致（道 46 / 佛 4 / 儒 5 / 魔 2 / 鬼 2 / 外道 2）',
+  badTao.length === 0,
+  badTao.length ? badTao.map(([k, n]) => `${k} 期望 ${n} 实际 ${att.taoism[k] || 0}`).join('；') : '全部匹配',
+);
+check('灵兽之躯标记（5 人）', att.lingshou.length === 5, att.lingshou.join('、'));
+check(
+  '道统 6 环闭环（道→鬼→儒→外道→佛→魔→道）',
+  att.taoismRing.join(',') === 'dao>gui,gui>ru,ru>waidao,waidao>fo,fo>mo,mo>dao',
+  att.taoismRing.join('、'),
+);
+check(
+  '五行环闭环（金克木…火克金）',
+  att.elementRing.join(',') === 'metal>wood,wood>earth,earth>water,water>fire,fire>metal',
+  att.elementRing.join('、'),
+);
+const s = att.sample;
+check(
+  '相克判定（道统 / 五行 / 道德鬼物 / 风毒 / 缺属性）',
+  s.foVsMo === 'win' &&
+    s.moVsFo === 'lose' &&
+    s.woodVsEarth === 'win' &&
+    s.earthVsWood === 'lose' &&
+    s.woodVsMetal === 'lose' &&
+    s.sameMetal === 'judge' &&
+    s.daodeVsGuiwu === 'win' &&
+    s.duVsFeng === 'lose' &&
+    s.noneAttr === 'none',
+  JSON.stringify(s),
+);
+const WANT_ATTR = { wood: 8, metal: 5, fire: 13, lei: 5, shou: 4, water: 2, earth: 1, feng: 1, daode: 1, du: 2, guiwu: 1 };
+const badAttr = Object.entries(WANT_ATTR).filter(([k, n]) => (att.attrs[k] || 0) !== n);
+check(
+  '卡牌属性标注齐备（五行 / 雷 / 兽 / 道德 / 鬼物 / 风 / 毒）',
+  badAttr.length === 0,
+  badAttr.length
+    ? badAttr.map(([k, n]) => `${k} 期望 ${n} 实际 ${att.attrs[k] || 0}`).join('；')
+    : `11 类共 ${Object.values(att.attrs).reduce((a, b) => a + b, 0)} 张`,
+);
+
 /* ---------- 2. 各卡包勾选后卡牌入池 ---------- */
 // 各卡包勾选后，牌堆中对应子类应增加的张数（基础值见 BASE）
 const EXPECT = {

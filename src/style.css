@@ -1238,3 +1238,34 @@ sub{bottom:-.16em}
 .llm-status{font-size:12px;padding:3px 10px;border-radius:14px;border:1px solid var(--gold-dim);color:var(--muted)}
 .llm-status.on{color:#1a1206;background:linear-gradient(90deg,#f5c542,#ffe9a8);border-color:transparent}
 
+
+/* ==================== 掌门路：属性 / 道统徽标 ====================
+ * 仅掌门路 / 开辟战争渲染（经典模式卡面无 attr / taoism 字段）。
+ * 手牌：五行等属性徽标在左下角，道统徽标在右下角；出牌区缩小置于右上侧。
+ */
+.attr-chip{position:absolute;left:2px;bottom:2px;z-index:2;font-size:8px;line-height:1.35;font-weight:700;letter-spacing:0;padding:0 2px;border-radius:3px;background:rgba(0,0,0,.62);border:1px solid currentColor;white-space:nowrap;pointer-events:none}
+.taoism-chip{left:auto;right:2px}
+.play-card .attr-chip{top:9px;bottom:auto;left:1px;font-size:6.5px;padding:0 1px;border-radius:2px;line-height:1.2}
+.play-card .taoism-chip{left:auto;right:1px}
+/* 座位上的道统小标（角色属性，随座位常驻显示） */
+.taoism-tag{display:inline-block;font-size:8px;line-height:1.25;font-weight:700;padding:0 3px;border-radius:3px;background:rgba(0,0,0,.45);border:1px solid currentColor;vertical-align:middle;margin-left:2px}
+/* 五行五色 */
+.attr-chip.attr-metal,.taoism-tag.taoism-metal{color:#c9a227}
+.attr-chip.attr-wood,.taoism-tag.taoism-wood{color:#2e8b57}
+.attr-chip.attr-water,.taoism-tag.taoism-water{color:#2176c7}
+.attr-chip.attr-fire,.taoism-tag.taoism-fire{color:#c0392b}
+.attr-chip.attr-earth,.taoism-tag.taoism-earth{color:#8a6d3b}
+/* 特殊属性 */
+.attr-chip.attr-daode{color:#e0c15a}
+.attr-chip.attr-guiwu{color:#6b3fa0}
+.attr-chip.attr-feng{color:#5bc0be}
+.attr-chip.attr-du{color:#7d9b3a}
+.attr-chip.attr-lei{color:#7b4fd0}
+.attr-chip.attr-shou{color:#b5651d}
+/* 道统六色 */
+.attr-chip.taoism-dao,.taoism-tag.taoism-dao{color:#6b8e23}
+.attr-chip.taoism-fo,.taoism-tag.taoism-fo{color:#d4a017}
+.attr-chip.taoism-ru,.taoism-tag.taoism-ru{color:#4a6fa5}
+.attr-chip.taoism-mo,.taoism-tag.taoism-mo{color:#a83232}
+.attr-chip.taoism-gui,.taoism-tag.taoism-gui{color:#5b5b7a}
+.attr-chip.taoism-waidao,.taoism-tag.taoism-waidao{color:#6e4b1f}

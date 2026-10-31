@@ -413,9 +413,11 @@ export async function aiPlayPhase(idx: number): Promise<void> {
           for (let k = 0; k < extraCost && k < rest.length; k++) discardCard(p, rest[k]);
           discardCard(p, sha);
           const dmgType = sha.damageType || convertDamageType(p, sha, 'sha', false) || 'normal';
+          // 掌门路属性：仅真【杀】卡携带属性；转化当杀（闪/锦囊）留空 → 回退武器属性
+          const shaAttr = SHA_SUBS.includes(sha.sub) ? sha.attr : undefined;
           for (let k = 0; k < targets.length; k++) {
             if (!G.players[targets[k]].alive) continue;
-            await useSha(idx, targets[k], { suit: sha.suit, num: sha.num, damageType: dmgType, fromFangtian: k > 0, cardName: sha.name });
+            await useSha(idx, targets[k], { suit: sha.suit, num: sha.num, damageType: dmgType, fromFangtian: k > 0, cardName: sha.name, attr: shaAttr });
           }
           await sleep(300);
         }

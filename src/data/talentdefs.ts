@@ -2622,7 +2622,13 @@ export function defOf(id: string): TalentDef | undefined {
 export function talentOf(id: string): Talent {
   const d = defOf(id);
   if (!d) return { id, name: id, type: 'active', desc: '' };
-  return { id: d.id, name: d.name, type: skillTypeOf(d), desc: d.desc };
+  // 掌门路属性字段（attr / lingshou / taoism）原样透传：供伤害结算与徽标展示读取。
+  // 经典模式这些字段缺省，Talent 结构与序列化完全不变。
+  const t: Talent = { id: d.id, name: d.name, type: skillTypeOf(d), desc: d.desc };
+  if (d.attr) t.attr = d.attr;
+  if (d.lingshou) t.lingshou = d.lingshou;
+  if (d.taoism) t.taoism = d.taoism;
+  return t;
 }
 
 /** 技能在指定时机是否生效（含「效果自带 at 时机」的情况） */

@@ -13,6 +13,7 @@ import { updateNetChatVisible } from './netchat';
 import { useItem } from '../game/actions';
 import { expansionItemById } from '../data/expansion';
 import { NET, scheduleSync } from '../net/network';
+import { cardChips, charTaoism, TAOISM_LABEL, taoismChip } from '../data/zml/attr';
 
 const EQUIP_ICON: Record<string, string> = {
   weapon: '⚔️',
@@ -38,6 +39,9 @@ function buildPlayerCard(p: Player, i: number): string {
   const isThinking = G.thinkingSeat === i;
   const mark = ROLE_MARKS[i];
   const isMarked = !!mark && !isSelf && !p.roleRevealed;
+  // 掌门路：角色道统徽标（经典模式无该字段，不渲染）
+  const tao = isZml(G.mode) ? charTaoism(p.charId) : undefined;
+  const taoTag = tao ? `<span class="taoism-tag taoism-${tao}" title="道统：${TAOISM_LABEL[tao]}">${TAOISM_LABEL[tao]}</span>` : '';
   // 身份展示：自己/已公开 → 真实身份；被自己标记且未公开 → 标记身份（虚线框区分）；否则未知
   // 掌门路模式下显示名改为 掌门 / 弟子 / 邪修 / 黑手
   const zl = (r: 'lord' | 'loyal' | 'rebel' | 'spy'): string => zmlRoleLabel(r, G.mode) || ROLES[r].name;
@@ -109,7 +113,7 @@ function buildPlayerCard(p: Player, i: number): string {
   return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''} ${isThinking ? 'thinking' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
     <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
     ${markBtn}
-    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${genderIconHtml}${aiTag}${isThinking ? '<span class="seat-thinking">🤖 思考中…</span>' : ''}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${shownAvatar}</div><div class="pname-block"><div class="pname">${isTurn && p.alive ? '<span class="turn-arrow">▶</span>' : ''}${p.name} ${taoTag}${genderIconHtml}${aiTag}${isThinking ? '<span class="seat-thinking">🤖 思考中…</span>' : ''}</div><div class="prole" style="color:${roleColor}">${roleName} · <span style="color:${fColor};">${faction.name}</span></div>${moodHtml}</div></div>
     <div class="php-bar">${hpGems}</div>
     ${cultBar}
     <div class="pequip-slots">${equipSlots}</div>
@@ -315,7 +319,9 @@ export function render(): void {
         const typeCls = c.type === 'skill' ? ' trick-tag' : c.type === 'equip' ? ' equip-tag' : '';
         // 掌门路模式下「锦囊」改称「技能」（经典模式仍沿用三国杀原版术语）
         const typeName = c.type === 'basic' ? '基本' : c.type === 'skill' ? (isZml(G.mode) ? '技能' : '锦囊') : '装备';
-        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${typeName}</span></div>`;
+        // 掌门路：卡面属性 / 道统徽标（经典模式无字段，不渲染）
+        const chips = isZml(G.mode) ? cardChips(c) : '';
+        return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}>${chips}<span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${typeName}</span></div>`;
       })
       .join('') || '<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
 

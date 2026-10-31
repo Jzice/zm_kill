@@ -75,6 +75,17 @@ declare global {
     setRuleMode: (m: string) => void;
     /** 冒烟测试专用：掌门路修真牌堆的「卡名 → 张数」统计 */
     __xtsZmlDeckStats: () => Record<string, number>;
+    /** 冒烟测试专用：属性攻防体系自检（道统分布 / 卡牌属性统计 / 相克环） */
+    __xtsAttrInfo: () => {
+      characters: number;
+      missingTaoism: number;
+      taoism: Record<string, number>;
+      attrs: Record<string, number>;
+      lingshou: string[];
+      taoismRing: string[];
+      elementRing: string[];
+      sample: Record<string, string>;
+    };
     clearWrongBook: () => void;
     // 首页学习情况：展开错题解析 / 展开已攻克列表 / 标记已复习 / 复习模式
     toggleStudyItem: (key: string) => void;

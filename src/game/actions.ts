@@ -1,5 +1,5 @@
 /* ==================== 出牌 ==================== */
-import type { Card, ChoiceOption, DamageType, EquipSlot, Player } from '../core/types';
+import type { Attr, Card, ChoiceOption, DamageType, EquipSlot, Player } from '../core/types';
 import { G } from './state';
 import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
 import { Sound } from '../core/sound';
@@ -243,6 +243,8 @@ export async function useSha(
     damageType?: DamageType;
     /** 实际卡名（修真变体名），用于战报 / 飞牌展示；缺省按属性回退 杀 / 火杀 / 雷杀 */
     cardName?: string;
+    /** 攻击牌属性（掌门路：杀卡属性；缺省时回退武器属性） */
+    attr?: Attr;
   } = {},
 ): Promise<void> {
   const a = G.players[attackerIdx],
@@ -275,13 +277,15 @@ export async function useSha(
   }
   a.flags.shaUsed = (a.flags.shaUsed || 0) + 1;
   const dmgType: DamageType = opts.damageType || 'normal';
+  // 攻击属性：杀卡属性优先；杀卡无属性（含转化 / 拼点 / 两牌当杀）时才取武器属性
+  const atkAttr: Attr | undefined = opts.attr ?? a.equip.weapon?.attr;
   const cname = opts.cardName || (dmgType === 'fire' ? '火杀' : dmgType === 'thunder' ? '雷杀' : '杀');
   const suit = opts.suit ?? '♠';
   addPlayLog(a.name, 'use', cname, t.name);
   aiSpeak(a, 'attack');
   FX.attackLunge(attackerIdx);
   Sound.play('sha');
-  showPlayCard({ name: cname, suit, num: '?', type: 'basic' }, a.name, FACTIONS[a.faction].color);
+  showPlayCard({ name: cname, suit, num: '?', type: 'basic', attr: atkAttr }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
   // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
   // 掌门路【通天令】法宝（进攻型，占武器槽）：你使用的【杀】同样无视目标护身法器
@@ -327,7 +331,7 @@ export async function useSha(
   /** 命中结算：兼爱可防止伤害，散射实验可反伤；命中后触发武器追加效果 */
   const resolveHit = async (): Promise<void> => {
     if (await tryPreventShaDamage(attackerIdx, targetIdx)) return;
-    const dealt = await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor);
+    const dealt = await dealDamage(attackerIdx, targetIdx, shaDamage(a, t), dmgType, ignoreArmor, atkAttr);
     await tryReflect(attackerIdx, targetIdx);
     if (dealt) await afterShaHit(a, t, attackerIdx, targetIdx, suit, dmgType, wVoid);
   };
@@ -384,6 +388,7 @@ export async function useSha(
           suit: shaInHand.suit,
           damageType: shaInHand.damageType,
           cardName: shaInHand.name,
+          attr: shaInHand.attr,
         });
         return;
       }
@@ -675,6 +680,7 @@ export async function useSkill(
             suit: shaCard.suit,
             damageType: shaCard.damageType,
             cardName: shaCard.name,
+            attr: shaCard.attr,
           });
         } else {
           const w = holder.equip.weapon;
@@ -786,7 +792,8 @@ export async function useSkill(
               }
             }
           }
-          if (burn) await dealDamage(attackerIdx, targetIdx, 1, 'fire');
+          // 掌门路属性：火攻类技能卡（极寒碧火诀）自带火属性，参与属性相克结算
+          if (burn) await dealDamage(attackerIdx, targetIdx, 1, 'fire', false, card.attr);
           else addLog('火攻未生效', 'dmg');
         }
       }

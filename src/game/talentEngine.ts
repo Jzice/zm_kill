@@ -443,7 +443,8 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
       case 'targetDamage': {
         const ti = await resolveTarget(idx, ctx, false);
         if (ti < 0) break;
-        await dealDamage(owner, ti, e.n, e.damageType || 'normal');
+        // 掌门路属性：效果级 attr 优先，缺省回退技能定义上的 attr（血影邪功 / 散魂棺 …）
+        await dealDamage(owner, ti, e.n, e.damageType || 'normal', false, e.attr ?? ctx.def?.attr);
         break;
       }
       case 'targetLoseHp': {
@@ -645,7 +646,8 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
           const pass = e.bonusTest.op === 'ge' ? n >= e.bonusTest.n : n <= e.bonusTest.n;
           if (pass) dmg += e.bonus || 0;
         }
-        await dealDamage(owner, ti, dmg);
+        // 掌门路属性：毒木诀 / 寒毒 / 血影遁 等天赋伤害的卡牌属性
+        await dealDamage(owner, ti, dmg, 'normal', false, e.attr ?? ctx.def?.attr);
         break;
       }
       case 'drawDiscardMin': {

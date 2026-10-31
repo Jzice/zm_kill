@@ -144,6 +144,12 @@ export interface TalentDef {
   limit?: SkillLimit;
   cond?: SkillCond;
   effects: SkillE[];
+  /** 该技能的伤害属性（掌门路；效果级 attr 缺省时作为兜底） */
+  attr?: Attr;
+  /** 灵兽标签（兽属性判定对象） */
+  lingshou?: boolean;
+  /** 道统标签（雷属性判定对象） */
+  taoism?: Taoism;
 }
 
 export interface Talent {
@@ -163,6 +169,12 @@ export interface Talent {
   copied?: boolean;
   /** 复制来的天赋持续时间：'turn' 持到本回合结束，'game' 持到本局结束 */
   copiedUntil?: 'turn' | 'game';
+  /** 该技能的伤害属性（掌门路；随 talentOf 从 TalentDef 透传） */
+  attr?: Attr;
+  /** 灵兽标签（随 talentOf 透传） */
+  lingshou?: boolean;
+  /** 道统标签（随 talentOf 透传） */
+  taoism?: Taoism;
 }
 
 /**
@@ -177,7 +189,8 @@ export type SkillEffect =
   /** 令目标弃牌。cond 为可选触发条件（受伤后反制类技能） */
   | { kind: 'targetDiscard'; n: number; cond?: SkillCond }
   | { kind: 'targetLoseHp'; n: number }
-  | { kind: 'targetDamage'; n: number; damageType?: DamageType }
+  /** attr：极寒碧火诀 / 血影邪功等天赋伤害的卡牌属性（掌门路） */
+  | { kind: 'targetDamage'; n: number; damageType?: DamageType; attr?: Attr }
   | { kind: 'targetHeal'; n: number }
   | { kind: 'targetDraw'; n: number }
   | { kind: 'gainHand'; n: number }
@@ -248,7 +261,7 @@ export type SkillEffect =
   /** 反间：令其猜花色，猜中 / 猜错 */
   | { kind: 'guessSuit'; hit: SkillEffect[]; miss: SkillEffect[] }
   /** 弃 c 张牌造成 d 点伤害；弃置牌点数满足 bonusTest 时伤害 +bonus（柯西·极限） */
-  | { kind: 'costThenDamage'; cost: number; dmg: number; bonusTest?: { op: 'ge' | 'le'; n: number }; bonus?: number }
+  | { kind: 'costThenDamage'; cost: number; dmg: number; bonusTest?: { op: 'ge' | 'le'; n: number }; bonus?: number; attr?: Attr }
   /** 连续两次判定，颜色相同时执行 sameColor（笛卡尔·坐标系） */
   | { kind: 'doubleJudge'; sameColor: SkillEffect[] }
   /** 摸 draw 张后弃置点数最小的 discard 张；其和 ≤ sumAtMost 时追加 bonus（达尔文·进化论） */
@@ -420,10 +433,26 @@ export interface Character {
   benming?: string[];
   fagi?: string[];
   lingqi?: number;
+  /** 道统（掌门路：道 / 佛 / 儒 / 魔 / 鬼 / 外道，6 环相克）；经典模式不参与结算 */
+  taoism?: Taoism;
+  /** 灵兽之躯（兽属性攻击的判定对象） */
+  lingshou?: boolean;
 }
 
 /** 伤害属性：普通 / 火 / 雷（属性伤害可被【藤甲】放大，并触发【铁索连环】传导） */
 export type DamageType = 'normal' | 'fire' | 'thunder';
+
+/* ---------------- 属性攻防体系（仅掌门路模式生效） ----------------
+ * 角色道统（Taoism）：道/佛/儒/魔/鬼/外道，6 环相克。
+ * 卡牌属性（Attr）：五行（金木水火土）+ 雷/兽/道德/鬼物/风/毒。
+ * 出处：用户设定（五行相克 / 雷克邪魔鬼 / 兽克灵兽载具 / 道德克鬼物 / 风克毒）。
+ */
+/** 角色道统 */
+export type Taoism = 'dao' | 'fo' | 'ru' | 'mo' | 'gui' | 'waidao';
+/** 五行元素 */
+export type Element = 'metal' | 'wood' | 'water' | 'fire' | 'earth';
+/** 卡牌属性：五行 + 雷 / 兽 / 道德 / 鬼物 / 风 / 毒 */
+export type Attr = Element | 'lei' | 'shou' | 'daode' | 'guiwu' | 'feng' | 'du';
 
 /* ---------------- 掌门路（修真规则层） ----------------
  * 仅在「掌门路模式」下生效；经典模式所有字段均为空，结构与序列化完全不变。
@@ -504,6 +533,12 @@ export interface Card {
   equipSlot?: 'weapon' | 'armor';
   /** 子类标签，供规则书分组展示：'fabao' 法宝 / 'fulu' 符箓 / 'zai ju' 载具 … */
   category?: string;
+  /** 卡牌属性（掌门路：五行 / 雷 / 兽 / 道德 / 鬼物 / 风 / 毒）；经典模式为空 */
+  attr?: Attr;
+  /** 灵兽标签（兽属性攻击的判定对象：灵兽之躯 / 载具） */
+  lingshou?: boolean;
+  /** 道统标签（防具 / 法宝 / 锦囊可携带，供雷属性对魔 / 鬼判定）；经典模式为空 */
+  taoism?: Taoism;
 }
 
 /** 出牌区展示用的轻量卡牌视图（允许 num 为 '?' 等占位） */
@@ -512,6 +547,10 @@ export interface PlayCardView {
   suit: string;
   num: string | number;
   type: CardType;
+  /** 卡牌属性徽标（掌门路；经典模式为空） */
+  attr?: Attr;
+  /** 道统徽标（掌门路；经典模式为空） */
+  taoism?: Taoism;
 }
 
 export interface Equips {

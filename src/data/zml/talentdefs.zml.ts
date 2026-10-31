@@ -100,9 +100,9 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '毒木诀',
     kind: 'active',
     timing: 'active',
-    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（一阶上品毒木诀）。出处：B-毒木诀',
+    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（一阶上品毒木诀，毒属性）。出处：B-毒木诀',
     limit: 'perTurn',
-    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1 }],
+    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1, attr: 'du' }],
   },
   {
     id: 'zml_zhangshishi_zhongpu',
@@ -179,9 +179,9 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '寒毒',
     kind: 'active',
     timing: 'active',
-    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（七芯蝎尾夺·寒毒）。出处：J-七芯蝎尾夺',
+    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（七芯蝎尾夺·寒毒，毒属性）。出处：J-七芯蝎尾夺',
     limit: 'perTurn',
-    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1 }],
+    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1, attr: 'du' }],
   },
   {
     id: 'zml_xingjian_zhifa',
@@ -277,9 +277,10 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '血影邪功',
     kind: 'active',
     timing: 'active',
-    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（血影邪修，血引遁）。出处：魔修·血刀条目',
+    desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（血影邪修，血引遁，鬼物属性）。出处：魔修·血刀条目',
+    attr: 'guiwu',
     limit: 'perTurn',
-    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1 }],
+    effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1, attr: 'guiwu' }],
   },
 
   /* ---------------- 御兽门 ---------------- */
@@ -475,7 +476,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
   { id: 'zml_sikongshou_zhaixingge', name: '摘星阁', kind: 'passive', timing: 'onDraw', desc: '摸牌阶段额外摸 1 张（摘星阁主，星辰本命）。出处：白山·司空寿条目', effects: [{ kind: 'extraDraw', n: 1 }] },
   { id: 'zml_yingbo_danmeng2', name: '丹盟', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名已受伤角色回复 1 点体力（丹盟客卿，青铜长戟）。出处：白山·英伯条目', limit: 'perTurn', effects: [{ kind: 'targetHeal', n: 1 }] },
   { id: 'zml_hantianqing_dan2', name: '丹盟调度', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色摸 1 张牌（丹盟元婴，调度诸家）。出处：白山·韩天青条目', limit: 'perTurn', effects: [{ kind: 'multiDraw', max: 1, n: 1 }] },
-  { id: 'zml_xuedao_xueying2', name: '血影遁', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（血影邪修，血遁伤人）。出处：魔修·血刀条目', limit: 'perTurn', effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1 }] },
+  { id: 'zml_xuedao_xueying2', name: '血影遁', kind: 'active', timing: 'active', desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点伤害（血影邪修，血遁伤人，鬼物属性）。出处：魔修·血刀条目', limit: 'perTurn', attr: 'guiwu', effects: [{ kind: 'costThenDamage', cost: 1, dmg: 1, attr: 'guiwu' }] },
   /* —— 御兽门 —— */
   { id: 'zml_yuhe_wuxing', name: '无形鹤', kind: 'passive', timing: 'passive', desc: '你计算与其他角色的距离 -1（清风无形，鹤乃有相）。出处：L-本命代征.md', effects: [{ kind: 'distMod', delta: -1 }] },
   { id: 'zml_kaerweiming_ming2', name: '光明护体', kind: 'active', timing: 'active', desc: '出牌阶段限一次：获得 2 点护盾（光明大道护体）。出处：御兽门·喀尔威明条目', limit: 'perTurn', effects: [{ kind: 'shield', n: 2 }] },
@@ -531,7 +532,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
 
   /* ---- 沙诺 ---- */
   { id: 'zml_shanuo_guzhong', name: '青铜古钟', kind: 'passive', timing: 'onTargetSha', desc: '每回合限一次：你成为【杀】的目标时，可展示一张手牌，若其点数不小于该【杀】的点数则该【杀】无效（废本命【青铜古钟】钟鸣护体）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', limit: 'perTurn', effects: [{ kind: 'numGuard', op: 'ge', against: 'shaNum', limit: 'perTurn' }] },
-  { id: 'zml_shanuo_sanhun', name: '散魂棺', kind: 'trigger', timing: 'onDeath', desc: '每当一名角色阵亡，你摸 3 张牌（散魂棺聚敛魂魄；曾以此湮灭齐妆的聚魂棺）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', effects: [{ kind: 'soulSeize', on: 'death', draw: 3 }] },
+  { id: 'zml_shanuo_sanhun', name: '散魂棺', kind: 'trigger', timing: 'onDeath', desc: '每当一名角色阵亡，你摸 3 张牌（散魂棺聚敛魂魄；曾以此湮灭齐妆的聚魂棺）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', attr: 'guiwu', effects: [{ kind: 'soulSeize', on: 'death', draw: 3 }] },
 
   /* ---- 明真 ---- */
   { id: 'zml_mingzhen_zhennang', name: '檀香针囊', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名已受伤的角色回复 1 点体力（一囊御群针，医修仁心）。出处：docs/md/角色/楚秦门/03.金丹/明真.md', limit: 'perTurn', effects: [{ kind: 'targetHeal', n: 1 }] },

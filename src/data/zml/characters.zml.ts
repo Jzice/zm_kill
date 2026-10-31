@@ -6,7 +6,7 @@
  * 技能密度：核心 12 人各 3 技能，其余各 2 技能（技能定义见 talentdefs.zml.ts）。
  * 本表是**唯一角色池**：经典模式与掌门路模式共用（经典模式不注入修真资源）。
  */
-import type { Character, Realm } from '../../core/types';
+import type { Character, Realm, Taoism } from '../../core/types';
 import { talentOf } from '../talentdefs';
 
 export interface ZmlCharacter extends Character {
@@ -135,7 +135,8 @@ const MANHUANG: ZmlCharacter[] = [
   { id: 'zml_xingshi', name: '醒狮', title: '醒狮谷之王', faction: 'manhuang', hp: 6, avatar: '🦁', realm: 'huashen', benming: ['元犼真身'], talents: [talentOf('zml_xingshi_hunshui'), talentOf('zml_xingshi_xiuhun')], src: 'docs/md/角色/蛮荒/05.化神/醒狮.md' },
 ];
 
-export const ZML_CHARACTERS: ZmlCharacter[] = [
+/** 原始角色定义（未带道统 / 灵兽标签；对外请用 ZML_CHARACTERS） */
+const RAW_CHARACTERS: ZmlCharacter[] = [
   ...CHUQIN,
   ...QIYUN,
   ...BAISHAN,
@@ -147,6 +148,121 @@ export const ZML_CHARACTERS: ZmlCharacter[] = [
   ...TIANLI,
   ...MANHUANG,
 ];
+
+/* ---------------- 道统（原著设定：道 / 佛 / 儒 / 魔 / 鬼 / 外道） ----------------
+ * 门派倾向不等于道统：楚秦门以道门功法为宗，佛门（南林寺 / 天引寺 / 何玉）为佛，
+ * 大周书院崇理为儒，邪修（赵瑶 / 血刀）为魔，鬼修（沙诺 / 姜炎）为鬼，
+ * 黑风谷与蛮荒醒狮不循六道，为外道。
+ * 映射集中在本表，避免 61 条角色定义逐条散落（属性结算只查这张表）。
+ */
+const TAOISM_MAP: Record<string, Taoism> = {
+  /* 楚秦门 —— 道 15 / 佛 1 / 魔 1 / 鬼 1 */
+  zml_qixiu: 'dao',
+  zml_qizhuang: 'dao',
+  zml_chuwuying: 'dao',
+  zml_qinchangfeng: 'dao',
+  zml_gutan: 'dao',
+  zml_duoluosen: 'dao',
+  zml_mingzhen: 'dao',
+  zml_mojianxin: 'dao',
+  zml_qinweiyu: 'dao',
+  zml_zhangshishi: 'dao',
+  zml_zhanchou: 'dao',
+  zml_xiongdai: 'dao',
+  zml_xiongshisi: 'dao',
+  zml_zhanjianfeng: 'dao',
+  zml_baixiaosheng: 'dao',
+  zml_heyu: 'fo', // 白山密宗神傀化身，佛门手段
+  zml_zhaoyao: 'mo', // 醒狮魔修，魔化之躯（化名小红）
+  zml_shanuo: 'gui', // 逃入魔井、与鬼修万骨共生
+
+  /* 齐云 —— 道 15 / 鬼 1 */
+  zml_chuhongshang: 'dao',
+  zml_chuzhen: 'dao',
+  zml_nangongzhi: 'dao',
+  zml_chuduo: 'dao',
+  zml_chushentong: 'dao', // 南楚谋主，道门正统（非外道）
+  zml_chuwen: 'dao',
+  zml_xingxi: 'dao',
+  zml_tiandifeng: 'dao',
+  zml_nangongmu: 'dao',
+  zml_nangongmeng: 'dao',
+  zml_nangongyanran: 'dao',
+  zml_xingjian: 'dao',
+  zml_jianghuan: 'dao',
+  zml_fengzhen: 'dao',
+  zml_peiwen: 'dao',
+  zml_jiangyan: 'gui', // 金丹鬼修，红莲业火焚心
+
+  /* 白山 —— 道 6 / 佛 1 / 魔 1 */
+  zml_jiachanggeng: 'dao',
+  zml_gurong: 'dao',
+  zml_chaiyi: 'dao',
+  zml_sikongshou: 'dao',
+  zml_yingbo: 'dao',
+  zml_hantianqing: 'dao',
+  zml_fayin: 'fo', // 天引寺主持
+  zml_xuedao: 'mo', // 血影邪修
+
+  /* 御兽门 —— 道 5 */
+  zml_yuhe: 'dao',
+  zml_kaerweiming: 'dao',
+  zml_laozhong: 'dao',
+  zml_fengxu: 'dao',
+  zml_huoguan: 'dao',
+
+  /* 大周书院 —— 儒 4 */
+  zml_jixinlong: 'ru',
+  zml_wenxin: 'ru',
+  zml_jixingde: 'ru',
+  zml_jiyuliang: 'ru',
+
+  /* 青莲剑宗 —— 道 2 */
+  zml_niefengzi: 'dao',
+  zml_liyuanying: 'dao',
+
+  /* 南林寺 —— 佛 2 */
+  zml_kurong: 'fo',
+  zml_miaoqing: 'fo',
+
+  /* 外海 —— 道 3 */
+  zml_longyueyun: 'dao',
+  zml_qinxizhao: 'dao',
+  zml_qinlaozu: 'dao',
+
+  /* 天理门 —— 外道 1 / 儒 1 */
+  zml_tufeng: 'waidao', // 黑风谷祖师，不循六道
+  zml_tianlihuashen: 'ru', // 崇理一脉，儒门正宗
+
+  /* 蛮荒 —— 外道 1 */
+  zml_xingshi: 'waidao', // 醒狮谷之王，非人类宗门
+};
+
+/** 灵兽之躯（兽属性攻击的判定对象；可与道统并存） */
+const LINGSHOU_IDS: string[] = [
+  'zml_laozhong', // 摩云鬣化形
+  'zml_yuhe', // 无形鹤伴兽
+  'zml_xingshi', // 元犼真身
+  'zml_huoguan', // 五虎拍门
+  'zml_kaerweiming', // 御兽门光明大道化神
+];
+
+/** 角色池：在原始定义之上换入道统 / 灵兽标签（声明式，不修改源数组） */
+export const ZML_CHARACTERS: ZmlCharacter[] = RAW_CHARACTERS.map((c) => ({
+  ...c,
+  taoism: TAOISM_MAP[c.id] ?? c.taoism,
+  lingshou: LINGSHOU_IDS.includes(c.id) ? true : c.lingshou,
+}));
+
+/** 按 charId 取道统（属性结算 / 徽标共用；未知 id 返回 undefined） */
+export function charTaoismOf(id: string): Taoism | undefined {
+  return TAOISM_MAP[id];
+}
+
+/** 按 charId 判断灵兽之躯 */
+export function charLingshouOf(id: string): boolean {
+  return LINGSHOU_IDS.includes(id);
+}
 
 /** 按 id 取角色 */
 export function zmlCharById(id: string): ZmlCharacter | undefined {
