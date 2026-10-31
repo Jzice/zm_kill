@@ -63,11 +63,11 @@ export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
 export let SELECTED_CARD_PACKS: CardPackId[] = [];
 
 /**
- * 对局模式（规则层）：classic=经典（原版三国杀，零改动）/ zml=掌门路 / war=开辟战争。
+ * 对局模式（规则层）：classic=经典（原版三国杀，零改动，可选遗留玩法）/ zml=掌门路（默认）/ war=开辟战争。
  * 注意与上方的 SELECTED_MODE（single / host / join 联机模式）区分：两者互不影响。
  * 由本模块独占持有，其他模块只读；通过 setRuleMode 修改。
  */
-export let SELECTED_RULE_MODE: GameMode = 'classic';
+export let SELECTED_RULE_MODE: GameMode = 'zml';
 
 /** 切换对局模式（大厅设置；联机时以房主选择为准） */
 export function setRuleMode(m: GameMode): void {

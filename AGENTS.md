@@ -4,7 +4,7 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Repository Overview
 
-掌门杀 (Zhangmensha) is a browser-based, Sanguosha-like identity card game themed on the 修真 (cultivation) world of 《修真门派掌门路》. It was forked from 「学堂杀」 and refactored: the original single-file HTML game became a modular TypeScript project that builds back to a **single self-contained HTML file**. **Phase 1 removed the entire quiz / grade / subject system**; the engine is now a clean card-battle kernel with a 修真 faction layer, ready for cultivation mechanics (修为 / 本命 / 法器 / 灵石) to be layered on later.
+掌门杀 (Zhangmensha) is a browser-based, Sanguosha-like identity card game themed on the 修真 (cultivation) world of 《修真门派掌门路》. It was forked from 「学堂杀」 and refactored: the original single-file HTML game became a modular TypeScript project that builds back to a **single self-contained HTML file**. **Phase 1 removed the entire quiz / grade / subject system**; the engine is now a clean card-battle kernel with a 修真 faction layer, ready for cultivation mechanics (修为 / 本命 / 法器 / 灵石) to be layered on later. The default rule mode is now **掌门路 (zml)**; the original 「学堂杀」 classic Sanguosha mode is retained as an optional legacy mode in the lobby picker (may be removed later).
 
 Stack: TypeScript (strict) + Vite + `vite-plugin-singlefile`. No runtime framework; the UI is string-templated `innerHTML` re-rendered from a single state object.
 
