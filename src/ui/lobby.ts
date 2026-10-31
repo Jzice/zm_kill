@@ -341,7 +341,6 @@ export function renderCharPreview(): void {
   box.innerHTML = charCardHtml(c, {
     label: USER_CHOSEN ? '✅ 已选择' : '🎲 随机派发',
     random: !USER_CHOSEN,
-    expanded: c.id.startsWith('ex_'),
   });
 }
 

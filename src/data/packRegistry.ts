@@ -357,6 +357,15 @@ function buildCharacter(c: PackCharacter): Character {
   };
 }
 
+/** 角色来源扩展包：返回包含该角色 id 的已启用扩展包（原著角色返回 null） */
+export function packOfChar(charId: string): { id: string; name: string } | null {
+  if (!customAllowed) return null;
+  for (const p of enabledPacks()) {
+    if ((p.characters || []).some((c) => c.id === charId)) return { id: p.id, name: p.name };
+  }
+  return null;
+}
+
 /** 当前启用的自定义角色（返回全部启用包角色） */
 export function customCharsFor(_packet: PacketId): Character[] {
   if (!customAllowed) return [];

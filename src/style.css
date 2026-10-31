@@ -109,7 +109,7 @@ h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba
 .faction-card .f-name{font-size:13px;font-weight:700;letter-spacing:1px}
 .faction-card .f-desc{font-size:8.5px;opacity:.7;line-height:1.2;margin-top:1px}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;max-height:340px;overflow-y:auto;padding-right:4px}
-.char-preview{margin-top:8px;font-size:12px;text-align:center;color:var(--gold-dim);min-height:16px}
+.char-preview{margin:8px 0 0;text-align:left;font-size:12px;color:var(--gold-dim);min-height:16px}
 .char-card{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:8px;padding:6px;cursor:pointer;transition:all .2s;position:relative}
 .char-card .faction-badge{position:absolute;top:4px;right:4px;font-size:11px;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid currentColor}
 .char-card .ctop{display:flex;align-items:center;gap:5px;margin-bottom:3px}
@@ -927,7 +927,10 @@ sub{bottom:-.16em}
 .ach-item .ai{font-size:20px}.ach-item .an{font-size:9px;color:var(--muted);margin-top:2px}
 .ach-item.unlocked .an{color:var(--gold)}
 
-/* ===== 武将完整卡（随机预览 + 开局亮将，v1.8.3） ===== */
+/* ===== 武将完整卡（设置界面预览 + 开局亮将共用卡壳） =====
+ * 卡壳定义在通用 .rcp 上，两处视觉同源；预览区用 #charPreview 覆写为紧凑尺寸。 */
+.rcp{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:9px;padding:9px 11px;text-align:left;position:relative}
+.rcp.random{border-color:var(--gold);box-shadow:0 0 16px rgba(245,197,66,.35)}
 .rcp-head{display:flex;align-items:center;gap:9px}
 .rcp-avatar{font-size:30px;width:44px;height:44px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--avatar-bg);border:1px solid var(--gold-dim);border-radius:8px}
 .rcp-id{flex:1;min-width:0}
@@ -944,13 +947,23 @@ sub{bottom:-.16em}
 .rcp-src{font-size:9px;color:var(--green);margin-top:5px;line-height:1.5}
 .rcp-reroll{margin-top:8px}
 
-/* ===== 开局亮将弹窗（随机派将，仅此处使用金框卡片） ===== */
+/* 设置界面预览区：同一卡壳，尺寸收紧（避免撑高大屏 / 手机上的设置面板） */
+#charPreview .rcp{padding:7px 10px;border-radius:8px}
+#charPreview .rcp-avatar{font-size:24px;width:36px;height:36px}
+#charPreview .rcp-name{font-size:13.5px}
+#charPreview .rcp-title{font-size:9px}
+#charPreview .rcp-meta{font-size:10.5px;margin:5px 0 4px}
+#charPreview .rcp-skill{font-size:9.5px;line-height:1.5}
+#charPreview .rcp-skill b{font-size:10px}
+#charPreview .rcp-lord{font-size:9px;margin-top:4px}
+#charPreview .rcp-src{font-size:8.5px;margin-top:4px}
+#charPreview .rcp-reroll{margin-top:6px}
+
+/* ===== 开局亮将弹窗（随机派将；卡壳来自 .rcp，此处只管弹窗容器） ===== */
 #revealModal .reveal-box{max-width:430px;width:100%}
 #revealModal .shop-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--gold-dim);background:linear-gradient(180deg,rgba(245,197,66,.10),rgba(0,0,0,0))}
 #revealModal .shop-title{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px}
 #revealBody{flex:1;min-height:0;overflow-y:auto;padding:12px 14px}
-#revealBody .rcp{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:9px;padding:9px 11px;text-align:left;position:relative}
-#revealBody .rcp.random{border-color:var(--gold);box-shadow:0 0 16px rgba(245,197,66,.35)}
 .rv-tip{font-size:11px;color:var(--muted);text-align:center;margin-bottom:9px;line-height:1.5}
 .rv-actions{display:flex;gap:8px;justify-content:center;margin-top:11px;flex-wrap:wrap}
 .rv-actions .btn{white-space:nowrap}
@@ -963,6 +976,7 @@ sub{bottom:-.16em}
   #revealModal .shop-title{font-size:13px;letter-spacing:1px}
   #revealBody{padding:9px 10px}
   #revealBody .rcp{padding:8px 9px}
+  #charPreview .rcp{padding:6px 8px}
   .rv-tip{font-size:10.5px;margin-bottom:7px}
   .rv-actions{gap:6px;margin-top:9px}
   .rv-actions .btn-accent{flex:1 1 100%}

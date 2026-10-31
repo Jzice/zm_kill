@@ -6,6 +6,7 @@
 import type { Character } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { FACTIONS } from '../data/factions';
+import { packOfChar } from '../data/packRegistry';
 
 export interface CharCardOpts {
   /** 角标文案：「✅ 已选择」/「🎲 随机派发」 */
@@ -15,13 +16,13 @@ export interface CharCardOpts {
   /** 是否在武将卡内部显示「🎲 换一个」按钮；缺省时跟随 random。
    *  亮将弹窗底部已有可用的换将按钮，故弹窗内传 false 避免重复且失效的卡内按钮。 */
   cardReroll?: boolean;
-  /** 是否展示扩展包角色来源信息（扩展包角色标注其所属扩展包 id） */
-  expanded: boolean;
 }
 
 /** 完整武将卡 HTML（设置界面预览与开局亮将弹窗共用） */
 export function charCardHtml(c: Character, opts: CharCardOpts): string {
   const f = FACTIONS[c.faction];
+  /** 自定义扩展包角色：卡底标注来源包名；原著角色为 null，不输出该行 */
+  const src = packOfChar(c.id);
   const talents = c.talents
     .map(
       (s) =>
@@ -42,6 +43,7 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
     <div class="rcp-meta" style="color:${f.color}">${f.icon} ${escapeHtml(f.name)} · 体力 ${c.hp}</div>
     <div class="rcp-talents"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">天赋池（本局随机激活 2~3 门）</div>${talents}</div>
     <div class="rcp-lord">👑 主公技 <b>${escapeHtml(f.lordSkill.name)}</b>：${escapeHtml(f.lordSkill.desc)}</div>
+    ${src ? `<div class="rcp-src">📦 扩展包「${escapeHtml(src.name)}」</div>` : ''}
     ${(opts.cardReroll ?? opts.random) ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}
   </div>`;
 }
@@ -71,7 +73,7 @@ function renderReveal(): void {
   if (!body || !revealChar) return;
   body.innerHTML =
     `<div class="rv-tip">本局你将使用以下武将，确认后开局（也可先换一个）</div>` +
-    charCardHtml(revealChar, { label: '🎲 随机派发', random: true, cardReroll: false, expanded: revealChar.id.startsWith('ex_') }) +
+    charCardHtml(revealChar, { label: '🎲 随机派发', random: true, cardReroll: false }) +
     `<div class="rv-actions">
       <button class="btn btn-accent" onclick="revealConfirm()">🎮 开始对局</button>
       <button class="btn" onclick="revealReroll()">🎲 换一个</button>
