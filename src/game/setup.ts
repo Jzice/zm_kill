@@ -14,6 +14,7 @@ import { groundSetupFor, isZml } from '../core/mode';
 import { zmlCharById, zmlCharPool } from '../data/zml/characters.zml';
 import { initCult } from './zml/economy';
 import { drawCards } from './rules';
+import { syncEquipmentUpgrades } from './zml/upgrades';
 import { addChat, resetChatMessages } from './chat';
 import { addLog, resetPlayLog } from './log';
 import { clearRoleMarks } from './marks';
@@ -292,6 +293,8 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     const rest = pl.talentPool?.length ? `｜天赋池待觉醒 ${pl.talentPool.length} 门` : '';
     addLog(`🎲${pl.name} 本局天赋：${names}${rest}`, 'sys');
   });
+  // 角色升级机制：局前配装若已含专属法宝，开局即按条件解锁对应升级天赋
+  G.players.forEach((_, i) => syncEquipmentUpgrades(i));
   // 掌门路模式：写入对局模式、布置灵地盘、为每位玩家注入修真状态（境界 / 本命 / 家族）
   G.mode = SELECTED_RULE_MODE;
   if (isZml(SELECTED_RULE_MODE)) {

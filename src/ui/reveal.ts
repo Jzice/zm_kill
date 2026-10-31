@@ -7,6 +7,20 @@ import type { Character } from '../core/types';
 import { escapeHtml } from '../core/dom';
 import { FACTIONS } from '../data/factions';
 import { packOfChar } from '../data/packRegistry';
+import { unlockEquipNameOf, upgradeDefsOfChar } from '../data/zml/upgradeTalents.zml';
+
+/**
+ * 紧凑一行式「升级技能」摘要（大厅角色格 / 角色图鉴用）：
+ * 只列「装备【X】解锁【Y】」，不展开效果描述，避免挤爆小卡。
+ */
+export function upgradeSummaryHtml(c: Character): string {
+  const ups = upgradeDefsOfChar(c.id);
+  if (!ups.length) return '';
+  const items = ups
+    .map((d) => `装备【${escapeHtml(unlockEquipNameOf(d))}】解锁<b>${escapeHtml(d.name)}</b>`)
+    .join('；');
+  return `<div class="cskill-up" style="margin-top:3px;font-size:11px;color:#9ad0a0">🗡️ ${items}</div>`;
+}
 
 export interface CharCardOpts {
   /** 角标文案：「✅ 已选择」/「🎲 随机派发」 */
@@ -31,6 +45,18 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
         }</span>：${escapeHtml(s.desc)}</div>`,
     )
     .join('');
+  /** 升级技能（本命法宝解锁）：不进随机池，需装备对应法宝，离身即失效 */
+  const upgrades = upgradeDefsOfChar(c.id);
+  const upHtml = upgrades.length
+    ? `<div class="rcp-talents"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">升级技能（装备本命法宝解锁，离身即失效）</div>${upgrades
+        .map(
+          (d) =>
+            `<div class="rcp-skill" style="opacity:.72"><b>${escapeHtml(d.name)}</b><span class="rcp-type">未解锁</span>：装备【${escapeHtml(
+              unlockEquipNameOf(d),
+            )}】后解锁 —— ${escapeHtml(d.desc)}</div>`,
+        )
+        .join('')}</div>`
+    : '';
   return `<div class="rcp ${opts.random ? 'random' : ''}">
     <div class="rcp-head">
       <span class="rcp-avatar">${c.avatar}</span>
@@ -42,6 +68,7 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
     </div>
     <div class="rcp-meta" style="color:${f.color}">${f.icon} ${escapeHtml(f.name)} · 体力 ${c.hp}</div>
     <div class="rcp-talents"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">天赋池（本局随机激活 2~3 门）</div>${talents}</div>
+    ${upHtml}
     <div class="rcp-lord">👑 主公技 <b>${escapeHtml(f.lordSkill.name)}</b>：${escapeHtml(f.lordSkill.desc)}</div>
     ${src ? `<div class="rcp-src">📦 扩展包「${escapeHtml(src.name)}」</div>` : ''}
     ${(opts.cardReroll ?? opts.random) ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}

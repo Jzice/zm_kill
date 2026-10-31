@@ -13,6 +13,7 @@
 import type { Talent, TalentDef, SkillE, SkillTiming, SkillType } from '../core/types';
 import { ZML_TALENT_LIST } from './zml/talentdefs.zml';
 import { ZML_POOL_TALENT_LIST } from './zml/talentdefs.pool';
+import { ZML_UPGRADE_TALENT_LIST } from './zml/upgradeTalents.zml';
 
 /** 展示类型 → 出牌阶段是否作为「主动技按钮」出现 */
 export function skillTypeOf(d: TalentDef): SkillType {
@@ -2586,9 +2587,11 @@ export const TALENT_DEFS: Record<string, TalentDef> = Object.fromEntries(
     SUB_YICHUAN,
     SUB_GUANGHE,
     SUB_QUWEI,
-    // 掌门路原著角色技能（48 人，词条全部取自 docs/）
+    // 掌门路原著角色技能（61 人，词条全部取自 docs/）
     ...ZML_TALENT_LIST,
     ...ZML_POOL_TALENT_LIST,
+    // 掌门路角色升级天赋（装备 / 丹药 / 悟道 解锁；不进角色天赋池、不参与开局随机）
+    ...ZML_UPGRADE_TALENT_LIST,
   ].map((d) => [d.id, d]),
 );
 

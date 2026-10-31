@@ -111,7 +111,7 @@ const KNOWN_EFFECT_KINDS = new Set<string>([
   'addMark', 'tickMark', 'pledge', 'immune', 'noHandImmune', 'cardImmune', 'suitImmune',
   'distTrap', 'skillRedirect', 'shaRedirect', 'enemyEquipVoid', 'horseDist', 'reduceDamage',
   'replaceJudge', 'awaken', 'revive', 'nextShaBonus', 'nextShaUnblockable', 'rangePlus',
-  'distPlusToMe', 'ignoreHorsePlus', 'shunshouNoDist',
+  'distPlusToMe', 'ignoreHorsePlus', 'shunshouNoDist', 'targetFlip',
 ]);
 
 const SKILL_KINDS: SkillKind[] = ['active', 'trigger', 'passive', 'limit', 'awaken', 'lord', 'convert'];

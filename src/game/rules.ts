@@ -6,7 +6,15 @@ import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
 import { discardFx, drawFx } from '../core/fx';
 import { triggerDistMod, triggerHandLimit } from './skillfx';
-import { distModOf, distPlusToMeOf, enemyEquipVoidOf, handLimitBonus, horseDistOf, ignoreHorsePlus } from './talentEngine';
+import {
+  distModOf,
+  distPlusToMeOf,
+  enemyEquipVoidOf,
+  handLimitBonus,
+  horseDistOf,
+  ignoreHorsePlus,
+  rangeBonusOf,
+} from './talentEngine';
 
 export function hasTalent(p: Player, id: string): boolean {
   return !!p.talents && p.talents.some((s) => s.id === id);
@@ -50,8 +58,13 @@ export function distBetween(fi: number, ti: number): number {
   return Math.max(1, d);
 }
 
+/**
+ * 攻击范围 = 武器范围 + 天赋的「攻击范围 +n」（rangePlus 原语）。
+ * 修复：历史上此处漏加 rangeBonusOf，导致全部 rangePlus 天赋（含两个主公技）不生效。
+ */
 export function attackRange(p: Player): number {
-  return p.equip.weapon ? p.equip.weapon.range || 1 : 1;
+  const base = p.equip.weapon ? p.equip.weapon.range || 1 : 1;
+  return base + rangeBonusOf(p);
 }
 
 export function inRange(fi: number, ti: number): boolean {

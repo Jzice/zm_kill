@@ -99,6 +99,37 @@ check('角色天赋池均为 4~8 门', pool.chars.every((c) => c.talents.length 
 const allSkills = pool.chars.flatMap((c) => c.talents.map((s) => s.id));
 check('角色天赋无缺失定义', pool.chars.every((c) => c.talents.every((s) => s.kind !== '')), `${allSkills.length} 个`);
 
+// 2.2 角色升级机制：升级天赋不进角色池、只由装备 / 丹药 / 悟道 条件解锁
+check('升级天赋均带解锁条件', audit.upgrades.length >= 4 && audit.upgrades.every((u) => !!u.unlock),
+  audit.upgrades.map((u) => `${u.name}<-${u.unlock ? u.unlock.kind : '无'}`).join(','));
+check('升级天赋未混入任何角色天赋池', audit.upgrades.every((u) => !u.inPool),
+  audit.upgrades.filter((u) => u.inPool).map((u) => u.id).join(','));
+const up = await page.evaluate(() => window.__xtsUpgradeProbe());
+check('升级链自检通过（四剑在牌堆 / charId 存在 / 不在池内）', up.bad.length === 0,
+  up.bad.map((b) => `${b.name}:${b.equipMissing.concat(b.charMissing).join('|') || 'inPool'}`).join(','));
+check('四剑解锁链完整（齐休-幻日 / 秦长风-幻星 / 齐妆-幻月 / 楚无影-幻影）',
+  ['幻日无形剑', '幻星无形剑', '幻月无形剑', '幻影无形剑'].every((n) => up.chain.some((c) => c.equip === n)),
+  up.chain.map((c) => `${c.name}<-${c.equip}`).join(','));
+// 2.3 解锁条件判定：必须「角色本人 + 对应卡名」才生效（他人装备不解锁）
+const unlockOf = await page.evaluate(() => ({
+  cfStar: window.__xtsUpgradeCheck('zml_qinchangfeng', '幻星无形剑'),
+  qixiuStar: window.__xtsUpgradeCheck('zml_qixiu', '幻星无形剑'),
+  qixiuSun: window.__xtsUpgradeCheck('zml_qixiu', '幻日无形剑'),
+  qizhuangMoon: window.__xtsUpgradeCheck('zml_qizhuang', '幻月无形剑'),
+  wuyingShadow: window.__xtsUpgradeCheck('zml_chuwuying', '幻影无形剑'),
+}));
+check('秦长风装备幻星无形剑解锁【星遁】', unlockOf.cfStar.length === 1 && unlockOf.cfStar[0] === 'zml_qinchangfeng_xingdun', unlockOf.cfStar.join(','));
+check('齐休装备幻星无形剑不解锁星遁（角色不匹配）', unlockOf.qixiuStar.length === 0, unlockOf.qixiuStar.join(','));
+check('齐休装备幻日无形剑解锁【五感剥夺】', unlockOf.qixiuSun.length === 1 && unlockOf.qixiuSun[0] === 'zml_qixiu_wuganboduo', unlockOf.qixiuSun.join(','));
+check('齐妆 / 楚无影各自解锁月华 / 影遁',
+  unlockOf.qizhuangMoon[0] === 'zml_qizhuang_yuehua' && unlockOf.wuyingShadow[0] === 'zml_chuwuying_yingdun',
+  `${unlockOf.qizhuangMoon.join(',')} | ${unlockOf.wuyingShadow.join(',')}`);
+
+check('秦长风池含无根之雪且已不含星遁',
+  pool.chars.find((c) => c.id === 'zml_qinchangfeng')?.talents.some((s) => s.id === 'zml_qinchangfeng_wugenzhixue') === true &&
+    pool.chars.find((c) => c.id === 'zml_qinchangfeng')?.talents.some((s) => s.id === 'zml_qinchangfeng_xingdun') === false,
+  '');
+
 // 3. 单局无头 AI 对战：从开局跑到 gameOver，无卡死、无 console error
 const one = await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);
 check('无头 AI 对战能正常打完一局', one.games === 1 && one.stalls === 0, `stalls=${one.stalls}`);

@@ -45,13 +45,17 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     desc: '你受到伤害后，可令来源弃置 1 张手牌（【万幻】【影身】，含五阶影木妖器灵）。出处：J-万影阁',
     effects: [{ kind: 'targetDiscard', n: 1 }],
   },
+  /* 秦长风第二本命【无根之雪】（星遁已移作升级天赋：装备【幻星无形剑】后解锁，见 upgradeTalents.zml.ts） */
   {
-    id: 'zml_qinchangfeng_xingdun',
-    name: '星遁',
+    id: 'zml_qinchangfeng_wugenzhixue',
+    name: '无根之雪',
     kind: 'passive',
-    timing: 'onDraw',
-    desc: '摸牌阶段额外摸 1 张（参宿星本命，星遁配合法宝）。出处：J-星雪秘蛇胸针',
-    effects: [{ kind: 'extraDraw', n: 1 }],
+    timing: 'passive',
+    desc: '你始终可见牌堆顶 1 张，且手牌上限 +1（无根之雪：雪花降落凝成冰镜，镜中星光荧荧，遁入镜中之星）。出处：docs/raw 第017卷「第二本命无根之雪」；docs/raw 第019卷「冰镜观星」',
+    effects: [
+      { kind: 'peekTopDeck', n: 1 },
+      { kind: 'handLimit', n: 1 },
+    ],
   },
   {
     id: 'zml_gutan_zhinang',

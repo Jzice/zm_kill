@@ -17,6 +17,7 @@ import {
 } from '../profile/profile';
 import { REALM_TIERS } from '../profile/realm';
 import { defOf } from '../data/talentdefs';
+import { unlockEquipNameOf, upgradeDefsOfChar } from '../data/zml/upgradeTalents.zml';
 import { CARD_PACKS } from '../data/cardPacks';
 import { CARD_CATALOG } from '../data/cardCatalog';
 
@@ -170,6 +171,8 @@ function renderRulesContent(tab: string): void {
     el.innerHTML = `<div class="rule-section"><h4>⚔️ 基本牌</h4><ul><li><b>攻击牌</b>：对目标造成 1 点伤害；分普通 / 火 / 雷三种属性，可触发【混元剑狱】传导，火属性受【映雪冰风阵】放大。由各类攻击功法、火系 / 雷系符箓与法宝代替。</li><li><b>防御牌</b>：抵消一次攻击；由各类身法 / 盾法代替。</li><li><b>恢复牌</b>：回复 1 点体力或濒死自救；由各类恢复丹药代替。</li><li><b>增益牌</b>：本回合下一张攻击牌伤害 +1，濒死时可自救；由各类增益丹药 / 符箓代替。</li></ul></div>
     <div class="rule-section"><h4>🎴 锦囊</h4><ul><li><b>趋吉避凶诀</b>：摸2张</li><li><b>破阵符</b>：弃一张牌</li><li><b>敛息诀</b>：获得距离1内一张牌</li><li><b>决斗</b>：轮流出攻击</li><li><b>魔灾泛起 / 万剑钻心</b>：需出攻击 / 防御（护身法阵可免疫）</li><li><b>三木回心阵</b>：全体回血</li><li><b>不在算中</b>：抵消锦囊</li><li><b>七星定身阵</b>：判定红桃则失效</li><li><b>天劫</b>：判定黑桃2-9受3点雷伤</li><li><b>银甲乐傀召唤符</b>：令其出攻击，否则交出武器</li><li><b>同参木阵</b>：亮牌后依次各取一张</li><li><b>混元剑狱</b>：横置/重置，或重铸摸一张</li><li><b>极寒碧火诀</b>：弃同花色牌造成1点火伤</li><li><b>命演术</b>：指定角色判定，红桃则查看其隐藏身份（仅你可见）；自损 1 体力，每局限 1 次</li></ul></div>${knowledgeTrickHtml()}
     <div class="rule-section"><h4>🛡️ 装备</h4><ul><li><b>灵狐剑匣</b>：出攻击次数无限制</li><li><b>洼角云刀</b>：攻击被防御后可再出攻击</li><li><b>七剑斩元星</b>：两张手牌当攻击</li><li><b>七芯蝎尾夺</b>：无视目标护身法器</li><li><b>心生蜂云剑</b>：对异性用攻击，对方令你摸一张或自弃一张</li><li><b>青铜长戟</b>：攻击被防御后弃两张牌强制命中</li><li><b>月影玄冰剑</b>：弃两张牌改为令其弃两张牌</li><li><b>一剑碧环星</b>：目标无手牌时伤害+1</li><li><b>猴面金身法像</b>：判定红视为防御</li><li><b>清风法袍</b>：黑色攻击无效</li><li><b>映雪冰风阵</b>：普通攻击/群攻锦囊无效，火属性伤害+1</li><li><b>乙木御风梭 / 载具</b>：影响距离</li></ul></div>
+    <div class="rule-section"><h4>🗡️ 本命法宝与升级天赋</h4><ul><li><b>升级天赋</b>：不在角色天赋池内，<b>不参与开局随机</b>，也不占破境机缘名额，只由<b>解锁条件</b>触发获得。</li><li><b>本期条件 = 装备</b>：装备对应法宝当刻自动解锁并记入战报；法宝被替换 / 被拆 / 被夺即<b>立刻失去</b>该技能。</li><li><b>日 / 月 / 星 / 影四剑</b>：幻日无形剑 → 齐休【五感剥夺】；幻月无形剑 → 齐妆【月华】；幻星无形剑 → 秦长风【星遁】；幻影无形剑 → 楚无影【影遁】。四剑各 1 张，随牌堆抽取，需角色本人装备。</li><li><b>丹药 / 悟道</b>类解锁条件已在数据层预留，后续版本开放。</li></ul></div>
+    <div class="rule-section"><h4>📏 距离与攻击范围</h4><ul><li><b>攻击范围</b> = 武器范围 + 天赋「攻击范围 +n」加成（此前该加成未生效，本版修复）。</li><li><b>防守距离</b>：天赋「其他角色计算与你的距离 +n」等效于防守距离 +n，与 +1 马叠加。</li><li>技能描述中的「攻击距离 +n」即攻击范围加成，「防守距离 +n」即他人对你的距离加成。</li></ul></div>
     <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【混元剑狱】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>${cardPackHtml()}`;
   } else if (tab === 'chars') {
     let html = '';
@@ -204,7 +207,15 @@ function renderRulesContent(tab: string): void {
                 ? '主动技'
                 : '触发技';
             return `<b style="color:#f5e0a0">${s.name}</b>（<span style="color:#c8b8f0">${tag}</span>）：${s.desc}`;
-          }).join('<br>')}</div>
+          }).join('<br>')}
+          ${upgradeDefsOfChar(c.id)
+            .map(
+              (d) =>
+                `<br><b style="color:#f5e0a0">${d.name}</b>（<span style="color:#9ad0a0">🗡️装备解锁</span>）：装备【${unlockEquipNameOf(
+                  d,
+                )}】后解锁，离身即失效 —— ${d.desc}`,
+            )
+            .join('')}</div>
         </div>`;
       });
       html += `</div>`;

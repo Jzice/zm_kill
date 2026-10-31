@@ -187,7 +187,46 @@ declare global {
       winner: string;
       players: { name: string; char: string; role: string; alive: boolean; hp: number }[];
     };
-    xtsSkillAudit: () => { total: number; chars: number; missing: string[]; duplicates: string[]; qixiu: string[]; multi: string[] };
+    xtsSkillAudit: () => {
+      total: number;
+      chars: number;
+      missing: string[];
+      duplicates: string[];
+      qixiu: string[];
+      multi: string[];
+      upgrades: {
+        id: string;
+        name: string;
+        unlock: { kind: string; equip?: string; itemId?: string; realm?: string; charId?: string } | null;
+        inPool: boolean;
+      }[];
+    };
+    /** 升级天赋条件判定自检：给定角色 id + 装备卡名，返回解锁的升级天赋 id 列表 */
+    __xtsUpgradeCheck: (charId: string, equip: string) => string[];
+    /** 角色升级链自检：四剑卡名 / charId / unlock 条件 / 是否误入角色池 */
+    __xtsUpgradeProbe: () => {
+      total: number;
+      bad: {
+        id: string;
+        name: string;
+        equip: string;
+        charId: string;
+        hasUnlock: boolean;
+        inPool: boolean;
+        equipMissing: string[];
+        charMissing: string[];
+      }[];
+      chain: {
+        id: string;
+        name: string;
+        equip: string;
+        charId: string;
+        hasUnlock: boolean;
+        inPool: boolean;
+        equipMissing: string[];
+        charMissing: string[];
+      }[];
+    };
     xtsSeniorPool: () => {
       count: number;
       byFaction: Record<string, number>;

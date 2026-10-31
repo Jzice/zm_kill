@@ -16,6 +16,8 @@ import { renderRuleModePicker, setRuleMode } from './ui/lobby';
 import { FACTIONS } from './data/factions';
 import { defOf, TALENT_DEFS } from './data/talentdefs';
 import { buildDeck } from './data/cards';
+import { ZML_ALL } from './data/zml/cards.zml';
+import { ZML_UPGRADE_TALENT_LIST, unlockableUpgrades } from './data/zml/upgradeTalents.zml';
 import { normalizeCardPacks, withCore } from './data/cardPacks';
 import { initPacks } from './data/packRegistry';
 import {
@@ -332,8 +334,54 @@ window.xtsSkillAudit = () => {
   // 掌门路：以主角齐休作为「三技能基准角色」（诸葛亮等名人角色已移除）
   const qixiu = CHARACTERS.find((c) => c.id === 'zml_qixiu')?.talents.map((s) => s.id) || [];
   const multi = CHARACTERS.filter((c) => c.talents.length >= 3).map((c) => c.id);
-  return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, qixiu, multi };
+  // 角色升级天赋：不进任何角色池，只带 unlock 条件
+  const upgrades = ZML_UPGRADE_TALENT_LIST.map((d) => ({
+    id: d.id,
+    name: d.name,
+    unlock: d.unlock || null,
+    inPool: CHARACTERS.some((c) => c.talents.some((s) => s.id === d.id)),
+  }));
+  return { total: ids.length, chars: CHARACTERS.length, missing, duplicates: dup, qixiu, multi, upgrades };
 };
+
+/**
+ * 角色升级链自检（scripts/smoke-skills.mjs 断言用）：
+ * 校验四剑卡名真实存在于牌堆、解锁条件里的 charId 真实存在、
+ * 升级天赋均带 unlock 且不在任何角色天赋池内 —— 防止改名 / 手误造成静默失效。
+ */
+window.__xtsUpgradeProbe = () => {
+  const deckNames = new Set<string>();
+  for (const d of ZML_ALL) deckNames.add(d.name);
+  const charIds = new Set(CHARACTERS.map((c) => c.id));
+  const chain = ZML_UPGRADE_TALENT_LIST.map((d) => {
+    const u = d.unlock;
+    const equipMissing = !u || u.kind !== 'equip' ? [] : deckNames.has(u.equip) ? [] : [u.equip];
+    const charMissing = u?.charId && !charIds.has(u.charId) ? [u.charId] : [];
+    return {
+      id: d.id,
+      name: d.name,
+      equip: u && u.kind === 'equip' ? u.equip : '',
+      charId: u?.charId || '',
+      hasUnlock: !!u,
+      inPool: CHARACTERS.some((c) => c.talents.some((s) => s.id === d.id)),
+      equipMissing,
+      charMissing,
+    };
+  });
+  return {
+    total: chain.length,
+    bad: chain.filter((c) => !c.hasUnlock || c.inPool || c.equipMissing.length || c.charMissing.length),
+    chain,
+  };
+};
+
+/**
+ * 升级天赋条件判定自检（纯函数，不改动对局状态）：
+ * 给定「角色 id + 装备卡名」，返回会被解锁的升级天赋 id 列表。
+ * 用于冒烟脚本验证「角色 + 卡名」双重匹配（他人装备不应解锁）。
+ */
+window.__xtsUpgradeCheck = (charId: string, equip: string) =>
+  unlockableUpgrades(charId, [equip]).map((d) => d.id);
 
 /**
  * 高中扩展包 50 将专项指针（scripts/verify-senior50.mjs / smoke-talents.mjs 用）。

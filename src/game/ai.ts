@@ -14,6 +14,7 @@ import { useActiveTalent } from './skills';
 import { useTao, useSkill, useSha, useJiu } from './actions';
 import { onLoseArmor } from './damage';
 import { NET, syncStateToClients } from '../net/network';
+import { syncEquipmentUpgrades } from './zml/upgrades';
 import { defOf } from '../data/talentdefs';
 import {
   canConvertAs,
@@ -245,6 +246,8 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       await sleep(300);
     }
   }
+  // 角色升级机制：AI 装备不走 fire('onEquip')，此处按解锁条件重算升级天赋
+  if (equipChanged) syncEquipmentUpgrades(idx);
   if (equipChanged && NET.isHost) syncStateToClients();
   while (p.hp < p.maxHp && p.alive) {
     const tao = p.hand.find((c) => c.sub === 'tao');

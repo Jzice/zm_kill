@@ -134,6 +134,21 @@ export type SkillCond =
  */
 export type SkillE = SkillEffect & { at?: SkillTiming };
 
+/**
+ * 升级天赋的解锁条件（角色升级机制）。
+ * 升级天赋不在角色天赋池内、不参与开局随机、不占破境机缘名额，
+ * 只由本条件触发获得；条件消失（如卸下法宝）即失去。
+ *
+ * 本期只实现 `equip`；`item`（丹药）/ `realm`（悟道 / 境界）为后续扩展预留。
+ */
+export type TalentUnlock =
+  /** 装备区存在该卡名的装备（charId 缺省 = 任意角色装备均可解锁） */
+  | { kind: 'equip'; equip: string; charId?: string }
+  /** 服用 / 持有指定丹药（预留） */
+  | { kind: 'item'; itemId: string; charId?: string }
+  /** 达到指定境界（悟道，预留） */
+  | { kind: 'realm'; realm: Realm; charId?: string };
+
 export interface TalentDef {
   id: string;
   name: string;
@@ -150,6 +165,8 @@ export interface TalentDef {
   lingshou?: boolean;
   /** 道统标签（雷属性判定对象） */
   taoism?: Taoism;
+  /** 解锁条件：有值即为「升级天赋」，由 upgrades.syncEquipmentUpgrades 按条件动态授予 */
+  unlock?: TalentUnlock;
 }
 
 export interface Talent {
@@ -167,6 +184,11 @@ export interface Talent {
   cond?: SkillCond;
   /** 由【诡代】/【神傀化身】/【本命代征】复制而来（回合结束清理用） */
   copied?: boolean;
+  /**
+   * 由升级天赋的解锁条件授予（记录授予来源卡名）。
+   * 仅用于条件失效时精确移除，与 copied 互不影响。
+   */
+  grantedBy?: string;
   /** 复制来的天赋持续时间：'turn' 持到本回合结束，'game' 持到本局结束 */
   copiedUntil?: 'turn' | 'game';
   /** 该技能的伤害属性（掌门路；随 talentOf 从 TalentDef 透传） */
@@ -285,6 +307,8 @@ export type SkillEffect =
   | { kind: 'swapHp' }
   /** 据守：翻面并摸 n 张牌 */
   | { kind: 'turnFace'; draw: number }
+  /** 令一名其他角色翻面（跳过其下个回合）：五感剥夺 / 失神类效果 */
+  | { kind: 'targetFlip' }
   /** 将 n 张手牌交给一名角色；交给 ≥healIfSpread 名不同角色时自己回复 1 点体力 */
   | { kind: 'giveHand'; n: number; healIfSpread?: number }
   /** 交给一名角色 1 张手牌，若为【防御】则自己摸 selfDraw 张（朱自清·背影） */

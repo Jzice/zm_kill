@@ -56,6 +56,7 @@ import { runSkillEffects } from './skillfx';
 import { expansionItemById } from '../data/expansion';
 import { waitChoice } from './choice';
 import { gainExp } from './zml/economy';
+import { syncEquipmentUpgrades } from './zml/upgrades';
 import { NET, scheduleSync, syncStateToClients } from '../net/network';
 
 /** 结算一次【攻击】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
@@ -177,6 +178,7 @@ async function takeEquipFrom(targetIdx: number, slot: EquipSlot): Promise<void> 
   G.discard.push(c);
   addLog(`${t.name} 失去【${c.name}】`, 'dmg');
   await fire('onLoseEquip', { idx: targetIdx, card: c });
+  syncEquipmentUpgrades(targetIdx); // 装备离身 → 收回该法宝解锁的升级天赋
   render();
 }
 
@@ -698,6 +700,7 @@ export async function useSkill(
             holder.equip.weapon = null;
             a.hand.push(w);
             addLog(`${a.name} 获得 ${holder.name} 的【${w.name}】`, 'hl');
+            syncEquipmentUpgrades(targetIdx); // 兵器被夺 → 收回该法宝解锁的升级天赋
           }
         }
       }
@@ -1195,6 +1198,7 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
       else G.discard.push(c);
       addLog(`${src.name} ${mode}了 ${t.name} 的【${c.name}】`);
       await fire('onLoseEquip', { idx: targetIdx, card: c });
+      syncEquipmentUpgrades(targetIdx); // 被夺装备 → 收回该法宝解锁的升级天赋
     }
   }
   render();

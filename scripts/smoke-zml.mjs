@@ -107,6 +107,11 @@ check('关键修真卡全部入池', missing.length === 0, missing.length ? `缺
 const equipKeys = ['灵狐剑匣', '伪无形剑', '月影玄冰剑', '心生蜂云剑', '洼角云刀', '七芯蝎尾夺', '碧火幽魂刀', '青铜长戟', '一剑碧环星', '七剑斩元星', '猴面金身法像', '清风法袍', '映雪冰风阵', '玄水归土阵', '广开道德金光大阵', '乙木御风梭', '虾驼兽', '飞蟹', '青灵石蒲团', '储物袋', '红玉阵盘', '通天令', '通明幻镜'];
 const missingEq = equipKeys.filter((n) => !stats[n]);
 check('装备（兵器/护身/载具/宝物）入池', missingEq.length === 0, missingEq.length ? `缺：${missingEq.join('、')}` : `${equipKeys.length} 种`);
+// 日月星影四剑（角色升级机制的解锁载体，各 1 张）
+const fourSwords = ['幻日无形剑', '幻月无形剑', '幻星无形剑', '幻影无形剑'];
+const missingSword = fourSwords.filter((n) => stats[n] !== 1);
+check('日/月/星/影四剑各 1 张入池', missingSword.length === 0,
+  missingSword.length ? `异常：${missingSword.map((n) => `${n}=${stats[n] || 0}`).join('、')}` : `${fourSwords.length} 柄`);
 
 // 4. 选一个原著角色后开局（避免随机亮将弹窗）
 const charCards = await page.locator('#charGrid .char-card').count();

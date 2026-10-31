@@ -7,7 +7,7 @@ import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS } from '../data/characters';
 import { PACKETS, charPoolForPacket, packetName, isExpansion, canEnablePacket } from '../data/packets';
 import type { PacketId } from '../data/packets';
-import { charCardHtml } from './reveal';
+import { charCardHtml, upgradeSummaryHtml } from './reveal';
 import { NET } from '../net/network';
 import {
   AVATAR_OPTIONS,
@@ -322,7 +322,7 @@ export function renderCharPicker(): void {
       <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
       <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
       <div class="cskill">${c.talents.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
-      
+      ${upgradeSummaryHtml(c)}
     </div>`;
     })
     .join('');
@@ -484,6 +484,7 @@ export function renderJoinPickers(): void {
           <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
           <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
           <div class="cskill">${c.talents.map((s) => `<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+          ${upgradeSummaryHtml(c)}
           </div>`;
       })
       .join('');

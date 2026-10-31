@@ -31,6 +31,7 @@ import { dealDamage, onLoseArmor } from './damage';
 import { useActiveTalent } from './skills';
 import { useSha, useTao, useJiu, useSkill } from './actions';
 import { defOf } from '../data/talentdefs';
+import { equipUnlockHint, syncEquipmentUpgrades } from './zml/upgrades';
 import { GROUND_CLAIM_COST, MARKET_COST, REALM_LABEL, isZml } from '../core/mode';
 import {
   canMarket,
@@ -599,13 +600,17 @@ export async function playPhase(idx: number): Promise<void> {
       }
       await noteCardPlayed(idx, card);
       addLog(`${p.name} 装备【${card.name}】`);
-      showPlayHint('装备', card.name, EQUIP_DESC[card.skill || ''] || '');
+      const eqDesc = EQUIP_DESC[card.skill || ''] || '';
+      const unlockHint = equipUnlockHint(card.name);
+      showPlayHint('装备', card.name, [eqDesc, unlockHint].filter(Boolean).join('；'));
       Sound.play('equip');
       void equipFx(idx, card.name);
       render();
       // 李四光【构造体系】：装备 / 失去装备各摸一张
       if (replaced) await fire('onLoseEquip', { idx, card: replaced });
       await fire('onEquip', { idx, card });
+      // 角色升级机制：装备变动后按解锁条件重算升级天赋（在位生效 / 卸下失效）
+      syncEquipmentUpgrades(idx);
       if (NET.isHost) scheduleSync();
     }
     if (!p.alive || G.gameOver) break;

@@ -1001,6 +1001,15 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         addLog(`${p.name} 翻面并摸 ${e.draw} 张牌`, 'hl');
         break;
       }
+      case 'targetFlip': {
+        // 令目标翻面：五感尽失、浑噩一回合（回合开始翻回正面并跳过该回合，见 turn.ts）
+        const ti = await resolveTarget(idx, ctx, false);
+        if (ti < 0) break;
+        const t = G.players[ti];
+        t.turned = true;
+        addLog(`${p.name} 剥夺 ${t.name} 的五感，${t.name} 翻面（跳过其下个回合）`, 'hl');
+        break;
+      }
 
       /* ---- 状态与标记 ---- */
       case 'addMark': {
