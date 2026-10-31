@@ -35,7 +35,7 @@ const LUXUN_NAH: TalentDef = {
   name: '呐喊',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张黑色手牌当【过河拆桥】使用（杂文如匕首投枪）。',
+  desc: '你可将一张黑色手牌当【破阵符】使用（杂文如匕首投枪）。',
   effects: [{ kind: 'convert', from: { color: 'black' }, to: 'guohe' }],
 };
 
@@ -61,7 +61,7 @@ const LIBAI_JIANGJINJIU: TalentDef = {
   name: '将进酒',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张红色手牌当【酒】使用，每回合限一次（举杯邀明月）。',
+  desc: '你可将一张红色手牌当【增益】使用，每回合限一次（举杯邀明月）。',
   effects: [{ kind: 'convert', from: { color: 'red' }, to: 'jiu', limit: 'perTurn' }],
 };
 
@@ -116,7 +116,7 @@ const ZHUZIQING_BEIYING: TalentDef = {
   name: '背影',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可将一张手牌交给一名角色；若为【闪】，你摸两张牌。',
+  desc: '出牌阶段，你可将一张手牌交给一名角色；若为【防御】，你摸两张牌。',
   effects: [{ kind: 'giveHandIfShan', selfDraw: 2 }],
 };
 
@@ -149,7 +149,7 @@ const LAOSHE_XIANGZI: TalentDef = {
   name: '骆驼祥子',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张装备牌当【闪】使用或打出（车夫的脊梁）。',
+  desc: '你可将一张装备牌当【防御】使用或打出（车夫的脊梁）。',
   effects: [{ kind: 'convert', from: { type: 'equip' }, to: 'shan' }],
 };
 
@@ -159,7 +159,7 @@ const MAODUN_ZIYE: TalentDef = {
   name: '子夜',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张黑色手牌当【杀】使用，每回合限一次。',
+  desc: '你可将一张黑色手牌当【攻击】使用，每回合限一次。',
   effects: [{ kind: 'convert', from: { color: 'black' }, to: 'sha', limit: 'perTurn' }],
 };
 
@@ -169,7 +169,7 @@ const MAODUN_PIPAN: TalentDef = {
   name: '批判',
   kind: 'trigger',
   timing: 'onSkillCountered',
-  desc: '你的锦囊牌被【无懈可击】抵消后，你可弃置一张手牌，令该【无懈可击】的使用者弃置一张牌。',
+  desc: '你的锦囊牌被【不在算中】抵消后，你可弃置一张手牌，令该【不在算中】的使用者弃置一张牌。',
   effects: [
     { kind: 'costCard', n: 1 },
     { kind: 'targetDiscard', n: 1 },
@@ -496,19 +496,19 @@ const AINSTEIN_ZNFC: TalentDef = {
   name: '质能方程',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张红色手牌当【火杀】使用（E=mc²，质能转换）。',
+  desc: '你可将一张红色手牌当【烈火攻击】使用（E=mc²，质能转换）。',
   effects: [{ kind: 'convert', from: { color: 'red' }, to: 'sha', damageType: 'fire' }],
 };
 
-/** 法拉第·避雷针：免疫【闪电】+ 受雷伤摸牌（v2.1：法拉第笼，替代原弃牌雷伤技） */
+/** 法拉第·避雷针：免疫【天劫】+ 受雷伤摸牌（v2.1：法拉第笼，替代原弃牌雷伤技） */
 const FALADI_DCYG: TalentDef = {
   id: 'faladi_dcyg',
   name: '避雷针',
   kind: 'passive',
   timing: 'passive',
-  desc: '锁定技：你不能成为【闪电】的目标；当你受到雷属性伤害时，你摸一张牌。',
+  desc: '锁定技：你不能成为【天劫】的目标；当你受到雷属性伤害时，你摸一张牌。',
   effects: [
-    { kind: 'cardImmune', names: ['闪电'] },
+    { kind: 'cardImmune', names: ['天劫'] },
     { kind: 'selfDraw', n: 1, at: 'onDamaged', cond: { k: 'lastDamageThunder' } },
   ],
 };
@@ -519,7 +519,7 @@ const FALADI_CHANGLUN: TalentDef = {
   name: '场论',
   kind: 'trigger',
   timing: 'onUseShan',
-  desc: '你使用或打出【闪】后摸一张牌；若该【闪】点数为偶数，改为摸两张牌。',
+  desc: '你使用或打出【防御】后摸一张牌；若该【防御】点数为偶数，改为摸两张牌。',
   effects: [
     { kind: 'selfDraw', n: 1 },
     { kind: 'selfDraw', n: 1, cond: { k: 'lastCardEven' } },
@@ -532,7 +532,7 @@ const JIALILUE_ZYLT: TalentDef = {
   name: '自由落体',
   kind: 'passive',
   timing: 'passive',
-  desc: '你使用【杀】无次数限制，每回合最多额外使用 2 张；你每回合使用的第二张及之后的【杀】，需先弃置一张手牌。',
+  desc: '你使用【攻击】无次数限制，每回合最多额外使用 2 张；你每回合使用的第二张及之后的【攻击】，需先弃置一张手牌。',
   effects: [{ kind: 'shaUnlimited', maxExtra: 2, extraCostHand: 1 }],
 };
 
@@ -573,7 +573,7 @@ const PULANGKE_CS: TalentDef = {
   name: '普朗克常数',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你使用或打出【闪】后，若你已受伤，你回复 1 点体力（每回合限一次）。',
+  desc: '你的手牌上限 +1；你使用或打出【防御】后，若你已受伤，你回复 1 点体力（每回合限一次）。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'selfHeal', n: 1, cond: { k: 'isHurt' }, at: 'onUseShan' },
@@ -675,7 +675,7 @@ const KKL_JGS: TalentDef = {
   name: '结构式',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1，装备区每有一张牌额外 +1；你的装备不能被【过河拆桥】与【顺手牵羊】指定。',
+  desc: '你的手牌上限 +1，装备区每有一张牌额外 +1；你的装备不能被【破阵符】与【敛息诀】指定。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'immune', scope: 'equip' },
@@ -698,14 +698,14 @@ const LSF_HMX: TalentDef = {
   ],
 };
 
-/** 卢瑟福·散射实验：α 粒子被原子核散射偏转 → 转移【杀】的目标（每回合限一次） */
+/** 卢瑟福·散射实验：α 粒子被原子核散射偏转 → 转移【攻击】的目标（每回合限一次） */
 const LSF_SSSY: TalentDef = {
   id: 'lsf_sssy',
   name: '散射实验',
   kind: 'trigger',
   timing: 'onTargetSha',
   limit: 'perTurn',
-  desc: '当你成为【杀】的目标时，你可将此【杀】转移给另一名角色（每回合限一次）。',
+  desc: '当你成为【攻击】的目标时，你可将此【攻击】转移给另一名角色（每回合限一次）。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'shaRedirect' },
@@ -803,7 +803,7 @@ const TYY_QHS: TalentDef = {
   name: '青蒿素',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张点数 ≤6 的手牌当【桃】使用，每回合限一次（低温提取小分子）。',
+  desc: '你可将一张点数 ≤6 的手牌当【恢复】使用，每回合限一次（低温提取小分子）。',
   effects: [{ kind: 'convert', from: { maxNum: 6 }, to: 'tao', limit: 'perTurn' }],
 };
 
@@ -826,7 +826,7 @@ const LSZ_BCGM: TalentDef = {
   name: '本草纲目',
   kind: 'convert',
   timing: 'passive',
-  desc: '你的回合外，你可将一张红色手牌当【桃】使用（百草皆可入药）。',
+  desc: '你的回合外，你可将一张红色手牌当【恢复】使用（百草皆可入药）。',
   effects: [{ kind: 'convert', from: { color: 'red' }, to: 'tao', outsideTurn: true }],
 };
 
@@ -883,7 +883,7 @@ const YF_JZ: TalentDef = {
   name: '精忠',
   kind: 'passive',
   timing: 'passive',
-  desc: '你每回合使用的第一张【杀】，目标需连续使用两张【闪】才能抵消（岳家军势不可挡）。',
+  desc: '你每回合使用的第一张【攻击】，目标需连续使用两张【防御】才能抵消（岳家军势不可挡）。',
   effects: [{ kind: 'shaNeedShan', n: 2, perTurnFirst: true }],
 };
 
@@ -913,13 +913,13 @@ const ZH_XXY: TalentDef = {
   ],
 };
 
-/** 郑和·航海图：距离 -1 + 顺手牵羊无距离限制 + 马政（v2.1：舟楫之利） */
+/** 郑和·航海图：距离 -1 + 敛息诀无距离限制 + 马政（v2.1：舟楫之利） */
 const ZH_HHT: TalentDef = {
   id: 'zh_hht',
   name: '航海图',
   kind: 'passive',
   timing: 'passive',
-  desc: '你计算与其他角色的距离 −1；你使用【顺手牵羊】无距离限制；装备区每有一张马，你计算距离额外 −1。',
+  desc: '你计算与其他角色的距离 −1；你使用【敛息诀】无距离限制；装备区每有一张马，你计算距离额外 −1。',
   effects: [
     { kind: 'distMod', delta: -1 },
     { kind: 'shunshouNoDist' },
@@ -947,7 +947,7 @@ const LZX_HF: TalentDef = {
   kind: 'trigger',
   timing: 'onTargetSha',
   limit: 'perTurn',
-  desc: '当你成为【杀】的目标时，你可展示一张手牌，若其点数 ≥ 该【杀】的点数，此【杀】对你无效（每回合限一次）。',
+  desc: '当你成为【攻击】的目标时，你可展示一张手牌，若其点数 ≥ 该【攻击】的点数，此【攻击】对你无效（每回合限一次）。',
   effects: [{ kind: 'numGuard', op: 'ge', against: 'shaNum', limit: 'perTurn' }],
 };
 
@@ -990,7 +990,7 @@ const SMQ_CYJZYZY: TalentDef = {
   ],
 };
 
-/** 诸葛亮·观星（三国杀原版） */
+/** 诸葛亮·观星 */
 const ZGL_GX: TalentDef = {
   id: 'zgl_gx',
   name: '观星',
@@ -1000,13 +1000,13 @@ const ZGL_GX: TalentDef = {
   effects: [{ kind: 'star', n: 'alive' }],
 };
 
-/** 诸葛亮·空城（三国杀原版） */
+/** 诸葛亮·空城 */
 const ZGL_KC: TalentDef = {
   id: 'zgl_kc',
   name: '空城',
   kind: 'passive',
   timing: 'passive',
-  desc: '锁定技：若你没有手牌，你不能成为【杀】或【决斗】的目标。',
+  desc: '锁定技：若你没有手牌，你不能成为【攻击】或【决斗】的目标。',
   effects: [{ kind: 'noHandImmune' }],
 };
 
@@ -1016,7 +1016,7 @@ const ZGL_CSB: TalentDef = {
   name: '出师表',
   kind: 'active',
   timing: 'active',
-  desc: '出牌阶段，你可弃置一张手牌，令一名角色选择：交给你一张手牌 / 立下军令状——本回合结束时若其未使用过【杀】，其失去 1 点体力。',
+  desc: '出牌阶段，你可弃置一张手牌，令一名角色选择：交给你一张手牌 / 立下军令状——本回合结束时若其未使用过【攻击】，其失去 1 点体力。',
   effects: [
     { kind: 'costCard', n: 1 },
     {
@@ -1050,7 +1050,7 @@ const XXK_TX: TalentDef = {
   name: '探险',
   kind: 'passive',
   timing: 'passive',
-  desc: '锁定技：你计算与其他角色的距离 −1，且计算距离时无视其他角色的 +1 马；与你距离大于 1 的角色不能对你使用【杀】。',
+  desc: '锁定技：你计算与其他角色的距离 −1，且计算距离时无视其他角色的 +1 马；与你距离大于 1 的角色不能对你使用【攻击】。',
   effects: [
     { kind: 'distMod', delta: -1 },
     { kind: 'ignoreHorsePlus' },
@@ -1117,13 +1117,13 @@ const LSG_DZKT: TalentDef = {
   effects: [{ kind: 'deckBottom', n: 5, then: 'digEquip' }],
 };
 
-/** 李四光·构造体系：枭姬双向 + 地质锤（v2.1：装备牌可当【杀】使用） */
+/** 李四光·构造体系：枭姬双向 + 地质锤（v2.1：装备牌可当【攻击】使用） */
 const LSG_GZTX: TalentDef = {
   id: 'lsg_gztx',
   name: '构造体系',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你装备一张装备牌时摸一张牌；你失去装备区的牌时摸一张牌；你可将一张装备牌当【杀】使用（每回合限一次）。',
+  desc: '你的手牌上限 +1；你装备一张装备牌时摸一张牌；你失去装备区的牌时摸一张牌；你可将一张装备牌当【攻击】使用（每回合限一次）。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'selfDraw', n: 1, at: 'onEquip' },
@@ -1234,9 +1234,9 @@ const MZ_FG: TalentDef = {
   name: '非攻',
   kind: 'passive',
   timing: 'passive',
-  desc: '锁定技：你不能成为【万箭齐发】与【南蛮入侵】的目标；其他角色的武器与防具对你无效。',
+  desc: '锁定技：你不能成为【万剑钻心】与【魔灾泛起】的目标；其他角色的武器与防具对你无效。',
   effects: [
-    { kind: 'cardImmune', names: ['万箭齐发', '南蛮入侵'] },
+    { kind: 'cardImmune', names: ['万剑钻心', '魔灾泛起'] },
     { kind: 'enemyEquipVoid', slots: ['weapon', 'armor'] },
   ],
 };
@@ -1268,7 +1268,7 @@ const SZ_XS: TalentDef = {
   name: '虚实',
   kind: 'convert',
   timing: 'passive',
-  desc: '每回合限一次，你可将一张【闪】当【杀】使用；每回合限一次，你可将一张【杀】当【闪】使用或打出（虚实相生）。',
+  desc: '每回合限一次，你可将一张【防御】当【攻击】使用；每回合限一次，你可将一张【攻击】当【防御】使用或打出（虚实相生）。',
   effects: [
     { kind: 'convert', from: { sub: 'shan' }, to: 'sha', limit: 'perTurn' },
     { kind: 'convert', from: { sub: 'sha' }, to: 'shan', limit: 'perTurn' },
@@ -1587,7 +1587,7 @@ const MLD_FB: TalentDef = {
   name: '非暴力',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +2；受到伤害后，若你本回合未使用过【杀】，你回复 1 点体力。',
+  desc: '你的手牌上限 +2；受到伤害后，若你本回合未使用过【攻击】，你回复 1 点体力。',
   effects: [
     { kind: 'handLimit', n: 2 },
     { kind: 'selfHeal', n: 1, at: 'onDamaged', cond: { k: 'noShaThisTurn' } },
@@ -1643,7 +1643,7 @@ const KPL_TK: TalentDef = {
   name: '天空立法者',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你使用【杀】无次数限制，每回合最多额外 1 张；你每回合使用的第二张及之后的【杀】，需先弃置一张手牌。',
+  desc: '你的手牌上限 +1；你使用【攻击】无次数限制，每回合最多额外 1 张；你每回合使用的第二张及之后的【攻击】，需先弃置一张手牌。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'shaUnlimited', maxExtra: 1, extraCostHand: 1 },
@@ -1674,7 +1674,7 @@ const MKSW_WY: TalentDef = {
   name: '位移电流',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你使用或打出【闪】后摸一张牌。',
+  desc: '你的手牌上限 +1；你使用或打出【防御】后摸一张牌。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'selfDraw', n: 1, at: 'onUseShan' },
@@ -1824,7 +1824,7 @@ const BL_DFX: TalentDef = {
   name: '电负性',
   kind: 'convert',
   timing: 'passive',
-  desc: '你可将一张黑色手牌当【雷杀】使用（电负性：得电子者带负电）。',
+  desc: '你可将一张黑色手牌当【雷霆攻击】使用（电负性：得电子者带负电）。',
   effects: [{ kind: 'convert', from: { color: 'black' }, to: 'sha', damageType: 'thunder' }],
 };
 
@@ -1967,7 +1967,7 @@ const NPL_CQ: TalentDef = {
   name: '重整旗鼓',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +2；你使用【杀】无次数限制，每回合最多额外 1 张。',
+  desc: '你的手牌上限 +2；你使用【攻击】无次数限制，每回合最多额外 1 张。',
   effects: [
     { kind: 'handLimit', n: 2 },
     { kind: 'shaUnlimited', maxExtra: 1, extraCostHand: 0 },
@@ -2019,7 +2019,7 @@ const BSM_GS: TalentDef = {
   name: '关税同盟',
   kind: 'passive',
   timing: 'passive',
-  desc: '你的手牌上限 +1；你受到【杀】造成的伤害后，对伤害来源造成 1 点伤害。',
+  desc: '你的手牌上限 +1；你受到【攻击】造成的伤害后，对伤害来源造成 1 点伤害。',
   effects: [
     { kind: 'handLimit', n: 1 },
     { kind: 'reflect', n: 1, when: 'hurtBySha' },
@@ -2063,13 +2063,13 @@ const WGN_FDL: TalentDef = {
   effects: [{ kind: 'selfDraw', n: 3 }, { kind: 'toDeckTop', from: 'hand' }],
 };
 
-/** 魏格纳·大陆漂移：距离 −1 + 顺手牵羊无距离限制 */
+/** 魏格纳·大陆漂移：距离 −1 + 敛息诀无距离限制 */
 const WGN_DLPY: TalentDef = {
   id: 'wgn_dlpy',
   name: '大陆漂移',
   kind: 'passive',
   timing: 'passive',
-  desc: '你计算与其他角色的距离 −1；你使用【顺手牵羊】无距离限制。',
+  desc: '你计算与其他角色的距离 −1；你使用【敛息诀】无距离限制。',
   effects: [
     { kind: 'distMod', delta: -1 },
     { kind: 'shunshouNoDist' },
@@ -2146,7 +2146,7 @@ const GLB_XHL: TalentDef = {
   name: '新航路',
   kind: 'passive',
   timing: 'passive',
-  desc: '锁定技：与你距离大于 1 的角色不能对你使用【杀】；其他角色计算与你的距离 +1。',
+  desc: '锁定技：与你距离大于 1 的角色不能对你使用【攻击】；其他角色计算与你的距离 +1。',
   effects: [
     { kind: 'distTrap', min: 1 },
     { kind: 'distPlusToMe', n: 1 },

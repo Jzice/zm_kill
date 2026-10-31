@@ -7,9 +7,9 @@ import { addChat } from '../game/chat';
 import { addLog, appendPlayLog, playLog, setPlayLog } from '../game/log';
 import { render } from '../ui/render';
 import { clearPlayZone } from '../ui/playzone';
-import { SELECTED_CARD_PACKS, SELECTED_COUNT, SELECTED_EXTRA_PACKETS, SELECTED_GRADE, SELECTED_PACKET, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
+import { SELECTED_CARD_PACKS, SELECTED_COUNT, SELECTED_EXTRA_PACKETS, SELECTED_PACKET, renderSeatPanel, updateGuestRoomInfo, updateHostRoomInfo } from '../ui/lobby';
 import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
-import { consumePackUse } from '../profile/packMeter';
+
 import { applyLlmModes } from '../game/setup';
 import { resolveChoice } from '../game/choice';
 import { identityFromProfile, localIdentity, maybeSettle, publicProfile } from '../profile/profile';
@@ -431,16 +431,6 @@ export function onClientData(data: NetMessage): void {
   } else if (data.type === 'rematch') {
     backToRoomForRematch();
   } else if (data.type === 'start_game') {
-    // 远程客户端本地自结算：仅为「自己叠加启用的扩展包」付费（每日免费优先，否则扣学分）；
-    // 房主基础包由房主自行结算，本端不代付。启用前 UI 已阻止不可负担的包，故此处必然可负担。
-    if (SELECTED_EXTRA_PACKETS.length) {
-      const r = consumePackUse(SELECTED_EXTRA_PACKETS);
-      if (!r.ok) {
-        // 极端情况下（如免费用尽且学分不足）仍允许进入，但提示未付费成功
-        console.warn('[pack] 远程端扩展包扣费失败，仍按房主基础池进行');
-      }
-      window.dispatchEvent(new CustomEvent('credits-updated'));
-    }
     G.players = data.players;
     G.myPlayerIdx = data.myPlayerIdx;
     G.playerCount = data.playerCount;

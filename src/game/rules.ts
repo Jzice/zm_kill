@@ -12,7 +12,7 @@ export function hasTalent(p: Player, id: string): boolean {
   return !!p.talents && p.talents.some((s) => s.id === id);
 }
 
-/** 角色性别：真人取个性化设置（隐藏则回退角色表），AI 取角色表；用于【雌雄双股剑】异性判定 */
+/** 角色性别：真人取个性化设置（隐藏则回退角色表），AI 取角色表；用于【心生蜂云剑】异性判定 */
 export function genderOf(p: Player): Gender {
   const g = p.identity?.gender;
   if (g && g !== 'hidden') return g;

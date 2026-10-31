@@ -32,9 +32,9 @@ const TIMINGS: { v: string; t: string }[] = [
   { v: 'beforeJudge', t: '判定牌生效前' },
   { v: 'beforeDamage', t: '伤害结算前' },
   { v: 'onDamaged', t: '受到伤害后' },
-  { v: 'onTargetSha', t: '成为杀的目标时' },
-  { v: 'onUseShan', t: '使用/打出闪后' },
-  { v: 'onShaHit', t: '杀造成伤害后' },
+  { v: 'onTargetSha', t: '成为攻击牌目标时' },
+  { v: 'onUseShan', t: '使用/打出防御后' },
+  { v: 'onShaHit', t: '攻击造成伤害后' },
   { v: 'onUseSkill', t: '使用锦囊后' },
 ];
 

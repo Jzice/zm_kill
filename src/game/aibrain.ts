@@ -350,7 +350,7 @@ function trickHarms(sub: string, primary: number | null, idx: number): boolean {
 }
 
 /**
- * AI 是否对当前生效的锦囊打出【无懈可击】。
+ * AI 是否对当前生效的锦囊打出【不在算中】。
  * - 尚未被无懈（countered=false）：抵消「对自己/盟友有害」的锦囊。
  * - 已被某人无懈（countered=true）：若刚刚无懈者是敌人且原始锦囊对我方有利（如桃园回血），则再无懈恢复之。
  */

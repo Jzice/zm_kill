@@ -20,7 +20,7 @@ import type {
   SkillTiming,
 } from '../core/types';
 import { FACTIONS } from './factions';
-import { stageOf, type PacketId } from './packets';
+import { type PacketId } from './packets';
 import {
   registerTalentDef,
   unregisterTalentDef,
@@ -357,8 +357,8 @@ function buildCharacter(c: PackCharacter): Character {
   };
 }
 
-/** 当前启用的自定义角色（首版不再按年级 / 学段筛选，返回全部启用包角色） */
-export function customCharsFor(_grade: string, _packet: PacketId): Character[] {
+/** 当前启用的自定义角色（返回全部启用包角色） */
+export function customCharsFor(_packet: PacketId): Character[] {
   if (!customAllowed) return [];
   const out: Character[] = [];
   for (const p of enabledPacks()) {

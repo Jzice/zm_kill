@@ -48,11 +48,11 @@ export interface AiPolicy {
   exposureW: number;
   /** 决斗 EV 门槛（低于此值不打决斗） */
   duelMin: number;
-  /** 火攻 EV 门槛 */
+  /** 极寒碧火诀 EV 门槛 */
   huogongMin: number;
   /** AOE（南蛮/万箭）EV 门槛：>0 即允许「有队友但净收益为正」时开 */
   aoeMin: number;
-  /** 铁索连环 EV 门槛 */
+  /** 混元剑狱 EV 门槛 */
   tiesuoMin: number;
   /** 留闪边际价值系数：闪的防守价值 = shanMarginal × 预计被攻击概率 */
   shanMarginal: number;
@@ -76,7 +76,7 @@ export interface AiPolicy {
 /** 默认策略：数值与原启发式保持同量级，保证 A/B 两条路径可比 */
 export const DEFAULT_POLICY: AiPolicy = {
   // 默认关闭 EV 增强：发布即「原启发式」行为，零回归。
-  // 先验修正后请用 `npm run ai:eval "学堂杀.html" 300 5` 验证 EV 臂 J 是否超过基线，
+  // 先验修正后请用 `npm run ai:eval "掌门杀.html" 300 5` 验证 EV 臂 J 是否超过基线，
   // 若转为更优，把这里改成 true（一行）即可全量启用博弈论增强层。
   useEv: false,
 

@@ -5,9 +5,8 @@ import { escapeHtml, inputValue } from '../core/dom';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG, ROLE_ICON, CHARACTERS } from '../data/characters';
-import { PACKETS, charPoolForPacket, packetName, packTollOf, isExpansion } from '../data/packets';
+import { PACKETS, charPoolForPacket, packetName, isExpansion, canEnablePacket } from '../data/packets';
 import type { PacketId } from '../data/packets';
-import { canEnablePacket, packFreeRemaining, packUsePreview } from '../profile/packMeter';
 import { charCardHtml } from './reveal';
 import { NET } from '../net/network';
 import {
@@ -40,14 +39,14 @@ import { DEFAULT_TIMER_SEC, TIMER_OPTIONS } from '../game/timer';
 import { CARD_PACKS, cardPackName, normalizeCardPacks } from '../data/cardPacks';
 import type { CardPackId } from '../data/cardPacks';
 import { CARD_CATALOG } from '../data/cardCatalog';
+import { ZML_DECK_TOTAL } from '../data/zml/cards.zml';
 
 /* ---- 大厅选择状态（原版全局变量，仅本模块写入，其他模块只读） ---- */
-export let SELECTED_GRADE = '';
 export let SELECTED_COUNT = 5;
 export let SELECTED_CHAR: Character | null = null;
 export let SELECTED_FACTION: FactionId = 'chuqin';
 export let SELECTED_MODE: 'single' | 'host' | 'join' = 'single';
-/** 扩展包：角色池范围（全部 / 初中 / 高中），首版均为全量角色 */
+/** 扩展包：角色池范围（首版仅 'all'） */
 export let SELECTED_PACKET: PacketId = 'all';
 export let USER_CHOSEN = false;
 /** 随机模式预览角色：未手动选择时随机派发，一次预览后保持稳定（开局所见即所得） */
@@ -57,13 +56,13 @@ export let SELECTED_ROLE: Role | 'random' = 'random';
 export let SELECTED_TIMER_ON = true;
 export let SELECTED_TIMER_SEC: number = DEFAULT_TIMER_SEC;
 /**
- * 牌库扩展包（与角色扩展包 SELECTED_PACKET 相互独立）：决定牌堆在基础 125 张之上追加哪些扩展卡。
+ * 牌库扩展包（与角色扩展包 SELECTED_PACKET 相互独立）：决定牌堆在修真牌堆之上追加哪些扩展卡。
  * 由本模块独占持有（其他模块只读 / 通过 toggleCardPack 修改），不对外赋值。
  */
 export let SELECTED_CARD_PACKS: CardPackId[] = [];
 
 /**
- * 对局模式（规则层）：classic=经典（原版三国杀，零改动，可选遗留玩法）/ zml=掌门路（默认）/ war=开辟战争。
+ * 对局模式（规则层）：zml=掌门路（默认）/ war=开辟战争，均基于修真内核。
  * 注意与上方的 SELECTED_MODE（single / host / join 联机模式）区分：两者互不影响。
  * 由本模块独占持有，其他模块只读；通过 setRuleMode 修改。
  */
@@ -78,11 +77,11 @@ export function setRuleMode(m: GameMode): void {
   renderCardPackPicker();
 }
 
-/** 对局模式选择器：经典 / 掌门路 / 开辟战争 */
+/** 对局模式选择器：掌门路 / 开辟战争 */
 export function renderRuleModePicker(): void {
   const box = document.getElementById('ruleModePicker');
   if (!box) return;
-  const ids: GameMode[] = ['classic', 'zml', 'war'];
+  const ids: GameMode[] = ['zml', 'war'];
   box.innerHTML = ids
     .map(
       (m) =>
@@ -132,12 +131,12 @@ export function saveSetupPrefs(): void {
   }
 }
 
-/** 扩展包选择器：按年级（累加，默认，永久免费）/ 初中 / 高中 / 全部（受每日免费 + 学分约束） */
+/** 扩展包选择器：角色池范围（首版仅 'all'，全部免费并列） */
 export function renderPacketPicker(): void {
   const box = document.getElementById('packetPicker');
   if (!box) return;
   box.innerHTML = PACKETS.map((p) => {
-    const n = charPoolForPacket(SELECTED_GRADE, p.id).length;
+    const n = charPoolForPacket(p.id).length;
     const tail = n ? `${n}角色` : '暂无角色';
     const enabled = canEnablePacket(p.id);
     const badge = packStateBadge(p.id);
@@ -146,11 +145,9 @@ export function renderPacketPicker(): void {
   }).join('');
   const hint = document.getElementById('packetHint');
   if (hint) {
-    const n = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).length;
+    const n = charPoolForPacket(SELECTED_PACKET).length;
     hint.textContent = `当前：${packetName(SELECTED_PACKET)} —— 共 ${n} 名角色`;
   }
-  // 同步刷新每日免费额度胶囊
-  renderPackMeter();
 }
 
 /**
@@ -172,8 +169,8 @@ export function renderCardPackPicker(): void {
   const hint = document.getElementById('cardPackHint');
   if (hint) {
     hint.textContent = SELECTED_CARD_PACKS.length
-      ? `当前牌库：基础 125 张 + ${SELECTED_CARD_PACKS.map(cardPackName).join(' / ')}（房主勾选后随房间同步，单人对局按本地记忆）`
-      : '当前牌库：仅基础 125 张（未启用任何扩展卡包）';
+      ? `当前牌库：修真牌堆 ${ZML_DECK_TOTAL} 张（已勾选 ${SELECTED_CARD_PACKS.map(cardPackName).join(' / ')}；扩展卡尚未修真化，暂不投放牌堆）`
+      : `当前牌库：仅修真牌堆 ${ZML_DECK_TOTAL} 张（未启用任何扩展卡包）`;
   }
 }
 
@@ -201,7 +198,7 @@ export function renderTimerPicker(): void {
   const hint = document.getElementById('timerHint');
   if (hint) {
     hint.textContent = SELECTED_TIMER_ON
-      ? `当前：每次决策限时 ${SELECTED_TIMER_SEC} 秒 —— 出牌超时自动结束出牌，出闪超时承受伤害，濒死超时放弃，答题超时算答错`
+      ? `当前：每次决策限时 ${SELECTED_TIMER_SEC} 秒 —— 出牌超时自动结束出牌，防御超时承受伤害，濒死超时放弃，答题超时算答错`
       : '当前：不限时（AI 回合不计时，仅对真人玩家的决策计时）';
   }
 }
@@ -230,7 +227,7 @@ export function setPacket(id: PacketId): void {
   SELECTED_PACKET = id;
   renderPacketPicker();
   // 切换扩展包后角色池变化：确保已选阵营/角色仍有效
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = charPoolForPacket(SELECTED_PACKET);
   if (!pool.length) {
     renderFactionPicker();
     renderCharPicker();
@@ -272,7 +269,7 @@ export function selectRole(r: Role | 'random'): void {
 export function renderFactionPicker(): void {
   const grid = document.getElementById('factionPicker');
   if (!grid) return;
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = charPoolForPacket(SELECTED_PACKET);
   const fset = new Set(pool.map((c) => c.faction));
   grid.innerHTML = Object.entries(FACTIONS)
     .map(([k, f]) => {
@@ -281,7 +278,7 @@ export function renderFactionPicker(): void {
       return `<div class="faction-card ${k === SELECTED_FACTION && !disabled ? 'selected' : ''}" style="border-color:${f.color};color:${f.color};${disabled ? 'opacity:.35;' : ''}${k === SELECTED_FACTION && !disabled ? 'box-shadow:0 0 16px ' + f.color : ''}" onclick="selectFaction('${k}')">
       <div class="f-icon">${f.icon}</div>
       <div class="f-name" style="color:${f.color};">${f.name}</div>
-      <div class="f-desc">${disabled ? '本年级暂无角色' : '主公技：' + f.lordSkill.name + ' · ' + cnt + '角色'}</div>
+      <div class="f-desc">${disabled ? '本门派暂无角色' : '主公技：' + f.lordSkill.name + ' · ' + cnt + '角色'}</div>
     </div>`;
     })
     .join('');
@@ -289,9 +286,9 @@ export function renderFactionPicker(): void {
 
 export function selectFaction(k: FactionId): void {
   Sound.play('click');
-  const pool = charPoolForPacket(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === k);
+  const pool = charPoolForPacket(SELECTED_PACKET).filter((c) => c.faction === k);
   if (!pool.length) {
-    alert('当前年级下该阵营暂无角色，请提高年级或导入题库');
+    alert('当前该阵营暂无角色');
     return;
   }
   USER_CHOSEN = true;
@@ -305,12 +302,12 @@ export function selectFaction(k: FactionId): void {
 export function renderCharPicker(): void {
   const grid = document.getElementById('charGrid');
   if (!grid) return;
-  const full = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  const full = mergedCharPool(SELECTED_PACKET);
   const pool = full.filter((c) => c.faction === SELECTED_FACTION);
   const hint = document.getElementById('charPoolHint');
   if (hint) hint.textContent = `（当前可选角色池共 ${full.length} 名，含已解锁扩展包角色）`;
   if (!pool.length) {
-    grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">该阵营在当前年级暂无角色</div>';
+    grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">该阵营当前暂无角色</div>';
     const pv0 = document.getElementById('charPreview');
     if (pv0) pv0.innerHTML = '';
     return;
@@ -351,7 +348,7 @@ export function renderCharPreview(): void {
 /** 随机模式：开局前更换随机派发的武将（重新派发后仍保持「开局所见即所得」） */
 export function rerollRandomChar(): Character | null {
   if (USER_CHOSEN) return SELECTED_CHAR;
-  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = mergedCharPool(SELECTED_PACKET);
   if (!pool.length) return null;
   let c = pool[Math.floor(Math.random() * pool.length)];
   if (pool.length > 1 && RANDOM_CHAR && c.id === RANDOM_CHAR.id) {
@@ -370,87 +367,51 @@ export function rerollRandomChar(): Character | null {
 export function selectChar(id: string): void {
   Sound.play('click');
   USER_CHOSEN = true;
-  // 优先从「当前上下文的角色池」取，保证自选角色带上对应学段/学科主题技能；
+  // 优先从「当前上下文的角色池」取，保证自选角色带上门派主题技能；
   // 联机加入方用「房主基础包 ∪ 自己叠加扩展包」的有效池，房主/单机用合并池。找不到时回退原始数据。
   const searchPool =
     SELECTED_MODE === 'join'
-      ? effectiveCharPool(REMOTE_BASE_GRADE, REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS)
-      : mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+      ? effectiveCharPool(REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS)
+      : mergedCharPool(SELECTED_PACKET);
   SELECTED_CHAR = searchPool.find((c) => c.id === id) || CHARACTERS.find((c) => c.id === id) || null;
   renderCharPicker();
   pushGuestPref();
 }
 
 /** 选角池 = 原著角色池 + 自定义扩展包角色（已移除学堂杀年级包与 108 名生成角色） */
-export function mergedCharPool(grade: string, packet: PacketId): Character[] {
-  const base = charPoolForPacket(grade, packet);
+export function mergedCharPool(packet: PacketId): Character[] {
+  const base = charPoolForPacket(packet);
   const ids = new Set(base.map((c) => c.id));
   // 自定义扩展包角色：追加式并入，受「仅单机/房主」限制（联机加入方返回空）
-  const custom = customCharsFor(grade, packet).filter((c) => !ids.has(c.id));
+  const custom = customCharsFor(packet).filter((c) => !ids.has(c.id));
   return [...base, ...custom];
 }
 
 /**
  * 某座位的有效角色池 = 基础包（房主统一选包）∪ 该玩家本局叠加启用的扩展包（个人叠加）。
- * 复用 mergedCharPool 的「基础池 + 已学分解锁扩展角色」规则，逐包合并并去重。
+ * 复用 mergedCharPool 的「基础池 + 扩展角色」规则，逐包合并并去重。
  */
-export function effectiveCharPool(grade: string, base: PacketId, extra: PacketId[]): Character[] {
+export function effectiveCharPool(base: PacketId, extra: PacketId[]): Character[] {
   const seen = new Map<string, Character>();
   const add = (list: Character[]): void => {
     for (const c of list) if (!seen.has(c.id)) seen.set(c.id, c);
   };
-  add(mergedCharPool(grade, base));
-  for (const p of extra) if (p !== base) add(mergedCharPool(grade, p));
+  add(mergedCharPool(base));
+  for (const p of extra) if (p !== base) add(mergedCharPool(p));
   return [...seen.values()];
 }
 
 /* ==================== 扩展包按次使用（学习解锁机制） ==================== */
 
-/** 联机加入方：房主统一选的基础包与年级（由 room_state 下发，未同步前回退到本地默认值） */
+/** 联机加入方：房主统一选的基础包（由 room_state 下发，未同步前回退到本地默认值） */
 export let REMOTE_BASE_PACKET: PacketId = 'all';
-export let REMOTE_BASE_GRADE = '';
 
 /** 本地玩家的「个人叠加扩展包」（联机加入方在房主基础包之上额外启用的包；单机/房主恒为空） */
 export let SELECTED_EXTRA_PACKETS: PacketId[] = [];
 
-/** 渲染「扩展包每日免费额度」胶囊：今日扩展包免费 X/3 */
-export function renderPackMeter(): void {
-  const box = document.getElementById('packMeter');
-  if (!box) return;
-  const left = packFreeRemaining();
-  const total = 3;
-  const used = total - left;
-  const pct = Math.round((used / total) * 100);
-  const color = left > 0 ? 'var(--accent, #4F8CFF)' : '#6B7280';
-  box.innerHTML = `
-    <div class="pm-meter">
-      <span class="pm-label">🎟️ 今日扩展包免费</span>
-      <span class="pm-count"><b style="color:${left > 0 ? '#36D399' : '#FBBF24'}">${left}</b>/${total}</span>
-      <span class="pm-bar"><i style="width:${pct}%;background:${color}"></i></span>
-    </div>
-    <div class="pm-tip">${left > 0 ? `今日还剩 ${left} 次免费使用任意扩展包，超出后按次消耗学分` : '今日免费已用尽，继续使用扩展包将按次消耗学分'}</div>
-    <button class="pm-study ${left > 0 ? '' : 'pm-study--hot'}" onclick="openStudyFromPack()">📖 去学习赚学分</button>`;
-}
-
-/** 把一次扩展包使用预览渲染成状态徽标文案 */
-function packStateBadge(id: PacketId): string {
-  if (!isExpansion(id)) return '<span class="pk-badge free">永久免费</span>';
-  const toll = packTollOf([id]);
-  const pv = packUsePreview([id]);
-  if (pv.viaFree) return `<span class="pk-badge free">免费 ${packFreeRemaining()}/3</span>`;
-  if (pv.affordable) return `<span class="pk-badge pay">💰 ${toll}/局</span>`;
-  return `<span class="pk-badge locked">🔒 学分不足</span>`;
-}
-
-/** 学习引导按钮：跳转题库浏览 / 刷题（答题、复习赚取学分） */
-export function openStudyFromPack(): void {
-  Sound.play('click');
-  // 复用题库浏览入口（内含刷题 / 复习），引导用户通过答题积累学分
-  try {
-    (window as unknown as { openBankBrowser?: () => void }).openBankBrowser?.();
-  } catch {
-    /* ignore */
-  }
+/** 把一次扩展包使用预览渲染成状态徽标文案（首版恒为「永久免费」） */
+function packStateBadge(_id: PacketId): string {
+  return '<span class="pk-badge free">永久免费</span>';
 }
 
 /* ==================== 加入档：阵营 / 角色选择（同步给房主） ==================== */
@@ -487,12 +448,11 @@ export function renderExtraPackPicker(): void {
       return `<button class="opt-btn ${on ? 'active' : ''}${lockedCls}" data-epacket="${id}" onclick="toggleExtraPacket('${id}')">${p.icon} ${p.name}<small>叠加到 ${baseName} 之上</small><div class="pk-badges">${badge}</div></button>`;
     })
     .join('');
-  const eff = effectiveCharPool(REMOTE_BASE_GRADE, base, SELECTED_EXTRA_PACKETS);
+  const eff = effectiveCharPool(base, SELECTED_EXTRA_PACKETS);
   box.innerHTML = `
     <h3>◈ 扩展包 · 个人叠加 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（房主基础包：${baseName}${baseFree ? '（免费）' : '（房主已选）'}；你可叠加启用自己的扩展包，不受房主限制）</span></h3>
     <div class="opt-row" id="extraPackPicker">${toggles}</div>
-    <div class="scope-hint" id="extraPackHint">本局你的可选角色池共 <b>${eff.length}</b> 名（基础 + 已叠加扩展包）</div>
-    <button class="pm-study" onclick="openStudyFromPack()">📖 去学习赚学分</button>`;
+    <div class="scope-hint" id="extraPackHint">本局你的可选角色池共 <b>${eff.length}</b> 名（基础 + 已叠加扩展包）</div>`;
 }
 
 /** 渲染加入方专用选择器（使用全量角色池，不限定年级） */
@@ -511,8 +471,8 @@ export function renderJoinPickers(): void {
   }
   const cg = document.getElementById('joinCharGrid');
   if (cg) {
-    // 加入方可选角色 = 房主基础包 ∪ 自己叠加启用的扩展包（年级按房主选定）
-    const pool = effectiveCharPool(REMOTE_BASE_GRADE, REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS).filter(
+    // 加入方可选角色 = 房主基础包 ∪ 自己叠加启用的扩展包
+    const pool = effectiveCharPool(REMOTE_BASE_PACKET, SELECTED_EXTRA_PACKETS).filter(
       (c) => c.faction === SELECTED_FACTION,
     );
     if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = pool[0] ?? null;
@@ -602,7 +562,7 @@ export function renderSetupSummary(): void {
     <div class="sum-tip">选择上方任一模式即进入设置界面修改</div>`;
 }
 
-/** 个人信息（点头像）：我的档案 + 个性化资料 + 错题本 合并弹窗 */
+/** 个人信息（点头像）：我的档案 + 个性化资料 合并弹窗 */
 export function openProfileMenu(): void {
   Sound.play('click');
   showAchievements(PROFILE, '我的档案', { editor: true });
@@ -845,11 +805,11 @@ export function updateAIHint(): void {
   h.textContent = ai > 0 ? `将补充 ${ai} 名 AI` : '真人已满，无 AI 位';
 }
 
-/** 保证当前选角在年级/阵营池内合法 */
+/** 保证当前选角在阵营池内合法 */
 export function ensureCharValid(): void {
-  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
+  const pool = mergedCharPool(SELECTED_PACKET).filter((c) => c.faction === SELECTED_FACTION);
   if (!pool.length) {
-    const allPool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+    const allPool = mergedCharPool(SELECTED_PACKET);
     if (allPool.length) {
       SELECTED_FACTION = allPool[0].faction;
       SELECTED_CHAR = allPool[0];
@@ -859,10 +819,10 @@ export function ensureCharValid(): void {
   if (!SELECTED_CHAR || !pool.some((c) => c.id === SELECTED_CHAR!.id)) SELECTED_CHAR = pool[0];
 }
 
-/** 随机模式预览角色：未手动选择时按当前年级/扩展包随机派发；一次预览后保持稳定，保证开局「所见即所得」 */
+/** 随机模式预览角色：未手动选择时按当前扩展包随机派发；一次预览后保持稳定，保证开局「所见即所得」 */
 export function randomPreviewChar(): Character | null {
   if (USER_CHOSEN) return SELECTED_CHAR;
-  const pool = mergedCharPool(SELECTED_GRADE, SELECTED_PACKET);
+  const pool = mergedCharPool(SELECTED_PACKET);
   if (!pool.length) return null;
   if (RANDOM_CHAR && pool.some((c) => c.id === RANDOM_CHAR!.id)) return RANDOM_CHAR;
   const fset = [...new Set(pool.map((c) => c.faction))];
@@ -911,8 +871,6 @@ interface RoomStateLike {
   targetCount: number;
   /** 房主统一选的基础扩展包（加入方据此预览个人叠加） */
   packet?: string;
-  /** 房主选定的年级 / 学期 */
-  grade?: string;
 }
 
 function memberListHtml(members: RoomStateLike['members'], currentCount: number, targetCount: number, tail: string): string {
@@ -976,9 +934,8 @@ export function updateGuestRoomInfo(state: RoomStateLike): void {
   );
   lb!.style.display = 'inline-block';
   jb!.style.display = 'none';
-  // 记录房主统一选的基础包与年级，使个人叠加选项与可选角色池与房主一致
+  // 记录房主统一选的基础包，使个人叠加选项与可选角色池与房主一致
   if (state.packet) REMOTE_BASE_PACKET = state.packet as PacketId;
-  if (state.grade) REMOTE_BASE_GRADE = state.grade;
   renderExtraPackPicker();
   renderJoinPickers();
   renderSeatPanel();
@@ -1198,11 +1155,6 @@ export function setPlayerCount(n: number): void {
   }
   saveSetupPrefs();
   Sound.play('click');
-}
-
-/** 设置当前年级（首版不再按年级筛池，保留接口以兼容脚本调用） */
-export function setGrade(g: string): void {
-  SELECTED_GRADE = g;
 }
 
 /** 同步人数滑块下限：建房后随加入人数变化（有人加入则下限提高，有人退出则回落） */

@@ -6,7 +6,6 @@ import { withCore } from '../data/cardPacks';
 import { G } from './state';
 import { FACTIONS } from '../data/factions';
 import { ROLES, ROLE_CONFIG } from '../data/characters';
-import { charPoolForPacket, packTollOf, isExpansion, packetName } from '../data/packets';
 import { SELECTED_CARD_PACKS, SELECTED_RULE_MODE } from '../ui/lobby';
 import { applyDeckComposition } from './aicounts';
 import { expansionEquipById, expansionItemById } from '../data/expansion';
@@ -26,14 +25,12 @@ import { aiSpeak } from './ai';
 import {
   SELECTED_CHAR,
   SELECTED_COUNT,
-  SELECTED_GRADE,
   SELECTED_PACKET,
   SELECTED_ROLE,
   SELECTED_TIMER_ON,
   SELECTED_TIMER_SEC,
   USER_CHOSEN,
   ensureCharValid,
-  effectiveCharPool,
   pickRandomCharIfNotChosen,
   rerollRandomChar,
 } from '../ui/lobby';
@@ -46,10 +43,9 @@ import {
   refreshProfileUI,
   saveProfile,
 } from '../profile/profile';
-/** 局前配装上限（沿用原学分体系下的常量，首版不再依赖学分） */
+/** 局前配装上限常量 */
 const LOADOUT_EQUIP_LIMIT = 2;
 const LOADOUT_ITEM_LIMIT = 9;
-import { consumePackUse } from '../profile/packMeter';
 import { Sound } from '../core/sound';
 import { llmEnabledForSeat } from '../llm/config';
 import { resetLlmFailStreak } from '../llm/agent';
@@ -151,7 +147,6 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   shuffle(rem); // 借用洗牌打乱剩余角色分配
   const roles: Role[] = [myRole, ...rem];
   const base = SELECTED_PACKET;
-  const grade = SELECTED_GRADE;
   // 收集全部成员的「个人叠加扩展包」，构成房间总可用池（供 AI 座位抽取）；
   // 房主统一选基础包 + 各玩家叠加 = 个人叠加模型（不受房主限制）。
   const extraAll: PacketId[] = [];
@@ -163,7 +158,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       for (const p of m.pref?.cardPacks || []) if (p !== 'core' && !cardPacks.includes(p)) cardPacks.push(p);
     }
   }
-  const roomPool = isZml(SELECTED_RULE_MODE) ? zmlCharPool() : effectiveCharPool(grade, base, extraAll);
+  const roomPool = zmlCharPool();
   const aiChars = roomPool.filter((c) => c.id !== localChar.id);
   shuffle(aiChars);
   // 已分配角色，避免多座位重复
@@ -267,7 +262,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
         (typeof rawName === 'string' && rawName ? { ...localIdentity(), name: rawName } : null);
       const name = identity?.name || member?.name || (typeof rawName === 'string' && rawName) || '玩家' + i;
       // 远程玩家：优先采用其在设置界面自选的阵营 / 角色偏好（限定在其「基础包 ∪ 叠加包」的有效池内）
-      const seatPool = isZml(SELECTED_RULE_MODE) ? zmlCharPool() : effectiveCharPool(grade, base, member?.pref?.packets || []);
+      const seatPool = zmlCharPool();
       const seatChars = seatPool.filter((c) => c.id !== localChar.id && !used.has(c.id));
       const fallback = seatChars[0] ?? aiChars.find((c) => !used.has(c.id)) ?? roomPool[0];
       const byFaction = member?.pref?.faction
@@ -342,16 +337,6 @@ export async function startSingle(): Promise<void> {
   }
   pickRandomCharIfNotChosen();
   ensureCharValid();
-  // 扩展包按次使用：单机基础包若为扩展包，结算每日免费额度或学分（房主基础包同理）
-  if (isExpansion(SELECTED_PACKET)) {
-    const r = consumePackUse([SELECTED_PACKET]);
-    if (!r.ok) {
-      alert(
-        `扩展包「${packetName(SELECTED_PACKET)}」今日免费次数已用尽，且学分不足（需 ${packTollOf([SELECTED_PACKET])} 学分/局）。\n\n请先通过学习（答题 / 复习错题）积累学分，或改用「按年级」（永久免费）。`,
-      );
-      return;
-    }
-  }
   const localChar = SELECTED_CHAR!;
   const nickname = readNickname('你');
   if (nickname) {
@@ -386,16 +371,6 @@ export async function hostStartGame(): Promise<void> {
   }
   pickRandomCharIfNotChosen();
   ensureCharValid();
-  // 扩展包按次使用：房主基础包若为扩展包，结算每日免费额度或学分（加入方仅为其叠加包付费）
-  if (isExpansion(SELECTED_PACKET)) {
-    const r = consumePackUse([SELECTED_PACKET]);
-    if (!r.ok) {
-      alert(
-        `你选择的扩展包「${packetName(SELECTED_PACKET)}」今日免费次数已用尽，且学分不足（需 ${packTollOf([SELECTED_PACKET])} 学分/局）。\n\n请先通过学习（答题 / 复习错题）积累学分，或改用「按年级」（永久免费）。`,
-      );
-      return;
-    }
-  }
   const localChar = SELECTED_CHAR!;
   const nick = readNickname('房主');
   if (nick) {
@@ -431,7 +406,7 @@ export async function hostStartGame(): Promise<void> {
   clearPlayZone();
   document.getElementById('chatPanel')!.style.display = 'flex';
   addLog(`游戏开始。你是 ${FACTIONS[localChar.faction].name} 阵营 ${ROLES[G.players[0].role].name}。`, 'hl');
-  addChat('系统', '欢迎来到学堂杀联机房！', 'sys');
+  addChat('系统', '欢迎来到掌门杀联机房！', 'sys');
   render();
   if (G.players[1])
     setTimeout(() => {

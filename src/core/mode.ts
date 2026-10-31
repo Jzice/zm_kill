@@ -14,13 +14,11 @@ import type { GameMode, Realm, Role, SpiritGround } from './types';
 
 /** 模式显示名 */
 export const MODE_LABEL: Record<GameMode, string> = {
-  classic: '经典',
   zml: '掌门路',
   war: '开辟战争',
 };
 
 export const MODE_DESC: Record<GameMode, string> = {
-  classic: '原版三国杀牌堆与角色，规则完全不变',
   zml: '掌门路修真牌堆 + 原著角色：灵石 / 境界 / 灵地 / 本命 / 家族 / 器灵 / 载具',
   war: '在掌门路基础上按门派分队，以灵地占领为唯一胜负目标',
 };

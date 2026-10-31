@@ -16,6 +16,7 @@ import { llmReady, llmDebug, getLlmConfig } from './config';
 import type { LlmConfig, LlmDecisionKind } from './types';
 import { aiQuiz } from '../game/ai';
 import { aiQuizRate, aiShouldCounter, aiShouldSave } from '../game/aibrain';
+import { trickName } from '../data/zml/terms';
 
 export { llmReady } from './config';
 
@@ -133,19 +134,19 @@ function tempForKind(kind: LlmDecisionKind): number {
 function instructionFor(kind: LlmDecisionKind): string {
   switch (kind) {
     case 'play':
-      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【杀】且存在标注「✅在你攻击范围内」的敌对角色，应优先出【杀】打击；技能通常需要答题才能发动，转化技可把一张牌当其他牌使用。优先顺序建议：发动关键技能 → 装备 → 补牌/控场 → 攻击敌方。';
+      return '出牌阶段：选择你要执行的动作（或结束出牌）。只要手中有【攻击】且存在标注「✅在你攻击范围内」的敌对角色，应优先出【攻击】打击；技能通常需要答题才能发动，转化技可把一张牌当其他牌使用。优先顺序建议：发动关键技能 → 装备 → 补牌/控场 → 攻击敌方。';
     case 'target':
-      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【杀】或锦囊时务必选定一名敌对角色，不要选 -1 取消；若只能选到友方(绿方)请改选其他动作或直接结束。';
+      return '选择一个目标座位（value 为座位号，-1 表示取消/不选择）。出【攻击】或锦囊时务必选定一名敌对角色，不要选 -1 取消；若只能选到友方(绿方)请改选其他动作或直接结束。';
     case 'discard':
-      return '弃牌阶段：手牌超出体力上限须弃置。优先弃掉锦囊与装备，保留【闪】【杀】【桃】等防御/进攻牌；若某牌可作转化技素材也优先保留。';
+      return '弃牌阶段：手牌超出体力上限须弃置。优先弃掉锦囊与装备，保留【防御】【攻击】【恢复】等防御/进攻牌；若某牌可作转化技素材也优先保留。';
     case 'rescue':
-      return '濒死：若手中有【桃】应自救回复 1 点体力；若无【桃】则只能放弃（选表示放弃的取消项）。';
+      return '濒死：若手中有【恢复】应自救回复 1 点体力；若无【恢复】则只能放弃（选表示放弃的取消项）。';
     case 'shan':
-      return '被【杀】攻击：若你确为攻击目标且非必死，应打出【闪】抵消；若代价过高或会误伤友方，可不闪（选取消项）。';
+      return '你成为【攻击】目标：若你确为目标且非必死，应打出【防御】抵消；若代价过高或会误伤友方，可不防御（选取消项）。';
     case 'save':
-      return '他人濒死：考虑你的身份目标与阵营关系，若值得救援则使用【桃】救之，否则不救（选 skip）。';
+      return '他人濒死：考虑你的身份目标与阵营关系，若值得救援则使用【恢复】救之，否则不救（选 skip）。';
     case 'counter':
-      return '是否打出【无懈可击】抵消该锦囊：若锦囊对你/盟友有害应打出；若已被无懈过一次且其对我方有利可再无懈恢复。';
+      return '是否打出【不在算中】抵消该锦囊：若锦囊对你/盟友有害应打出；若已被抵消过一次且其对我方有利可再度抵消恢复。';
     default:
       return '请选择一项。';
   }
@@ -289,16 +290,16 @@ export async function llmShouldCounter(
   lastCounterer: number,
 ): Promise<boolean> {
   const src = G.players[srcIdx]?.name || '某人';
-  const trickName = trickZh(sub);
+  const tname = trickName(sub);
   const harm = primary === pid ? '该锦囊直接指向你（对你有害）' : '该锦囊不直接指向你';
-  const instr = `是否打出【无懈可击】抵消【${trickName}】？来源：${src}。${harm}。${countered ? '该锦囊已被他人无懈过一次。' : ''}`;
+  const instr = `是否打出【不在算中】抵消【${tname}】？来源：${src}。${harm}。${countered ? '该锦囊已被他人抵消过一次。' : ''}`;
   const r = await llmDecideBool(pid, instr);
   if (r === null) {
-    dbg(pid, '无懈回退', `【${trickName}】→ 原启发式`);
+    dbg(pid, '抵消回退', `【${tname}】→ 原启发式`);
     return aiShouldCounter(pid, srcIdx, countered, sub, primary, lastCounterer);
   }
-  dbg(pid, '无懈决策', `【${trickName}】→ ${r ? '打出' : '不无懈'}`);
-  if (r === false) addLog(`${G.players[pid]?.name || 'AI'} 经大模型判断不无懈`, 'sys');
+  dbg(pid, '抵消决策', `【${tname}】→ ${r ? '打出' : '不抵消'}`);
+  if (r === false) addLog(`${G.players[pid]?.name || 'AI'} 经大模型判断不抵消`, 'sys');
   return r;
 }
 
@@ -307,7 +308,7 @@ export async function llmShouldSave(hIdx: number, dIdx: number): Promise<boolean
   const h = G.players[hIdx];
   const d = G.players[dIdx];
   if (!h || !d) return false;
-  const instr = `角色 ${d.name} 正处于濒死（体力 ${d.hp}），你是否使用手牌【桃】救援？考虑你的身份目标与阵营关系。`;
+  const instr = `角色 ${d.name} 正处于濒死（体力 ${d.hp}），你是否使用手牌【恢复】救援？考虑你的身份目标与阵营关系。`;
   const r = await llmDecideBool(hIdx, instr);
   if (r === null) {
     dbg(hIdx, '救援回退', `救 ${d.name} → 原启发式`);
@@ -344,21 +345,4 @@ export async function llmQuizDecide(idx: number): Promise<boolean> {
     noteFail(idx);
     return aiQuiz(aiQuizRate(p));
   }
-}
-
-function trickZh(sub: string): string {
-  const m: Record<string, string> = {
-    guohe: '过河拆桥',
-    shunshou: '顺手牵羊',
-    juedou: '决斗',
-    lebu: '乐不思蜀',
-    huogong: '火攻',
-    tiesuo: '铁索连环',
-    nanman: '南蛮入侵',
-    wanjian: '万箭齐发',
-    taoyuan: '桃园结义',
-    wuzhong: '无中生有',
-    wugu: '五谷丰登',
-  };
-  return m[sub] || sub;
 }

@@ -45,7 +45,7 @@ export interface SkillCtx {
   judgeCard?: Card | null;
   /** 判定归属者 */
   judgeOwner?: number;
-  /** 【杀】的点数（海防点数对抗） */
+  /** 【攻击】的点数（海防点数对抗） */
   shaNum?: number;
   /** 本回合已使用的锦囊张数（诗成顺序连锁） */
   skillSeq?: number;
@@ -873,7 +873,7 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         G.players[ti].hand.push(c);
         if (c.sub === 'shan') {
           drawCards(p, e.selfDraw);
-          addLog(`${p.name} 交出【闪】，摸 ${e.selfDraw} 张牌`, 'hl');
+          addLog(`${p.name} 交出【防御】，摸 ${e.selfDraw} 张牌`, 'hl');
         }
         break;
       }
@@ -1080,7 +1080,7 @@ export async function runEffects(idx: number, p: Player, effects: SkillEffect[],
         const ti = ctx.targetIdx;
         if (ti == null || ti < 0) break;
         G.players[ti].flags.pledge = true;
-        addLog(`${G.players[ti].name} 立下军令状：本回合结束时若未使用过【杀】，失去 1 点体力`, 'hl');
+        addLog(`${G.players[ti].name} 立下军令状：本回合结束时若未使用过【攻击】，失去 1 点体力`, 'hl');
         break;
       }
       case 'revive': {
@@ -1313,7 +1313,7 @@ function optionLabel(effs: SkillEffect[]): string {
       case 'targetHeal': parts.push(`回复 ${e.n} 点体力`); break;
       case 'selfDraw': parts.push(`令对方摸 ${e.n} 张牌`); break;
       case 'selfHeal': parts.push(`令对方回复 ${e.n} 点体力`); break;
-      case 'pledge': parts.push('立下军令状（本回合未出杀则失去1点体力）'); break;
+      case 'pledge': parts.push('立下军令状（本回合未出攻击则失去1点体力）'); break;
       case 'discardSuitMatch': parts.push('弃置一张同花色手牌'); break;
       default: parts.push('执行效果');
     }
@@ -1347,7 +1347,7 @@ export function extraDrawOf(p: Player): number {
   for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'extraDraw') sum += e.n;
   return sum;
 }
-/** 出杀伤害加成 */
+/** 攻击伤害加成 */
 export function damageModOf(p: Player): number {
   let sum = 0;
   for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'damageMod') sum += e.delta;
@@ -1392,7 +1392,7 @@ export function distPlusToMeOf(p: Player): number {
 export function ignoreHorsePlus(p: Player): boolean {
   return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'ignoreHorsePlus'));
 }
-/** 顺手牵羊是否无距离限制 */
+/** 敛息诀是否无距离限制 */
 export function shunshouNoDist(p: Player): boolean {
   return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'shunshouNoDist'));
 }
@@ -1454,7 +1454,7 @@ export function distTrapOf(p: Player): number {
 export function skillRedirectOf(p: Player): boolean {
   return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'skillRedirect'));
 }
-/** 可否转移【杀】的目标（卢瑟福·散射） */
+/** 可否转移【攻击】的目标（卢瑟福·散射） */
 export function shaRedirectOf(p: Player): boolean {
   return defsOf(p).some((d) => d.effects.some((e) => e.kind === 'shaRedirect'));
 }
@@ -1484,7 +1484,7 @@ export function consumeRedirect(p: Player, kind: 'shaRedirect' | 'skillRedirect'
   }
   return null;
 }
-/** 无双：抵消一张【杀】所需的【闪】数量 */
+/** 无双：抵消一张【攻击】所需的【防御】数量 */
 export function shanNeeded(attackerIdx: number): number {
   const a = G.players[attackerIdx];
   if (!a) return 1;
@@ -1493,7 +1493,7 @@ export function shanNeeded(attackerIdx: number): number {
       if (e.kind === 'shaNeedShan' && (!e.perTurnFirst || (a.flags.shaUsed || 0) === 0)) return e.n;
   return 1;
 }
-/** 咆哮：本回合出【杀】上限返回 -1 表示武器无限；否则返回张数上限 */
+/** 咆哮：本回合出【攻击】上限返回 -1 表示武器无限；否则返回张数上限 */
 export function shaLimitOf(p: Player): number {
   let limit = 1;
   for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'shaUnlimited') limit += e.maxExtra;
@@ -1505,7 +1505,7 @@ export function shaExtraCost(p: Player): number {
   for (const d of defsOf(p)) for (const e of d.effects) if (e.kind === 'shaUnlimited') return e.extraCostHand;
   return 0;
 }
-/** 被【杀】命中后的反伤数值（卢瑟福·散射实验） */
+/** 被【攻击】命中后的反伤数值（卢瑟福·散射实验） */
 export function reflectOf(p: Player): number {
   for (const d of defsOf(p))
     for (const e of d.effects) if (e.kind === 'reflect' && e.when === 'hurtBySha') return e.n;
@@ -1560,7 +1560,7 @@ export function markConvertUse(p: Player, card: Card, to: string, outsideTurn: b
   }
 }
 function toName(to: string): string {
-  return to === 'sha' ? '杀' : to === 'shan' ? '闪' : to === 'tao' ? '桃' : to === 'jiu' ? '酒' : '过河拆桥';
+  return to === 'sha' ? '攻击' : to === 'shan' ? '防御' : to === 'tao' ? '恢复' : to === 'jiu' ? '增益' : '锦囊';
 }
 /** 转化后的伤害属性（火杀等） */
 export function convertDamageType(p: Player, card: Card, to: string, outsideTurn: boolean): DamageType | undefined {
@@ -1581,7 +1581,7 @@ export function convertDamageType(p: Player, card: Card, to: string, outsideTurn
 
 /* ==================== 专属钩子 ==================== */
 
-/** 海防式点数对抗：成为【杀】目标时展示手牌，点数 ≥ 杀点数则该杀无效 */
+/** 海防式点数对抗：成为【攻击】目标时展示手牌，点数 ≥ 攻击点数则该杀无效 */
 export async function tryNumGuard(targetIdx: number, shaNum: number): Promise<boolean> {
   const p = G.players[targetIdx];
   if (!p || !p.alive || !p.hand.length) return false;
@@ -1594,7 +1594,7 @@ export async function tryNumGuard(targetIdx: number, shaNum: number): Promise<bo
         const ch = await waitChoice(
           targetIdx,
           [
-            { label: `【${d.name}】展示一张手牌，点数 ≥ ${shaNum} 则此杀无效`, value: 'yes', skill: true },
+            { label: `【${d.name}】展示一张手牌，点数 ≥ ${shaNum} 则此攻击无效`, value: 'yes', skill: true },
             { label: '不发动', value: 'no' },
           ],
           'list',
@@ -1605,10 +1605,10 @@ export async function tryNumGuard(targetIdx: number, shaNum: number): Promise<bo
       const shown = await pickHandCard(targetIdx, '展示一张手牌');
       if (!shown) continue;
       markUse(p, d);
-      addLog(`【${d.name}】${p.name} 展示 ${cardLabel(shown)}（杀点数 ${shaNum}）`, 'hl');
+      addLog(`【${d.name}】${p.name} 展示 ${cardLabel(shown)}（攻击点数 ${shaNum}）`, 'hl');
       const ok = e.op === 'ge' ? numOf(shown) >= shaNum : numOf(shown) <= shaNum;
       if (ok) {
-        addLog('点数对抗成功，此【杀】无效', 'hl');
+        addLog('点数对抗成功，此【攻击】无效', 'hl');
         return true;
       }
       addLog('点数对抗失败', 'dmg');
@@ -1651,7 +1651,7 @@ export async function tryReplaceJudge(judgeOwner: number, judgeCard: Card): Prom
   return judgeCard;
 }
 
-/** 兼爱：用【杀】造成伤害时可防止伤害改为令目标摸牌 */
+/** 兼爱：用【攻击】造成伤害时可防止伤害改为令目标摸牌 */
 export async function tryPreventShaDamage(srcIdx: number, tgtIdx: number): Promise<boolean> {
   const p = G.players[srcIdx];
   if (!p || !p.alive) return false;
@@ -1699,16 +1699,16 @@ export async function checkSuitCollect(idx: number): Promise<void> {
   }
 }
 
-/** 军令状结算：回合结束未使用过【杀】则失去 1 点体力 */
+/** 军令状结算：回合结束未使用过【攻击】则失去 1 点体力 */
 export async function resolvePledge(idx: number): Promise<void> {
   const p = G.players[idx];
   if (!p || !p.alive || !p.flags.pledge) return;
   p.flags.pledge = false;
   if ((p.flags.shaUsed || 0) > 0) {
-    addLog(`${p.name} 本回合使用过【杀】，军令状解除`, 'hl');
+    addLog(`${p.name} 本回合使用过【攻击】，军令状解除`, 'hl');
     return;
   }
-  addLog(`【军令状】${p.name} 本回合未使用过【杀】，失去 1 点体力`, 'dmg');
+  addLog(`【军令状】${p.name} 本回合未使用过【攻击】，失去 1 点体力`, 'dmg');
   await dealDamage(-1, idx, 1);
 }
 
@@ -1839,7 +1839,7 @@ export async function tryReplaceDraw(idx: number): Promise<boolean> {
   return false;
 }
 
-/** 反伤（卢瑟福·散射实验）：被【杀】命中后反击 */
+/** 反伤（卢瑟福·散射实验）：被【攻击】命中后反击 */
 export async function tryReflect(srcIdx: number, tgtIdx: number): Promise<void> {
   const t = G.players[tgtIdx];
   const a = G.players[srcIdx];

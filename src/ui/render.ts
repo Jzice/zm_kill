@@ -107,7 +107,7 @@ function buildPlayerCard(p: Player, i: number): string {
   let badges = '';
   if (!p.alive && p.roleRevealed) badges += `<span class="badge badge-reveal">☠ ${zl(p.role)}</span>`;
   if ((p.shield || 0) > 0) badges += `<span class="badge badge-shield">🛡️${p.shield}</span>`;
-  if (p.chained) badges += `<span class="badge badge-chain" title="铁索连环·横置：受属性伤害时传导">🔗连环</span>`;
+  if (p.chained) badges += `<span class="badge badge-chain" title="混元剑狱·横置：受属性伤害时传导">🔗连环</span>`;
   if (p.turned) badges += `<span class="badge badge-turned" title="翻面：跳过下一个回合">🔄翻面</span>`;
   const markBtn = isSelf || !p.alive ? '' : `<button class="p-mark-btn" title="标记身份" onclick="event.stopPropagation();openMarkMenu(${i})">🏷️</button>`;
   return `<div class="p-card ${!p.alive ? 'dead' : ''} ${isTurn ? 'turn' : ''} ${isSelf ? 'is-self' : ''} ${isMarked ? 'role-marked' : ''} ${isThinking ? 'thinking' : ''}" style="--faction-color:${fColor};${isMarked ? 'border:2px dashed ' + roleColor + ';' : ''}">
@@ -236,7 +236,7 @@ export function render(): void {
   } else if (G.pendingOptions && G.pendingPlayer === G.myPlayerIdx) {
     const type = G.pendingType;
     if (type === 'play') {
-      hintText = '💡 点击手牌出牌 · 点击技能（需答题） · 或结束出牌';
+      hintText = '💡 点击手牌出牌 · 点击技能 · 或结束出牌';
       hintClass = 'hint-play';
       const skillBtns = G.pendingOptions.filter((o) => typeof o.value === 'string' && o.value.startsWith('skill_'));
       skillBtns.forEach((o) => {
@@ -251,12 +251,12 @@ export function render(): void {
       hintText = `🗑️ 点击手牌弃置（还需弃 ${need} 张）`;
       hintClass = 'hint-play';
     } else if (type === 'rescue') {
-      hintText = '💔 濒死！点击手牌【桃】/【酒】自救';
+      hintText = '💔 濒死！点击手牌【恢复】/【增益】自救';
       hintClass = 'hint-urgent';
       const others = G.pendingOptions.filter((o) => !String(o.value).startsWith('card_'));
       btnHtml = others.map((o) => `<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
     } else if (type === 'shan') {
-      hintText = '🛡️ 需要出【闪】！点击手牌中的【闪】';
+      hintText = '🛡️ 需要出【防御】！点击手牌中的【防御】';
       hintClass = 'hint-urgent';
       const others = G.pendingOptions.filter((o) => !String(o.value).startsWith('card_'));
       btnHtml = others.map((o) => `<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
@@ -317,9 +317,9 @@ export function render(): void {
           onclick = `onclick="clickHandCard(${c.id})"`;
         } else if (G.handClickable) cardCls = 'disabled';
         const typeCls = c.type === 'skill' ? ' trick-tag' : c.type === 'equip' ? ' equip-tag' : '';
-        // 掌门路模式下「锦囊」改称「技能」（经典模式仍沿用三国杀原版术语）
-        const typeName = c.type === 'basic' ? '基本' : c.type === 'skill' ? (isZml(G.mode) ? '技能' : '锦囊') : '装备';
-        // 掌门路：卡面属性 / 道统徽标（经典模式无字段，不渲染）
+        // 掌门路 / 开辟战争模式下「锦囊」改称「技能」（修真内核统一术语）
+        const typeName = c.type === 'basic' ? '基本' : c.type === 'skill' ? '技能' : '装备';
+        // 掌门路 / 开辟战争：卡面属性 / 道统徽标
         const chips = isZml(G.mode) ? cardChips(c) : '';
         return `<div class="card ${color} ${cardCls}${typeCls}" ${onclick}>${chips}<span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${typeName}</span></div>`;
       })

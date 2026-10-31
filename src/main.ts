@@ -15,7 +15,6 @@ import { CHARACTERS } from './data/characters';
 import { renderRuleModePicker, setRuleMode } from './ui/lobby';
 import { FACTIONS } from './data/factions';
 import { defOf, TALENT_DEFS } from './data/talentdefs';
-import { stageOf } from './data/packets';
 import { buildDeck } from './data/cards';
 import { normalizeCardPacks, withCore } from './data/cardPacks';
 import { initPacks } from './data/packRegistry';
@@ -183,7 +182,7 @@ window.__xtsZmlDeckStats = (): Record<string, number> => {
 };
 /**
  * 冒烟测试专用：按给定卡包合成牌堆并返回「sub → 张数」统计。
- * 用于断言「不启用扩展包时牌堆与基础 125 张逐项一致」（scripts/smoke-cards.mjs）。
+ * 用于断言「修真牌堆各子类张数基线」（scripts/smoke-cards.mjs）。
  */
 window.__xtsDeckStats = (packs?: string[]): Record<string, number> => {
   const ids = Array.isArray(packs) ? normalizeCardPacks(packs) : [];

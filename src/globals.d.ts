@@ -60,18 +60,17 @@ declare global {
     // 回合限时：关闭 / 选择档位（10 / 20 / 30 秒）
     setTimerOn: (on: boolean) => void;
     setTimerSec: (sec: number) => void;
-    // 扩展包：决定可选角色的学段（初中 / 高中 / 全部）
+    // 扩展包：决定可选角色池范围（首版仅 'all'）
     setPacket: (id: PacketId) => void;
     toggleExtraPacket: (id: PacketId) => void;
-    openStudyFromPack: () => void;
     renderPacketPicker: () => void;
     renderExtraPackPicker: () => void;
-    // 牌库扩展包：决定牌堆在基础 125 张之上追加哪些扩展卡牌（与角色扩展包相互独立）
+    // 牌库扩展包：决定牌堆在修真牌堆之上追加哪些扩展卡牌（与角色扩展包相互独立）
     renderCardPackPicker: () => void;
     toggleCardPack: (id: CardPackId) => void;
     /** 冒烟测试专用：按卡包合成牌堆并返回 sub → 张数统计 */
     __xtsDeckStats: (packs?: string[]) => Record<string, number>;
-    /** 对局模式切换：classic（经典）/ zml（掌门路）/ war（开辟战争） */
+    /** 对局模式切换：zml（掌门路）/ war（开辟战争） */
     setRuleMode: (m: string) => void;
     /** 冒烟测试专用：掌门路修真牌堆的「卡名 → 张数」统计 */
     __xtsZmlDeckStats: () => Record<string, number>;

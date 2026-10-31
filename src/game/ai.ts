@@ -249,14 +249,14 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     await useSkill(idx, wz, null);
     await sleep(300);
   }
-  // 五谷丰登：直接铺牌
+  // 同参木阵：直接铺牌
   const wugu = p.hand.find((c) => c.sub === 'wugu');
   if (wugu && p.alive) {
     discardCard(p, wugu);
     await useSkill(idx, wugu, null);
     await sleep(300);
   }
-  // 铁索连环：优先横置最多两名敌方目标，无乘之机则按概率重铸
+  // 混元剑狱：优先横置最多两名敌方目标，无乘之机则按概率重铸
   const tiesuo = p.hand.find((c) => c.sub === 'tiesuo');
   if (tiesuo && p.alive) {
     const enemies = G.players
@@ -273,15 +273,15 @@ export async function aiPlayPhase(idx: number): Promise<void> {
     } else if (Math.random() < 0.4) {
       discardCard(p, tiesuo);
       drawCards(p, 1);
-      addLog(`${p.name} 重铸【铁索连环】，摸一张牌`);
+      addLog(`${p.name} 重铸【混元剑狱】，摸一张牌`);
       await sleep(200);
     }
   }
-  // 火攻：对敌方目标使用（目标须有手牌，否则必败）
+  // 极寒碧火诀：对敌方目标使用（目标须有手牌，否则必败）
   const huogong = p.hand.find((c) => c.sub === 'huogong');
   if (huogong && p.alive) {
     const hi = pickTarget(idx);
-    // 机会节点：火攻需「我方能弃出与目标展示牌同花色的牌」，按未见牌花色分布估成功概率
+    // 机会节点：极寒碧火诀需「我方能弃出与目标展示牌同花色的牌」，按未见牌花色分布估成功概率
     if (hi >= 0 && G.players[hi].hand.length > 0) {
       if (!AIPOLICY.useEv || evHuogong(idx, hi) >= AIPOLICY.huogongMin) {
         discardCard(p, huogong);
@@ -290,7 +290,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       }
     }
   }
-  // 借刀杀人：优先借「敌方」的武器，并让受害者优先是非同阵营角色
+  // 银甲乐傀召唤符：优先借「敌方」的武器，并让受害者优先是非同阵营角色
   const jiedao = p.hand.find((c) => c.sub === 'jiedao');
   if (jiedao && p.alive) {
     let hi = -1,
@@ -355,10 +355,10 @@ export async function aiPlayPhase(idx: number): Promise<void> {
   // 咆哮（伽利略·自由落体）放开每回合出杀上限
   const shaCap = shaLimitOf(p);
   if (p.alive && !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap) {
-    // 转化技：手牌中没有【杀】时可用黑色牌（茅盾·子夜）/ 红色牌（爱因斯坦·质能方程）当杀
+    // 转化技：手牌中没有【攻击】时可用黑色牌（茅盾·子夜）/ 红色牌（爱因斯坦·质能方程）当杀
     let shas = p.hand.filter((c) => SHA_SUBS.includes(c.sub));
     if (!shas.length) shas = p.hand.filter((c) => canConvertAs(p, c, 'sha', false));
-    // 【酒】：本回合首次出杀前喝一口（每回合限一次，伤害 +1）
+    // 【增益】：本回合首次出杀前喝一口（每回合限一次，伤害 +1）
     if (shas.length && !p.flags.jiuUsed) {
       const jiu = p.hand.find((c) => c.sub === 'jiu');
       if (jiu) {
@@ -413,7 +413,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
           for (let k = 0; k < extraCost && k < rest.length; k++) discardCard(p, rest[k]);
           discardCard(p, sha);
           const dmgType = sha.damageType || convertDamageType(p, sha, 'sha', false) || 'normal';
-          // 掌门路属性：仅真【杀】卡携带属性；转化当杀（闪/锦囊）留空 → 回退武器属性
+          // 掌门路属性：仅真【攻击】卡携带属性；转化当杀（闪/锦囊）留空 → 回退武器属性
           const shaAttr = SHA_SUBS.includes(sha.sub) ? sha.attr : undefined;
           for (let k = 0; k < targets.length; k++) {
             if (!G.players[targets[k]].alive) continue;
@@ -424,7 +424,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
       }
     }
   }
-  // 丈八蛇矛：没有【杀】时，将两张手牌当【杀】使用
+  // 丈八蛇矛：没有【攻击】时，将两张手牌当【攻击】使用
   if (
     p.alive &&
     !p.flags.noSha &&
@@ -447,7 +447,7 @@ export async function aiPlayPhase(idx: number): Promise<void> {
         discardCard(p, two[0]);
         discardCard(p, two[1]);
         const suit = two.every((c) => c.suit === '♥' || c.suit === '♦') ? '♥' : '♠';
-        addLog(`${p.name} 丈八蛇矛：两张手牌当杀`, 'hl');
+        addLog(`${p.name} 七剑斩元星：两张手牌当攻击`, 'hl');
         await useSha(idx, ti, { suit });
         await sleep(300);
       }

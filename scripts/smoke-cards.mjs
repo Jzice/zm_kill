@@ -85,13 +85,20 @@ await page.goto(url, { waitUntil: 'networkidle' });
 await page.evaluate(() => localStorage.removeItem('xuetangsha_setup_v1'));
 await page.reload({ waitUntil: 'networkidle' });
 
-/* ---------- 1. 零回归：不启用扩展包 = 基础 125 张 ---------- */
+/* ---------- 1. 零回归：修真牌堆构成（237 张） ---------- */
+// 牌堆已统一为「全修真」牌堆（`buildDeck` → `buildZmlDeck`，经典扩展包卡不再投放）。
+// 下表是当前修真牌堆的各 sub 基线张数，用于回归比对。
 const BASE = {
+  // 基本牌（攻击 / 防御 / 恢复 / 增益）
   sha: 20, huo: 5, lei: 5, shan: 15, tao: 8, jiu: 5,
-  wuzhong: 4, guohe: 6, shunshou: 5, juedou: 3, nanman: 3, wanjian: 1,
-  taoyuan: 1, wuxie: 4, lebu: 3, shandian: 2, jiedao: 2, wugu: 2,
-  tiesuo: 6, huogong: 3,
-  weapon: 10, armor: 6, 'horse+': 3, 'horse-': 3,
+  // 通用锦囊
+  wuzhong: 7, guohe: 8, shunshou: 5, juedou: 3, nanman: 7, wanjian: 3,
+  taoyuan: 2, wuxie: 4, lebu: 5, shandian: 2, jiedao: 3, wugu: 2,
+  tiesuo: 6, huogong: 6, bingliang: 2,
+  // 角色专属 / 机制锦囊
+  mingyan: 6, tongshi: 2, guidai: 2, daizheng: 1, quanzhi: 1, dan: 3,
+  // 装备（兵器 / 防具 / 坐骑 / 法宝）
+  weapon: 11, armor: 7, 'horse+': 6, 'horse-': 5, fabao: 70,
 };
 
 const baseStats = await page.evaluate(() => window.__xtsDeckStats([]));
@@ -103,11 +110,13 @@ for (const [sub, n] of Object.entries(BASE)) {
     diffs.push(`${sub}: 期望 ${n} 实际 ${baseStats[sub] || 0}`);
   }
 }
-check('零回归·基础牌堆各子类张数与改造前一致', baseOk, diffs.length ? diffs.join('；') : '20 个子类全部匹配');
+check('零回归·修真牌堆各子类张数与基线一致', baseOk, diffs.length ? diffs.join('；') : `${Object.keys(BASE).length} 个子类全部匹配`);
 const baseTotal = Object.values(baseStats).reduce((s, n) => s + n, 0);
-check('零回归·基础牌堆总量 = 125 + 知识点锦囊', baseTotal >= 125, `共 ${baseTotal} 张`);
-const noExtra = ['bingliang', 'qilin', 'zhuque', 'zhiji', 'wuxieguo', 'fabao'].every((s) => !baseStats[s]);
-check('零回归·未启用时牌堆不含任何扩展卡', noExtra);
+check('零回归·修真牌堆总量 = 237 张', baseTotal === 237, `共 ${baseTotal} 张`);
+// 扩展包专属 sub 不应出现在基础牌堆中（经典扩展包卡尚未修真化，暂不投放）
+const EXTRA_ONLY = ['zhiji', 'shuishui', 'caomu', 'yuanjiao', 'yiyi', 'huoshao', 'diaohu', 'lianjun', 'chiling', 'wuxieguo', 'qilin', 'zhuque', 'yinyue', 'qixing', 'taiping', 'mingguang', 'wuliu', 'muyu'];
+const noExtra = EXTRA_ONLY.every((s) => !baseStats[s]);
+check('零回归·未启用扩展包时牌堆不含扩展包专属卡', noExtra, noExtra ? '' : EXTRA_ONLY.filter((s) => baseStats[s]).join('/'));
 
 /* ---------- 1.5 属性攻防体系（仅掌门路）：数据自检 ---------- */
 const att = await page.evaluate(() => window.__xtsAttrInfo());
@@ -159,9 +168,12 @@ check(
 );
 
 /* ---------- 2. 各卡包勾选后卡牌入池 ---------- */
-// 各卡包勾选后，牌堆中对应子类应增加的张数（基础值见 BASE）
-const EXPECT = {
-  // 兵粮寸断 ×2 + 麒麟弓 + 朱雀羽扇（武器 10 → 12）
+// 说明：牌堆已统一为「全修真」牌堆（`buildDeck` 不再投放经典扩展包卡——
+// 麒麟弓 / 朱雀羽扇 / 太平要术 / 明光铠 / 吴六剑 / 木牛流马 / 赤兔 等扩展卡牌名
+// 尚未修真化，混入修真牌堆会造成两套命名）。因此勾选扩展包**不应**改变牌堆构成，
+// 待扩展包完成修真化后，再把下列目标张数恢复为「勾选后按张数入池」的断言。
+const EXPECT_TARGET = {
+  // 哼哈真言 ×2 + 麒麟弓 + 朱雀羽扇（武器 10 → 12）
   junzheng: { bingliang: 2, weapon: 12 },
   // 银月枪 + 七星刀（武器 12）+ 太平要术 + 明光铠（防具 8）
   shenhua: { weapon: 12, armor: 8 },
@@ -170,13 +182,13 @@ const EXPECT = {
   yingbian: { zhiji: 2, shuishui: 2, caomu: 2, yuanjiao: 1, yiyi: 1, huoshao: 1 },
   guozhan: { wuxieguo: 2, diaohu: 2, lianjun: 1, chiling: 1 },
 };
-for (const [pack, want] of Object.entries(EXPECT)) {
+for (const pack of Object.keys(EXPECT_TARGET)) {
   const st = await page.evaluate((p) => window.__xtsDeckStats([p]), pack);
-  const bad = Object.entries(want).filter(([s, n]) => (st[s] || 0) !== n);
+  const diff = Object.entries(BASE).filter(([sub, n]) => (st[sub] || 0) !== n);
   check(
-    `卡包「${pack}」勾选后卡牌按张数入池`,
-    bad.length === 0,
-    bad.length ? bad.map(([s, n]) => `${s} 期望 ${n} 实际 ${st[s] || 0}`).join('；') : Object.keys(want).join('/'),
+    `卡包「${pack}」勾选后不改变修真牌堆构成（扩展卡待修真化）`,
+    diff.length === 0,
+    diff.length ? diff.map(([s, n]) => `${s}: 基础 ${n} 实际 ${st[s] || 0}`).join('；') : '与基础牌堆一致',
   );
 }
 
@@ -205,8 +217,8 @@ await page.waitForTimeout(150);
 const cardsTxt = (await page.textContent('#rulesContent')) || '';
 check('规则书含「牌库扩展包」分区', cardsTxt.includes('牌库扩展包'));
 check(
-  '规则书使用三国杀原版卡名',
-  cardsTxt.includes('兵粮寸断') && cardsTxt.includes('无懈可击·国') && cardsTxt.includes('木牛流马'),
+  '规则书含扩展卡包卡名（哼哈真言 / 不在算中·国 / 木牛流马）',
+  cardsTxt.includes('哼哈真言') && cardsTxt.includes('不在算中·国') && cardsTxt.includes('木牛流马'),
 );
 await page.click('#rulesModal .rules-close');
 await page.waitForTimeout(150);
@@ -218,9 +230,9 @@ await page.evaluate(() => {
 });
 const allStats = await page.evaluate(() => window.__xtsDeckStats(['junzheng', 'shenhua', 'sp', 'yingbian', 'guozhan']));
 check(
-  '全卡包启用后牌堆含全部扩展卡',
-  allStats.bingliang === 2 && allStats.wuxieguo === 2 && allStats.fabao === 1 && allStats.zhiji === 2,
-  `共 ${Object.values(allStats).reduce((s, n) => s + n, 0)} 张`,
+  '全卡包启用后牌堆仍为统一修真牌堆',
+  allStats.bingliang === 2 && !allStats.wuxieguo && !allStats.zhiji && !allStats.diaohu,
+  `bingliang=${allStats.bingliang} wuxieguo=${allStats.wuxieguo ?? 0} zhiji=${allStats.zhiji ?? 0} 共 ${Object.values(allStats).reduce((s, n) => s + n, 0)} 张`,
 );
 await page.click('#startBtn');
 await page.waitForSelector('#revealModal.show', { timeout: 3000 }).catch(() => {});

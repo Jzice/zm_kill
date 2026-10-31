@@ -6,6 +6,7 @@ import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
 import { trickDefOf } from '../data/knowledgeTricks';
 import { DELAY_TRICK_SUBS, ONE_TARGET_TRICKS, RESPONSE_ONLY_SKILLS } from '../data/cardCatalog';
+import { trickName } from '../data/zml/terms';
 import { addLog, addPlayLog } from './log';
 import {
   canUseCard,
@@ -69,7 +70,7 @@ import { llmChooseAction, llmPlanActions, llmReady } from '../llm/agent';
 import { llmDebug } from '../llm/config';
 import type { LlmDecisionKind } from '../llm/types';
 
-/** 徐霞客【探险】距离陷阱：与目标距离 > min 的角色不能对其使用【杀】 */
+/** 徐霞客【探险】距离陷阱：与目标距离 > min 的角色不能对其使用【攻击】 */
 function distTrapBlocks(attackerIdx: number, targetIdx: number): boolean {
   const min = distTrapOf(G.players[targetIdx]);
   return min > 0 && distBetween(attackerIdx, targetIdx) > min;
@@ -78,7 +79,7 @@ function distTrapBlocks(attackerIdx: number, targetIdx: number): boolean {
 export async function runTurn(idx: number): Promise<void> {
   const p = G.players[idx];
   if (!p.alive) return;
-  // 翻面：跳过整个回合并翻回正面（严格原版：与铁索连环的「横置」相互独立）
+  // 翻面：跳过整个回合并翻回正面（严格原版：与混元剑狱的「横置」相互独立）
   if (p.turned) {
     p.turned = false;
     addLog(`🔄 ${p.name} 处于翻面状态，跳过本回合`, 'hl');
@@ -87,17 +88,17 @@ export async function runTurn(idx: number): Promise<void> {
   }
   // 回合初重置一切「本回合」状态：
   // - shaUsed/skillUsed/noSha：原有
-  // - skipPlay：乐不思蜀等延时锦囊只跳过「当前」回合的判定阶段，必须在此清零，
+  // - skipPlay：七星定身阵等延时锦囊只跳过「当前」回合的判定阶段，必须在此清零，
   //   否则一旦被跳过就永久失去出牌阶段（曾经的严重漏洞）
-  // - extraDamage：【酒】的加成只在本回合有效，没打出杀也不得留到下一回合
-  // - jiuUsed：【酒】每回合限饮一次，防止多张酒叠加一刀秒杀
+  // - extraDamage：【增益】的加成只在本回合有效，没打出杀也不得留到下一回合
+  // - jiuUsed：【增益】每回合限饮一次，防止多张酒叠加一刀秒杀
   p.flags.shaUsed = 0;
   p.flags.skillUsed = false;
   p.flags.noSha = false;
   p.flags.skipPlay = false;
   p.flags.extraDamage = 0;
   p.flags.jiuUsed = false;
-  // 【兵粮寸断】只跳过「当前」回合的摸牌阶段，必须在此清零
+  // 【哼哈真言】只跳过「当前」回合的摸牌阶段，必须在此清零
   p.flags.skipDraw = false;
   // 【银月枪】花色封锁在其自己回合开始时解除
   p.flags.blockSuit = null;
@@ -118,12 +119,12 @@ export async function runTurn(idx: number): Promise<void> {
   // 掌门路：回合开始的灵石产出（打坐吐纳 + 已占灵地）
   zmlTurnStart(idx);
   // 摸牌阶段：突袭（孙子·兵法）可替代常规摸牌
-  // 【兵粮寸断】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
+  // 【哼哈真言】跳过摸牌阶段（技能带来的额外摸牌仍生效）；【木牛流马】宝物额外摸 1 张
   const bonusDraw = extraDrawOf(p) + (fabaoSkillOf(p) === 'muyu' ? 1 : 0);
   const raid = await tryReplaceDraw(idx);
   const baseDraw = p.flags.skipDraw ? 0 : 2;
   const drawN = raid ? bonusDraw : baseDraw + bonusDraw;
-  if (p.flags.skipDraw && !raid) addLog(`📝【兵粮寸断】${p.name} 跳过摸牌阶段`, 'dmg');
+  if (p.flags.skipDraw && !raid) addLog(`📝【哼哈真言】${p.name} 跳过摸牌阶段`, 'dmg');
   drawCards(p, drawN);
   addLog(`${p.name} 摸 ${drawN} 张牌`);
   if (!raid) await fire('onDraw', { idx });
@@ -154,23 +155,23 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
     if (j.judgeType === 'lebu') {
       if (card.suit !== '♥') {
         p.flags.skipPlay = true;
-        addLog('【乐不思蜀】生效', 'dmg');
-      } else addLog('乐不思蜀失效');
+        addLog('【七星定身阵】生效', 'dmg');
+      } else addLog('七星定身阵失效');
       G.discard.push(card);
     } else if (j.judgeType === 'bingliang') {
-      // 【兵粮寸断】：判定不为♣梅花则生效，跳过摸牌阶段
+      // 【哼哈真言】：判定不为♣梅花则生效，跳过摸牌阶段
       if (card.suit !== '♣') {
         p.flags.skipDraw = true;
-        addLog('【兵粮寸断】生效，跳过摸牌阶段', 'dmg');
+        addLog('【哼哈真言】生效，跳过摸牌阶段', 'dmg');
       } else addLog('兵粮寸断失效');
       G.discard.push(card);
     } else if (j.judgeType === 'shandian') {
       if (card.suit === '♠' && Number(card.num) >= 2 && Number(card.num) <= 9) {
-        addLog('【闪电】命中！', 'dmg');
+        addLog('【天劫】命中！', 'dmg');
         G.discard.push(card);
         await dealDamage(-1, G.players.indexOf(p), 3, 'thunder');
       } else {
-        addLog('闪电未命中');
+        addLog('天劫未命中');
         const next = (G.players.indexOf(p) + 1) % G.players.length;
         G.players[next].judge.push({ ...j });
         G.discard.push(card);
@@ -233,7 +234,7 @@ export async function playPhase(idx: number): Promise<void> {
   while (p.alive && !G.gameOver) {
     // 安全阀：模型反复给出「执行后局面不变」的动作时防止死循环
     if (++guard > 30) break;
-    // 本回合是否还能出【杀】：连弩无限；否则受每回合上限约束（咆哮可额外出杀）；noSha 时本回合禁止
+    // 本回合是否还能出【攻击】：连弩无限；否则受每回合上限约束（咆哮可额外出杀）；noSha 时本回合禁止
     const shaCap = p.equip.weapon?.skill === 'liannu' ? Infinity : shaLimitOf(p);
     const canSha = !p.flags.noSha && (p.flags.shaUsed || 0) < shaCap;
     const opts: ChoiceOption[] = [];
@@ -241,8 +242,8 @@ export async function playPhase(idx: number): Promise<void> {
     for (const c of p.hand) {
       if (!canUseCard(p, c)) continue;
       if (SHA_SUBS.includes(c.sub) && canSha) opts.push({ label: `【${c.name}】${c.suit}${c.num}`, value: 'sha_' + c.id });
-      else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【桃】`, value: 'tao_' + c.id });
-      else if (c.sub === 'jiu' && !p.flags.jiuUsed) opts.push({ label: `【酒】`, value: 'jiu_' + c.id });
+      else if (c.sub === 'tao' && p.hp < p.maxHp) opts.push({ label: `【恢复】`, value: 'tao_' + c.id });
+      else if (c.sub === 'jiu' && !p.flags.jiuUsed) opts.push({ label: `【增益】`, value: 'jiu_' + c.id });
       else if (c.type === 'skill' && c.sub !== 'wuxie' && !RESPONSE_ONLY_SKILLS.includes(c.sub))
         opts.push({ label: `【${c.name}】`, value: 'trick_' + c.id });
       else if (c.type === 'equip') opts.push({ label: `【${c.name}】`, value: 'equip_' + c.id });
@@ -251,18 +252,18 @@ export async function playPhase(idx: number): Promise<void> {
     if (canSha)
       for (const c of p.hand)
         if (!SHA_SUBS.includes(c.sub) && canUseCard(p, c) && canConvertAs(p, c, 'sha', false))
-          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【杀】`, value: `conv_${c.id}_sha` });
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【攻击】`, value: `conv_${c.id}_sha` });
     if (!p.flags.jiuUsed)
       for (const c of p.hand)
         if (c.sub !== 'jiu' && canUseCard(p, c) && canConvertAs(p, c, 'jiu', false))
-          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【酒】`, value: `conv_${c.id}_jiu` });
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【增益】`, value: `conv_${c.id}_jiu` });
     if (p.hp < p.maxHp)
       for (const c of p.hand)
         if (c.sub !== 'tao' && canUseCard(p, c) && canConvertAs(p, c, 'tao', false))
-          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【桃】`, value: `conv_${c.id}_tao` });
+          opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【恢复】`, value: `conv_${c.id}_tao` });
     for (const c of p.hand)
       if (c.type !== 'skill' && canUseCard(p, c) && canConvertAs(p, c, 'guohe', false))
-        opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【过河拆桥】`, value: `conv_${c.id}_guohe` });
+        opts.push({ label: `▶【${c.name}】${c.suit}${c.num} 当【${trickName('guohe')}】`, value: `conv_${c.id}_guohe` });
     if (!p.flags.skillUsed) {
       p.talents.forEach((s) => {
         // 观星 / 周期律 / 行医等「非出牌阶段」技能不出现在出牌按钮里
@@ -289,7 +290,7 @@ export async function playPhase(idx: number): Promise<void> {
       });
     }
     if (canSha && p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
-      opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
+      opts.push({ label: `【${p.equip.weapon?.name || '本命法宝'}】两张手牌当攻击`, value: 'zhangba' });
     }
     // 掌门路：出牌阶段追加的修真行动（坊市 / 悟道 / 突破 / 开辟灵地）
     if (isZml(G.mode)) {
@@ -328,7 +329,7 @@ export async function playPhase(idx: number): Promise<void> {
           const suit = two.every((c) => c.suit === '♥' || c.suit === '♦') ? '♥' : '♠';
           discardCard(p, two[0]);
           discardCard(p, two[1]);
-          addLog(`${p.name} 丈八蛇矛：两张手牌当杀`, 'hl');
+          addLog(`${p.name} 七剑斩元星：两张手牌当攻击`, 'hl');
           await useSha(idx, tgt, { suit });
         }
       }
@@ -390,7 +391,7 @@ export async function playPhase(idx: number): Promise<void> {
             const t = await waitChoice(idx, targets, 'target');
             if (Number(t) >= 0) {
               discardCard(p, card);
-              const synth = C('过河拆桥', 'skill', 'guohe', card.suit, card.num);
+              const synth = C(trickName('guohe'), 'skill', 'guohe', card.suit, card.num);
               await useSkill(idx, synth, t as number);
             }
           }
@@ -404,13 +405,13 @@ export async function playPhase(idx: number): Promise<void> {
     if (!card) continue;
     if (kind === 'sha') {
       if (p.flags.noSha) {
-        addLog('本回合不能使用【杀】');
+        addLog('本回合不能使用【攻击】');
         continue;
       }
       const cand: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === idx || !G.players[i].alive) continue;
-        // 空城等免疫：不能成为【杀】的目标；徐霞客【探险】距离陷阱
+        // 空城等免疫：不能成为【攻击】的目标；徐霞客【探险】距离陷阱
         if (!canBeTarget(i, 'sha')) continue;
         if (distTrapBlocks(idx, i)) continue;
         if (inRange(idx, i)) cand.push(i);
@@ -424,25 +425,25 @@ export async function playPhase(idx: number): Promise<void> {
       const picked = await pickShaTargets(idx, cand, maxTargets);
       if (!picked.length) continue;
       let dmgType: DamageType = card.damageType || 'normal';
-      // 【朱雀羽扇】：可将一张普通【杀】当【火杀】使用
+      // 【朱雀羽扇】：可将一张普通【攻击】当【烈火攻击】使用
       if (p.equip.weapon?.skill === 'zhuque' && dmgType === 'normal') {
         const asFire = p.isAI
-          ? // AI：目标横置（连环传导）或装备【藤甲】时转火杀，否则保留普通杀
+          ? // AI：目标横置（连环传导）或装备【映雪冰风阵】时转火杀，否则保留普通杀
             picked.some((i) => G.players[i].chained || G.players[i].equip.armor?.skill === 'tengjia')
           : (await waitChoice(
               idx,
               [
-                { label: '🔥 朱雀羽扇：将这张【杀】当作【火杀】使用', value: 'yes' },
-                { label: '作为普通【杀】', value: 'no' },
+                { label: `🔥 ${p.equip.weapon?.name || '朱雀羽扇'}：将这张【攻击】当作【烈火攻击】使用`, value: 'yes' },
+                { label: '作为普通【攻击】', value: 'no' },
               ],
               'list',
             )) === 'yes';
         if (asFire) {
           dmgType = 'fire';
-          addLog(`【朱雀羽扇】${p.name} 将此【杀】当作【火杀】使用`, 'hl');
+          addLog(`【${p.equip.weapon?.name || '朱雀羽扇'}】${p.name} 将此【攻击】当作【烈火攻击】使用`, 'hl');
         }
       }
-      // 咆哮：第二张及之后的【杀】需先弃置手牌
+      // 咆哮：第二张及之后的【攻击】需先弃置手牌
       const extra = shaExtraCost(p);
       if (extra > 0) {
         const rest = p.hand.filter((x) => x.id !== card.id);
@@ -460,7 +461,7 @@ export async function playPhase(idx: number): Promise<void> {
       await useTao(idx, card.name);
     } else if (kind === 'jiu') {
       if (p.flags.jiuUsed) {
-        addLog('本回合已使用过【酒】');
+        addLog('本回合已使用过【增益】');
         continue;
       }
       discardCard(p, card);
@@ -469,7 +470,7 @@ export async function playPhase(idx: number): Promise<void> {
     } else if (kind === 'skill') {
       let tgt: number | null = null;
       let second: number | null = null;
-      // 铁索连环：可重铸（弃此牌摸一张）
+      // 混元剑狱：可重铸（弃此牌摸一张）
       if (card.sub === 'tiesuo') {
         const recast =
           (await waitChoice(idx, [
@@ -479,7 +480,7 @@ export async function playPhase(idx: number): Promise<void> {
         if (recast) {
           discardCard(p, card);
           drawCards(p, 1);
-          addLog(`${p.name} 重铸【铁索连环】，摸一张牌`, 'hl');
+          addLog(`${p.name} 重铸【混元剑狱】，摸一张牌`, 'hl');
           render();
           continue;
         }
@@ -501,7 +502,7 @@ export async function playPhase(idx: number): Promise<void> {
         const targets: ChoiceOption[] = [];
         for (let i = 0; i < G.players.length; i++) {
           if (i === idx || !G.players[i].alive) continue;
-          // 郑和【航海图】：使用【顺手牵羊】无距离限制
+          // 郑和【航海图】：使用【敛息诀】无距离限制
           if (card.sub === 'shunshou' && !shunshouNoDist(p) && distBetween(idx, i) > 1) continue;
           // 焚书（锦囊免疫）/ 空城（杀与决斗免疫）
           if (!canBeTarget(i, card.sub === 'juedou' ? 'juedou' : 'skill')) continue;
@@ -646,7 +647,7 @@ async function choosePlay(idx: number, opts: ChoiceOption[]): Promise<string | n
       if (v !== null && v !== undefined) return v;
       if (llmDebug()) addLog(`🤖[LLM·座位${idx}] 出牌回退: 模型无有效选择 → 结束出牌`, 'sys');
     } else if (llmDebug()) {
-      addLog(`🤖[LLM·座位${idx}] 出牌回退: 大模型未就绪 → 直接结束出牌（不开杀）`, 'sys');
+      addLog(`🤖[LLM·座位${idx}] 出牌回退: 大模型未就绪 → 直接结束出牌（不出攻击）`, 'sys');
     }
     return 'end';
   }
@@ -672,7 +673,7 @@ async function chooseAmong(idx: number, opts: ChoiceOption[], type: PendingType)
   return waitChoice(idx, opts, type);
 }
 
-/** 依次选择【杀】的目标：max>1 时可多选（方天画戟最多 3 个），返回已选目标 */
+/** 依次选择【攻击】的目标：max>1 时可多选（方天画戟最多 3 个），返回已选目标 */
 async function pickShaTargets(idx: number, cand: number[], max: number): Promise<number[]> {
   const picked: number[] = [];
   const rest = [...cand];
@@ -688,7 +689,7 @@ async function pickShaTargets(idx: number, cand: number[], max: number): Promise
   return picked;
 }
 
-/** 选单个【杀】目标（丈八蛇矛用），返回 -1 表示取消 */
+/** 选单个【攻击】目标（丈八蛇矛用），返回 -1 表示取消 */
 async function pickShaTarget(idx: number): Promise<number> {
   const cand: number[] = [];
   for (let i = 0; i < G.players.length; i++) {
@@ -725,7 +726,7 @@ async function pickTwoCards(idx: number): Promise<Card[]> {  const p = G.players
   return [fc, sc];
 }
 
-/** 铁索连环：选择 1–2 名其他存活角色进行横置 / 重置（原版可指定最多两名） */
+/** 混元剑狱：选择 1–2 名其他存活角色进行横置 / 重置（原版可指定最多两名） */
 async function pickTieSuoTargets(idx: number): Promise<number[]> {
   const picked: number[] = [];
   const rest = G.players

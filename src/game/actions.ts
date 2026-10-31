@@ -41,6 +41,7 @@ import { isZml } from '../core/mode';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
+import { trickName } from '../data/zml/terms';
 import { aiSpeak } from './ai';
 import { aiQuizRate, aiShouldCounter } from './aibrain';
 import { AIPOLICY } from './aipolicy';
@@ -55,7 +56,7 @@ import { waitChoice } from './choice';
 import { gainExp } from './zml/economy';
 import { NET, scheduleSync, syncStateToClients } from '../net/network';
 
-/** 结算一次【杀】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
+/** 结算一次【攻击】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
 function shaDamage(a: Player, t: Player): number {
   let dmg = 1;
   // 古锭刀：目标没有手牌时伤害 +1
@@ -77,9 +78,9 @@ function tailPick(p: Player, n: number): Card[] {
 }
 
 /**
- * 【杀】命中并造成体力损失后的武器追加效果（均需武器未被墨子【非攻】失效）：
+ * 【攻击】命中并造成体力损失后的武器追加效果（均需武器未被墨子【非攻】失效）：
  *   qilin  【麒麟弓】弃置目标一张坐骑牌
- *   yinyue 【银月枪】封锁目标该【杀】花色，直到其下个回合开始
+ *   yinyue 【银月枪】封锁目标该【攻击】花色，直到其下个回合开始
  *   qixing 【七星刀】令目标弃置一张手牌
  *   wuliu  【吴六剑】可弃置一张手牌，追加 1 点伤害
  */
@@ -204,7 +205,7 @@ async function tryTrickRedirect(attackerIdx: number, targetIdx: number): Promise
   return to;
 }
 
-/** 卢瑟福【散射实验】：成为【杀】目标时，可将其转移给另一名角色（每回合限一次） */
+/** 卢瑟福【散射实验】：成为【攻击】目标时，可将其转移给另一名角色（每回合限一次） */
 async function tryShaRedirect(attackerIdx: number, targetIdx: number): Promise<number> {
   const t = G.players[targetIdx];
   if (!t || !t.alive) return targetIdx;
@@ -214,7 +215,7 @@ async function tryShaRedirect(attackerIdx: number, targetIdx: number): Promise<n
   if (!cands.length) return targetIdx;
   const d = consumeRedirect(t, 'shaRedirect');
   if (!d) return targetIdx;
-  addLog(`【${d.name}】${t.name} 将此【杀】转移给另一名角色`, 'hl');
+  addLog(`【${d.name}】${t.name} 将此【攻击】转移给另一名角色`, 'hl');
   let to = cands[0];
   if (t.isAI) {
     to = cands.reduce((best, i) => (redirectScore(t, G.players[i]) > redirectScore(t, G.players[best]) ? i : best), cands[0]);
@@ -239,7 +240,7 @@ export async function useSha(
     fromFangtian?: boolean;
     fromJiedao?: boolean;
     suit?: string;
-    /** 【杀】的点数（林则徐·海防 点数对抗判据） */
+    /** 【攻击】的点数（林则徐·海防 点数对抗判据） */
     num?: string | number;
     damageType?: DamageType;
     /** 实际卡名（修真变体名），用于战报 / 飞牌展示；缺省按属性回退 杀 / 火杀 / 雷杀 */
@@ -250,12 +251,12 @@ export async function useSha(
 ): Promise<void> {
   const a = G.players[attackerIdx],
     t = G.players[targetIdx];
-  // 空城等免疫：不能成为【杀】的目标
+  // 空城等免疫：不能成为【攻击】的目标
   if (!canBeTarget(targetIdx, 'sha')) {
-    addLog(`${t.name} 不可被指定为【杀】的目标`, 'hl');
+    addLog(`${t.name} 不可被指定为【攻击】的目标`, 'hl');
     return;
   }
-  // 卢瑟福【散射实验】：成为【杀】目标时可转移给另一名角色，再以新目标重新结算
+  // 卢瑟福【散射实验】：成为【攻击】目标时可转移给另一名角色，再以新目标重新结算
   const redirectTo = await tryShaRedirect(attackerIdx, targetIdx);
   if (redirectTo !== targetIdx) {
     return useSha(attackerIdx, redirectTo, opts);
@@ -273,14 +274,14 @@ export async function useSha(
     !opts.fromJiedao &&
     (a.flags.shaUsed || 0) >= shaCap
   ) {
-    addLog('本回合已使用过【杀】');
+    addLog('本回合已使用过【攻击】');
     return;
   }
   a.flags.shaUsed = (a.flags.shaUsed || 0) + 1;
   const dmgType: DamageType = opts.damageType || 'normal';
   // 攻击属性：杀卡属性优先；杀卡无属性（含转化 / 拼点 / 两牌当杀）时才取武器属性
   const atkAttr: Attr | undefined = opts.attr ?? a.equip.weapon?.attr;
-  const cname = opts.cardName || (dmgType === 'fire' ? '火杀' : dmgType === 'thunder' ? '雷杀' : '杀');
+  const cname = opts.cardName || (dmgType === 'fire' ? '烈火攻击' : dmgType === 'thunder' ? '雷霆攻击' : '攻击');
   const suit = opts.suit ?? '♠';
   addPlayLog(a.name, 'use', cname, t.name);
   aiSpeak(a, 'attack');
@@ -288,25 +289,25 @@ export async function useSha(
   Sound.play('sha');
   showPlayCard({ name: cname, suit, num: '?', type: 'basic', attr: atkAttr }, a.name, FACTIONS[a.faction].color);
   await FX.flyCard(attackerIdx, targetIdx, cname, 'basic');
-  // 青釭剑：无视目标防具（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
-  // 掌门路【通天令】法宝（进攻型，占武器槽）：你使用的【杀】同样无视目标护身法器
+  // 青釭剑：无视目标护身法器（仁王盾 / 八卦阵 / 藤甲 / 白银狮子均失效）；墨子【非攻】令防具失效
+  // 掌门路【通天令】法宝（进攻型，占武器槽）：你使用的【攻击】同样无视目标护身法器
   const ignoreArmor = (a.equip.weapon?.skill === 'qinggang' || hasFabaoSkill(a, 'tongtian')) && !wVoid;
   const armor = ignoreArmor || aVoid ? undefined : t.equip.armor?.skill;
   const black = suit === '♠' || suit === '♣';
   if (armor === 'renwang' && black) {
-    addLog(`${t.name} 的【仁王盾】挡下了黑色【杀】`, 'hl');
+    addLog(`${t.name} 的【清风法袍】挡下了黑色【攻击】`, 'hl');
     render();
     return;
   }
-  // 藤甲：普通【杀】无效（属性杀可生效且火焰伤害 +1）
+  // 藤甲：普通【攻击】无效（属性杀可生效且火焰伤害 +1）
   if (armor === 'tengjia' && dmgType === 'normal') {
-    addLog(`${t.name} 的【藤甲】挡下了普通【杀】`, 'hl');
+    addLog(`${t.name} 的【映雪冰风阵】挡下了普通【攻击】`, 'hl');
     render();
     return;
   }
   // 雌雄双股剑：对异性角色使用杀，对方选择「令你摸一张」或「自弃一张」
   if (a.equip.weapon?.skill === 'cixiong' && !wVoid && genderOf(a) !== genderOf(t)) {
-    addLog(`【雌雄双股剑】：${t.name} 需抉择`, 'hl');
+    addLog(`【心生蜂云剑】：${t.name} 需抉择`, 'hl');
     let ch: string | number = 'draw';
     if (t.hand.length > 0) {
       ch = t.isAI
@@ -336,14 +337,14 @@ export async function useSha(
     await tryReflect(attackerIdx, targetIdx);
     if (dealt) await afterShaHit(a, t, attackerIdx, targetIdx, suit, dmgType, wVoid);
   };
-  // 林则徐【海防】：展示一张手牌，点数 ≥ 此【杀】点数则此杀无效
+  // 林则徐【海防】：展示一张手牌，点数 ≥ 此【攻击】点数则此攻击无效
   if (await tryNumGuard(targetIdx, Number(opts.num ?? 0))) {
     render();
     return;
   }
-  // 岳飞【精忠】（无双）：每回合第一张【杀】需连续使用两张【闪】才能抵消
+  // 岳飞【精忠】（无双）：每回合第一张【攻击】需连续使用两张【防御】才能抵消
   const needShan = shanNeeded(attackerIdx);
-  if (needShan > 1) addLog(`【精忠】${t.name} 需连续使用 ${needShan} 张【闪】才能抵消`, 'hl');
+  if (needShan > 1) addLog(`【精忠】${t.name} 需连续使用 ${needShan} 张【防御】才能抵消`, 'hl');
   const dodged = await requestShan(targetIdx, attackerIdx, { ignoreArmor, need: needShan });
   if (dodged) {
     // 贯石斧：弃两张牌，令此杀强制命中
@@ -359,7 +360,7 @@ export async function useSha(
         const dropped = await chooseSelfDiscard(a, 2, { aiPick: tailPick, cancelable: true });
         if (dropped.length === 2) {
           for (const c of dropped) discardCard(a, c);
-          addLog(`${a.name} 贯石斧：弃两张牌，此杀不可闪避`, 'hl');
+          addLog(`${a.name} 青铜长戟：弃两张牌，此次攻击不可防御`, 'hl');
           render();
           await resolveHit();
           return;
@@ -367,7 +368,7 @@ export async function useSha(
       }
     }
     // 青龙偃月刀：杀被闪后可对同目标再出一张杀
-    // 规则：需消耗一张手牌中的【杀】；该杀不计入出杀次数上限；若被再次闪避可继续发动（链式）
+    // 规则：需消耗一张手牌中的【攻击】；该杀不计入出杀次数上限；若被再次闪避可继续发动（链式）
     if (a.equip.weapon?.skill === 'qinglong' && !wVoid && t.alive) {
       const shaInHand = inRange(attackerIdx, targetIdx)
         ? usableHand(a, (c) => SHA_SUBS.includes(c.sub))[0]
@@ -377,7 +378,7 @@ export async function useSha(
         : (await waitChoice(
             attackerIdx,
             [
-              { label: '🐉 青龙偃月刀：再出一张杀', value: 'yes' },
+              { label: '🐉 洼角云刀：再出一张攻击', value: 'yes' },
               { label: '不发动', value: 'no' },
             ],
             'list',
@@ -412,7 +413,7 @@ export async function useSha(
         const theirs = await chooseSelfDiscard(t, 2, { aiPick: tailPick });
         for (const c of mine) discardCard(a, c);
         for (const c of theirs) discardCard(t, c);
-        addLog(`【寒冰剑】${t.name} 弃置两张手牌，免除伤害`, 'hl');
+        addLog(`【月影玄冰剑】${t.name} 弃置两张手牌，免除伤害`, 'hl');
         render();
         return;
       }
@@ -421,8 +422,8 @@ export async function useSha(
   await resolveHit();
 }
 
-/** 使用恢复类丹药（引擎 key = tao）。cardName 为实际卡名，缺省回退「桃」 */
-export async function useTao(idx: number, cardName = '桃'): Promise<void> {
+/** 使用恢复类丹药（引擎 key = tao）。cardName 为实际卡名，缺省回退「恢复」 */
+export async function useTao(idx: number, cardName = '恢复'): Promise<void> {
   const p = G.players[idx];
   if (p.hp >= p.maxHp) {
     addLog('体力已满');
@@ -437,12 +438,12 @@ export async function useTao(idx: number, cardName = '桃'): Promise<void> {
   render();
 }
 
-/** 使用增益类丹药/符箓（引擎 key = jiu）。cardName 为实际卡名，缺省回退「酒」 */
-export async function useJiu(idx: number, cardName = '酒'): Promise<void> {
+/** 使用增益类丹药/符箓（引擎 key = jiu）。cardName 为实际卡名，缺省回退「增益」 */
+export async function useJiu(idx: number, cardName = '增益'): Promise<void> {
   const p = G.players[idx];
   // 每回合限一次：多张酒不得叠加，避免一刀秒杀（原版规则）
   if (p.flags.jiuUsed) {
-    addLog('本回合已使用过【酒】');
+    addLog('本回合已使用过【增益】');
     return;
   }
   p.flags.jiuUsed = true;
@@ -496,7 +497,7 @@ export async function useSkill(
           : '#b57fff',
   );
 
-  // 无懈可击：即时锦囊结算前插入响应链（延时类乐/闪电在判定区，不在范围）
+  // 无懈可击：即时锦囊结算前插入响应链（延时类乐/天劫在判定区，不在范围）
   const COUNTERABLE = [
     'wuzhong', 'guohe', 'shunshou', 'juedou', 'nanman', 'wanjian', 'taoyuan',
     'jiedao', 'wugu', 'tiesuo', 'huogong',
@@ -508,7 +509,7 @@ export async function useSkill(
   if (COUNTERABLE.includes(card.sub) || trickDefOf(card.sub)) {
     const res = await counterChain(attackerIdx, card.sub, targetIdx);
     if (res.countered) {
-      addLog(`【无懈可击】生效，${card.name} 被抵消`, 'hl');
+      addLog(`【${trickName('wuxie')}】生效，${card.name} 被抵消`, 'hl');
       // 茅盾【批判】：锦囊被无懈后可弃一张牌令其弃一张牌
       await fire('onSkillCountered', {
         idx: attackerIdx,
@@ -524,7 +525,7 @@ export async function useSkill(
   // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色
   const SINGLE_TARGET_TRICKS = [
     'guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo',
-    // 扩展包单体锦囊 + 延时类（【兵粮寸断】）
+    // 扩展包单体锦囊 + 延时类（【哼哈真言】）
     ...ONE_TARGET_TRICKS,
     ...DELAY_TRICK_SUBS,
   ];
@@ -547,13 +548,13 @@ export async function useSkill(
       break;
     }
     case 'guohe': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '过河拆桥', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '破阵符', card.suit)) {
         await discardTargetCard(targetIdx, attackerIdx, '弃置');
       }
       break;
     }
     case 'shunshou': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '顺手牵羊', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '敛息诀', card.suit)) {
         await discardTargetCard(targetIdx, attackerIdx, '获得');
       }
       break;
@@ -583,22 +584,22 @@ export async function useSkill(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'skill', '南蛮入侵', card.suit)) continue;
+        if (!canBeTarget(i, 'skill', '魔灾泛起', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#e74c3c');
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
-        // 藤甲：南蛮入侵无效
+        // 藤甲：魔灾泛起无效
         if (t.equip.armor?.skill === 'tengjia') {
-          addLog(`${t.name} 的【藤甲】令【南蛮入侵】无效`, 'hl');
+          addLog(`${t.name} 的【${t.equip.armor?.name || '护身法阵'}】令【${trickName('nanman')}】无效`, 'hl');
           continue;
         }
         const sha = usableHand(t, (c) => SHA_SUBS.includes(c.sub))[0];
         if (sha) {
           discardCard(t, sha);
-          addLog(`${t.name} 出杀抵挡`);
+          addLog(`${t.name} 出攻击抵挡`);
         } else await dealDamage(attackerIdx, i, 1);
       }
       break;
@@ -607,22 +608,22 @@ export async function useSkill(
       const targets: number[] = [];
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
-        if (!canBeTarget(i, 'skill', '万箭齐发', card.suit)) continue;
+        if (!canBeTarget(i, 'skill', '万剑钻心', card.suit)) continue;
         targets.push(i);
       }
       await aoeFx(attackerIdx, targets, '#f39c12');
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
-        // 藤甲：万箭齐发无效
+        // 藤甲：万剑钻心无效
         if (t.equip.armor?.skill === 'tengjia') {
-          addLog(`${t.name} 的【藤甲】令【万箭齐发】无效`, 'hl');
+          addLog(`${t.name} 的【${t.equip.armor?.name || '护身法阵'}】令【${trickName('wanjian')}】无效`, 'hl');
           continue;
         }
         const shan = usableHand(t, (c) => c.sub === 'shan')[0];
         if (shan) {
           discardCard(t, shan);
-          addLog(`${t.name} 出闪抵挡`);
+          addLog(`${t.name} 出防御抵挡`);
           await FX.shield(i);
         } else await dealDamage(attackerIdx, i, 1);
       }
@@ -639,21 +640,21 @@ export async function useSkill(
       break;
     }
     case 'lebu': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '乐不思蜀', card.suit)) {
+      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '七星定身阵', card.suit)) {
         // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
           addLog(`${G.players[targetIdx].name} 的【太平要术】免疫延时锦囊`, 'hl');
           break;
         }
         G.players[targetIdx].judge.push({ ...card, judgeType: 'lebu' });
-        addLog(`【乐不思蜀】置于 ${G.players[targetIdx].name} 判定区`);
+        addLog(`【七星定身阵】置于 ${G.players[targetIdx].name} 判定区`);
       }
       break;
     }
     case 'shandian': {
-      // 法拉第【避雷针】：不能成为【闪电】的目标
-      if (cardImmuneTo(a, '闪电')) {
-        addLog(`${a.name} 免疫【闪电】，无法置于判定区`, 'hl');
+      // 法拉第【避雷针】：不能成为【天劫】的目标
+      if (cardImmuneTo(a, '天劫')) {
+        addLog(`${a.name} 免疫【天劫】，无法置于判定区`, 'hl');
         break;
       }
       // 【太平要术】锁定技：不能成为延时锦囊的目标
@@ -662,7 +663,7 @@ export async function useSkill(
         break;
       }
       a.judge.push({ ...card, judgeType: 'shandian' });
-      addLog(`【闪电】置于 ${a.name} 判定区`);
+      addLog(`【天劫】置于 ${a.name} 判定区`);
       break;
     }
     case 'jiedao': {
@@ -675,13 +676,13 @@ export async function useSkill(
         else if (shaCard && inRange(targetIdx, secondTarget)) {
           attack =
             (await waitChoice(targetIdx, [
-              { label: `对 ${victim.name} 使用【杀】`, value: 'attack' },
+              { label: `对 ${victim.name} 使用【攻击】`, value: 'attack' },
               { label: `交出武器【${holder.equip.weapon?.name || '武器'}】`, value: 'give' },
             ], 'list')) === 'attack';
         }
         if (attack && shaCard) {
           discardCard(holder, shaCard);
-          addLog(`${holder.name} 对 ${victim.name} 使用【杀】`);
+          addLog(`${holder.name} 对 ${victim.name} 使用【攻击】`);
           await useSha(targetIdx, secondTarget, {
             fromJiedao: true,
             suit: shaCard.suit,
@@ -707,7 +708,7 @@ export async function useSkill(
         const c = G.deck.pop();
         if (c) shown.push(c);
       }
-      addLog(`【五谷丰登】亮出 ${shown.length} 张牌`, 'hl');
+      addLog(`【同参木阵】亮出 ${shown.length} 张牌`, 'hl');
       const order: number[] = [];
       const start = G.players.indexOf(a);
       for (let k = 0; k < G.players.length; k++) {
@@ -759,8 +760,8 @@ export async function useSkill(
         t.chained = !t.chained;
         addLog(
           t.chained
-            ? `【铁索连环】${t.name} 横置（进入连环）`
-            : `【铁索连环】${t.name} 重置（解除连环）`,
+            ? `【混元剑狱】${t.name} 横置（进入连环）`
+            : `【混元剑狱】${t.name} 重置（解除连环）`,
           'hl',
         );
       }
@@ -772,8 +773,8 @@ export async function useSkill(
         const shown = t.hand.length ? t.hand[Math.floor(Math.random() * t.hand.length)] : null;
         addLog(
           shown
-            ? `【火攻】${t.name} 展示【${shown.name}】${shown.suit}${shown.num}`
-            : `【火攻】${t.name} 无手牌可展示，火攻失败`,
+            ? `【极寒碧火诀】${t.name} 展示【${shown.name}】${shown.suit}${shown.num}`
+            : `【极寒碧火诀】${t.name} 无手牌可展示，极寒碧火诀失败`,
           'hl',
         );
         if (shown) {
@@ -787,7 +788,7 @@ export async function useSkill(
               attackerIdx,
               same
                 .map((c) => ({ label: `弃【${c.name}】${c.suit}${c.num}`, value: 'c_' + c.id }))
-                .concat([{ label: '不弃牌（火攻失败）', value: 'no' }]),
+                .concat([{ label: '不弃牌（极寒碧火诀失败）', value: 'no' }]),
               'list',
             );
             if (String(ch).startsWith('c_')) {
@@ -799,16 +800,16 @@ export async function useSkill(
               }
             }
           }
-          // 掌门路属性：火攻类技能卡（极寒碧火诀）自带火属性，参与属性相克结算
+          // 掌门路属性：极寒碧火诀类技能卡（极寒碧火诀）自带火属性，参与属性相克结算
           if (burn) await dealDamage(attackerIdx, targetIdx, 1, 'fire', false, card.attr);
-          else addLog('火攻未生效', 'dmg');
+          else addLog('极寒碧火诀未生效', 'dmg');
         }
       }
       break;
     }
     /* ---------------- 扩展包锦囊（卡牌扩展包启用后才可能出现） ---------------- */
     case 'bingliang': {
-      // 【兵粮寸断】：延时锦囊，置入目标判定区
+      // 【哼哈真言】：延时锦囊，置入目标判定区
       if (targetIdx != null && canBeTarget(targetIdx, 'skill', card.name, card.suit)) {
         // 【太平要术】锁定技：不能成为延时锦囊的目标
         if (delayImmune(G.players[targetIdx])) {
@@ -816,7 +817,7 @@ export async function useSkill(
           break;
         }
         G.players[targetIdx].judge.push({ ...card, judgeType: 'bingliang' });
-        addLog(`【兵粮寸断】置于 ${G.players[targetIdx].name} 判定区`);
+        addLog(`【哼哈真言】置于 ${G.players[targetIdx].name} 判定区`);
       }
       break;
     }
@@ -957,8 +958,8 @@ export async function useSkill(
       break;
     }
     case 'wuxieguo': {
-      // 【无懈可击·国】为响应牌，不应被主动使用；主动打出时哑火并记录
-      addLog('【无懈可击·国】只能在他人使用锦囊时响应', 'dmg');
+      // 【不在算中·国】为响应牌，不应被主动使用；主动打出时哑火并记录
+      addLog('【不在算中·国】只能在他人使用锦囊时响应', 'dmg');
       break;
     }
     /* ---- 掌门路原著机制卡 ---- */
@@ -1073,7 +1074,7 @@ async function counterChain(
     const pid = queue.shift()!;
     if (responded.has(pid)) continue;
     const p = G.players[pid];
-    // 【无懈可击·国】优先：抵消后不可被再次无懈，直接终结响应链
+    // 【不在算中·国】优先：抵消后不可被再次抵消，直接终结响应链
     const wuxieCard =
       p.hand.find((c) => c.sub === 'wuxieguo') || p.hand.find((c) => c.sub === 'wuxie');
     if (!wuxieCard) continue;
@@ -1086,7 +1087,7 @@ async function counterChain(
         pid,
         [
           {
-            label: `🚫 ${isGuo ? '无懈可击·国' : '无懈可击'}（抵消【${trickLabel(sub)}】）`,
+            label: `🚫 ${wuxieCard.name}（抵消【${trickLabel(sub)}】）`,
             value: 'use',
           },
           { label: '不响应', value: 'skip' },
@@ -1114,25 +1115,16 @@ async function counterChain(
 }
 
 function trickLabel(sub: string): string {
-  const m: Record<string, string> = {
-    wuzhong: '无中生有', guohe: '过河拆桥', shunshou: '顺手牵羊', juedou: '决斗',
-    nanman: '南蛮入侵', wanjian: '万箭齐发', taoyuan: '桃园结义',
-    jiedao: '借刀杀人', wugu: '五谷丰登', tiesuo: '铁索连环', huogong: '火攻',
-    // 扩展包锦囊
-    bingliang: '兵粮寸断', zhiji: '知己知彼', shuishui: '水淹七军', caomu: '草木皆兵',
-    yuanjiao: '远交近攻', yiyi: '以逸待劳', huoshao: '火烧连营',
-    diaohu: '调虎离山', lianjun: '联军盛宴', chiling: '敕令', wuxieguo: '无懈可击·国',
-  };
-  return m[sub] || '锦囊';
+  return trickName(sub);
 }
 
 export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string): Promise<void> {
   const t = G.players[targetIdx];
-  // 焚书（锦囊免疫）：不能被【过河拆桥】/【顺手牵羊】指定
+  // 焚书（锦囊免疫）：不能被【破阵符】/【敛息诀】指定
   if (!canBeTarget(targetIdx, 'skill')) return;
   const opts: { label: string; value: string }[] = [];
   if (t.hand.length > 0) opts.push({ label: `手牌（${t.hand.length}张）`, value: 'hand' });
-  // 凯库勒【结构式】：装备不能被过河拆桥 / 顺手牵羊指定
+  // 凯库勒【结构式】：装备不能被破阵符 / 敛息诀指定
   if (!equipImmune(t)) {
     if (t.equip.weapon) opts.push({ label: `武器：${t.equip.weapon.name}`, value: 'weapon' });
     if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
@@ -1168,7 +1160,7 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
 
 /* ==================== 消耗类道具 ==================== */
 /**
- * 使用局内携带的消耗类道具（不进牌堆，不可被顺手牵羊等卡牌影响，局末清空）。
+ * 使用局内携带的消耗类道具（不进牌堆，不可被敛息诀等卡牌影响，局末清空）。
  * 消耗来自玩家「局内携带」计数（player.items），不影响个人档案库存与配装。
  */
 export async function useItem(idx: number, itemId: string): Promise<void> {
@@ -1187,7 +1179,7 @@ export async function useItem(idx: number, itemId: string): Promise<void> {
 
 /* ==================== 出闪 ==================== */
 /**
- * 请求出【闪】：need > 1 时（无双）需连续出多张，任意一张出不起即命中。
+ * 请求出【防御】：need > 1 时（无双）需连续出多张，任意一张出不起即命中。
  * 未成功闪避（need 未凑齐）返回 false。
  */
 export async function requestShan(
@@ -1219,20 +1211,20 @@ async function requestOneShan(
   // 八卦阵：手中无闪时判定，红色视为打出闪（AI 与真人同一套处理）
   if (noShan && !o.ignoreArmor && t.equip.armor?.skill === 'bagua') {
     const jc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
-    addLog(`【八卦阵】判定：${jc.suit}${jc.num}`, 'hl');
+    addLog(`【猴面金身法像】判定：${jc.suit}${jc.num}`, 'hl');
     G.discard.push(jc);
     if (jc.suit === '♥' || jc.suit === '♦') {
-      addLog('【八卦阵】判定为红色，视为闪', 'hl');
+      addLog('【猴面金身法像】判定为红色，视为防御', 'hl');
       await FX.shield(targetIdx);
       return onDodged();
     }
-    addLog('【八卦阵】判定失败');
+    addLog('【猴面金身法像】判定失败');
   }
 
   // 启发式 AI（或未真正开启大模型的接管座位）：确定性优先级，有闪必出
   if (t.isAI && !(t.aiMode === 'llm' && llmReady())) {
     // 转化技：老舍【骆驼祥子】装备当闪 / 孙子【虚实】杀当闪
-    // EV 门控：真【闪】必出；「转化」仅在值得时才做，避免满血时白扔一张【杀】
+    // EV 门控：真【防御】必出；「转化」仅在值得时才做，避免满血时白扔一张【攻击】
     const natural = t.hand.find((c) => c.sub === 'shan');
     const conv = t.hand.find((c) => c.sub !== 'shan' && canConvertAs(t, c, 'shan', outside));
     const shan =
@@ -1249,7 +1241,7 @@ async function requestOneShan(
     // 护盾当闪：残血时值得用（护盾是稀缺资源，满血时留给更需要的时候）
     if ((t.shield || 0) >= 1 && t.hp <= 2) {
       t.shield--;
-      addLog(`${t.name} 消耗1护盾当闪`);
+      addLog(`${t.name} 消耗1护盾当防御`);
       await FX.shield(targetIdx);
       return onDodged();
     }
@@ -1259,11 +1251,11 @@ async function requestOneShan(
   const opts: ChoiceOption[] = [];
   shans.forEach((c) =>
     opts.push({
-      label: c.sub === 'shan' ? `【闪】${c.suit}${c.num}` : `【${c.name}】${c.suit}${c.num} 当【闪】`,
+      label: c.sub === 'shan' ? `【防御】${c.suit}${c.num}` : `【${c.name}】${c.suit}${c.num} 当【防御】`,
       value: 'card_' + c.id,
     }),
   );
-  if ((t.shield || 0) >= 1) opts.push({ label: '1护盾当闪', value: 'shield' });
+  if ((t.shield || 0) >= 1) opts.push({ label: '1护盾当防御', value: 'shield' });
   opts.push({ label: '承受伤害', value: 'none' });
   let ch: string | number;
   if (t.isAI) {
@@ -1276,7 +1268,7 @@ async function requestOneShan(
   if (ch === 'none') return false;
   if (ch === 'shield') {
     t.shield--;
-    addLog(`${t.name} 消耗护盾当闪`);
+    addLog(`${t.name} 消耗护盾当防御`);
     await FX.shield(targetIdx);
     return onDodged();
   }

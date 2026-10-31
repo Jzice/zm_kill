@@ -62,7 +62,7 @@ export function copyInviteLink(): void {
 export function nativeShare(): void {
   const text = currentLink;
   if (!text) return;
-  const payload = { title: '学堂杀 · 九科争鸣', text: '一起来玩学堂杀！', url: text };
+  const payload = { title: '掌门杀 · 修真门派', text: '一起来玩掌门杀！', url: text };
   if (typeof navigator.share === 'function') {
     navigator.share(payload).catch(() => {
       /* 用户取消分享，忽略 */

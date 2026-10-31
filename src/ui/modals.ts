@@ -28,10 +28,10 @@ function knowledgeTrickHtml(): string {
   const items = Object.values(allTrickDefs());
   if (!items.length) return '';
   const lis = items.map((d) => `<li><b>【${d.name}】</b>${d.desc}</li>`).join('');
-  return `<div class="rule-section"><h4>📚 知识点锦囊</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">由知识点凝练的锦囊；均可被【无懈可击】抵消。</div><ul>${lis}</ul></div>`;
+  return `<div class="rule-section"><h4>📚 知识点锦囊</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">由知识点凝练的锦囊；均可被【不在算中】抵消。</div><ul>${lis}</ul></div>`;
 }
 /**
- * 牌库扩展包规则书分区：按卡包分组渲染全部扩展卡（卡名即《三国杀》原版名）。
+ * 牌库扩展包规则书分区：按卡包分组渲染全部扩展卡（卡名沿用通用卡牌命名）。
  * 与知识点锦囊同构——纯数据驱动，新增卡牌只加 CARD_CATALOG 一条记录即自动出现。
  */
 function cardPackHtml(): string {
@@ -49,7 +49,7 @@ function cardPackHtml(): string {
     })
     .join('');
   if (!groups) return '';
-  return `<div class="rule-section"><h4>🂠 牌库扩展包（需在「牌库扩展包」中勾选启用）</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">以下卡牌在基础 125 张之上追加，卡名与规则内核均与《三国杀》原版一致。</div>${groups}</div>`;
+  return `<div class="rule-section"><h4>🂠 牌库扩展包（需在「牌库扩展包」中勾选启用）</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">以下卡牌在修真基础牌堆之上追加，卡名与规则内核一致。</div>${groups}</div>`;
 }
 
 /** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */
@@ -126,14 +126,14 @@ function renderRulesContent(tab: string): void {
     </ul></div>
     <div class="rule-section"><h4>🔄 回合流程</h4><ol>
       <li>判定阶段：结算判定区</li>
-      <li>摸牌阶段：摸2张牌，可参悟答题多摸1张</li>
-      <li>出牌阶段：点击手牌出牌，点击座位卡选目标，点击技能发动（需答题）</li>
+      <li>摸牌阶段：摸2张牌</li>
+      <li>出牌阶段：点击手牌出牌，点击座位卡选目标，点击技能发动</li>
       <li>弃牌阶段：点击手牌弃置</li>
     </ol></div>
-    <div class="rule-section"><h4>📚 年级与角色池</h4><ul>
-      <li>内置初中三年与高中三年，每学年分上下学期，共 12 个年级</li>
-      <li><b>角色池随年级累加</b>：选择较高年级时，低年级角色同样可选</li>
-      <li>可通过「题库管理」导入外部题库（本地文件或 URL）</li>
+    <div class="rule-section"><h4>📚 角色池与门派</h4><ul>
+      <li>角色池为《修真门派掌门路》原著角色，按九大门派归类</li>
+      <li><b>选角改由门派筛选</b>：选择某一门派时，仅该门派角色可选（可在大厅「门派」中切换）</li>
+      <li>角色技能与卡牌均基于修真设定，详见「门派与主公技」与「卡牌大全」</li>
     </ul></div>
     <div class="rule-section"><h4>☯ 修为与境界</h4><ul>
       <li>每局结算得<b>修为</b>：胜利 +${EXP_WIN}，败北 +${EXP_LOSE}；每击杀 1 名角色 +${EXP_PER_KILL}；连胜每级 +${EXP_STREAK_STEP}（最多 +${EXP_STREAK_STEP * EXP_STREAK_MAX_STEP}）；主公获胜额外 +${EXP_LORD_BONUS}，内奸独赢额外 +${EXP_SPY_BONUS}；每解锁 1 个成就 +${EXP_PER_ACH}</li>
@@ -167,10 +167,10 @@ function renderRulesContent(tab: string): void {
       )
       .join('');
   } else if (tab === 'cards') {
-    el.innerHTML = `<div class="rule-section"><h4>⚔️ 基本牌</h4><ul><li><b>攻击牌（杀 / 火杀 / 雷杀）</b>：对目标造成 1 点伤害；分普通 / 火 / 雷三种属性，可触发【铁索连环】传导，火属性受【藤甲】放大。掌门路模式中由各类攻击功法、火系 / 雷系符箓与法宝代替。</li><li><b>防御牌（闪）</b>：抵消一次攻击；掌门路模式中由各类身法 / 盾法代替。</li><li><b>恢复牌（桃）</b>：回复 1 点体力或濒死自救；掌门路模式中由各类恢复丹药代替。</li><li><b>增益牌（酒）</b>：本回合下一张攻击牌伤害 +1，濒死时可自救；掌门路模式中由各类增益丹药 / 符箓代替。</li></ul></div>
-    <div class="rule-section"><h4>🎴 锦囊</h4><ul><li><b>无中生有</b>：摸2张</li><li><b>过河拆桥</b>：弃一张牌</li><li><b>顺手牵羊</b>：获得距离1内一张牌</li><li><b>决斗</b>：轮流出杀</li><li><b>南蛮/万箭</b>：需出杀/闪（【藤甲】可免疫）</li><li><b>桃园结义</b>：全体回血</li><li><b>无懈可击</b>：抵消锦囊</li><li><b>乐不思蜀</b>：判定红桃则失效</li><li><b>闪电</b>：判定黑桃2-9受3点雷伤</li><li><b>借刀杀人</b>：令其出杀，否则交出武器</li><li><b>五谷丰登</b>：亮牌后依次各取一张</li><li><b>铁索连环</b>：横置/重置，或重铸摸一张</li><li><b>火攻</b>：弃同花色牌造成1点火伤</li></ul></div>${knowledgeTrickHtml()}
-    <div class="rule-section"><h4>🛡️ 装备</h4><ul><li><b>诸葛连弩</b>：无限杀</li><li><b>青龙偃月刀</b>：杀被闪后可再出杀</li><li><b>丈八蛇矛</b>：两张手牌当杀</li><li><b>青釭剑</b>：无视目标防具</li><li><b>雌雄双股剑</b>：对异性用杀，对方令你摸一张或自弃一张</li><li><b>贯石斧</b>：杀被闪后弃两张牌强制命中</li><li><b>方天画戟</b>：最后一张手牌为杀时可打3个目标</li><li><b>寒冰剑</b>：弃两张牌改为令其弃两张牌</li><li><b>古锭刀</b>：目标无手牌时伤害+1</li><li><b>八卦阵</b>：判定红视为闪</li><li><b>仁王盾</b>：黑杀无效</li><li><b>藤甲</b>：普通杀/南蛮/万箭无效，火焰伤害+1</li><li><b>白银狮子</b>：每次受伤最多1点，失去时回1血</li><li><b>+1/-1马</b>：影响距离</li></ul></div>
-    <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【铁索连环】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>${cardPackHtml()}`;
+    el.innerHTML = `<div class="rule-section"><h4>⚔️ 基本牌</h4><ul><li><b>攻击牌</b>：对目标造成 1 点伤害；分普通 / 火 / 雷三种属性，可触发【混元剑狱】传导，火属性受【映雪冰风阵】放大。由各类攻击功法、火系 / 雷系符箓与法宝代替。</li><li><b>防御牌</b>：抵消一次攻击；由各类身法 / 盾法代替。</li><li><b>恢复牌</b>：回复 1 点体力或濒死自救；由各类恢复丹药代替。</li><li><b>增益牌</b>：本回合下一张攻击牌伤害 +1，濒死时可自救；由各类增益丹药 / 符箓代替。</li></ul></div>
+    <div class="rule-section"><h4>🎴 锦囊</h4><ul><li><b>趋吉避凶诀</b>：摸2张</li><li><b>破阵符</b>：弃一张牌</li><li><b>敛息诀</b>：获得距离1内一张牌</li><li><b>决斗</b>：轮流出攻击</li><li><b>魔灾泛起 / 万剑钻心</b>：需出攻击 / 防御（护身法阵可免疫）</li><li><b>三木回心阵</b>：全体回血</li><li><b>不在算中</b>：抵消锦囊</li><li><b>七星定身阵</b>：判定红桃则失效</li><li><b>天劫</b>：判定黑桃2-9受3点雷伤</li><li><b>银甲乐傀召唤符</b>：令其出攻击，否则交出武器</li><li><b>同参木阵</b>：亮牌后依次各取一张</li><li><b>混元剑狱</b>：横置/重置，或重铸摸一张</li><li><b>极寒碧火诀</b>：弃同花色牌造成1点火伤</li></ul></div>${knowledgeTrickHtml()}
+    <div class="rule-section"><h4>🛡️ 装备</h4><ul><li><b>灵狐剑匣</b>：出攻击次数无限制</li><li><b>洼角云刀</b>：攻击被防御后可再出攻击</li><li><b>七剑斩元星</b>：两张手牌当攻击</li><li><b>七芯蝎尾夺</b>：无视目标护身法器</li><li><b>心生蜂云剑</b>：对异性用攻击，对方令你摸一张或自弃一张</li><li><b>青铜长戟</b>：攻击被防御后弃两张牌强制命中</li><li><b>月影玄冰剑</b>：弃两张牌改为令其弃两张牌</li><li><b>一剑碧环星</b>：目标无手牌时伤害+1</li><li><b>猴面金身法像</b>：判定红视为防御</li><li><b>清风法袍</b>：黑色攻击无效</li><li><b>映雪冰风阵</b>：普通攻击/群攻锦囊无效，火属性伤害+1</li><li><b>乙木御风梭 / 载具</b>：影响距离</li></ul></div>
+    <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【混元剑狱】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>${cardPackHtml()}`;
   } else if (tab === 'chars') {
     let html = '';
     const byFaction = new Map<FactionId, typeof CHARACTERS>();
@@ -219,7 +219,7 @@ function renderRulesContent(tab: string): void {
     }</div></div>`;
   } else if (tab === 'packs') {
     el.innerHTML = `<div class="rule-section"><h4>🎁 扩展包</h4><ul>
-      <li><b>全部 / 初中 / 高中</b>：均为免费并列的角色池范围选项（首版不区分年级、无学分门槛）。</li>
+      <li><b>全部</b>：掌门路原著角色池范围选项（免费并列）。</li>
       <li>切换扩展包会即时刷新可选角色池，联机时加入方可在房主基础包之上叠加。</li>
     </ul></div>
     <div class="rule-section"><h4>👥 联机：房主统一选包 + 个人叠加</h4><ul>

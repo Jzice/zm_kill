@@ -10,56 +10,33 @@
  */
 import type { Card } from '../core/types';
 import { G } from './state';
-import { CARD_CATALOG } from '../data/cardCatalog';
+import { ZML_ALL } from '../data/zml/cards.zml';
 import type { CardPackId } from '../data/cardPacks';
 
-/** 基础牌堆构成（与 data/cards.ts::buildDeck 无参调用一一对应，共 125 张） */
-export const BASE_DECK_TOTAL: Record<string, number> = {
-  // 基本牌 58
-  sha: 20,
-  huo: 5,
-  lei: 5,
-  shan: 15,
-  tao: 8,
-  jiu: 5,
-  // 锦囊 45
-  wuzhong: 4,
-  guohe: 6,
-  shunshou: 5,
-  juedou: 3,
-  nanman: 3,
-  wanjian: 1,
-  taoyuan: 1,
-  wuxie: 4,
-  lebu: 3,
-  shandian: 2,
-  jiedao: 2,
-  wugu: 2,
-  tiesuo: 6,
-  huogong: 3,
-  // 装备 22
-  weapon: 10,
-  armor: 6,
-  'horse+': 3,
-  'horse-': 3,
-};
+/**
+ * 基础牌堆构成（与 data/cards.ts::buildDeck 无参调用一一对应）。
+ * 直接由修真牌堆定义派生，避免硬编码张数与实际牌堆漂移（当前 237 张）。
+ */
+export const BASE_DECK_TOTAL: Record<string, number> = (() => {
+  const m: Record<string, number> = {};
+  for (const d of ZML_ALL) m[d.sub] = (m[d.sub] || 0) + d.count;
+  return m;
+})();
 
 /**
- * 当前牌堆构成 = 基础 125 张 + 已启用扩展卡包的投放量。
+ * 当前牌堆构成 = 修真牌堆构成（237 张）。
  * 由 game/setup.ts 在 buildDeck 之后调用 applyDeckComposition() 刷新，
- * 否则 AI 的概率分母仍停留在「仅基础包」的口径（偏差可接受但不够准）。
+ * 使 AI 的概率分母与实际牌堆严格一致。
+ * 注：经典扩展包卡尚未修真化，`buildDeck` 不投放它们，故分母只取基础牌堆构成；
+ * 待扩展包完成修真化后，再按 packs 累加投放量。
  */
 export const DECK_TOTAL: Record<string, number> = { ...BASE_DECK_TOTAL };
 export let DECK_SIZE = Object.values(DECK_TOTAL).reduce((s, n) => s + n, 0);
 
-/** 按启用的牌库扩展包重算牌堆构成（幂等，可重复调用） */
-export function applyDeckComposition(packs: CardPackId[]): void {
+/** 按牌堆实际投放重算牌堆构成（幂等，可重复调用） */
+export function applyDeckComposition(_packs: CardPackId[]): void {
   for (const k of Object.keys(DECK_TOTAL)) delete DECK_TOTAL[k];
   Object.assign(DECK_TOTAL, BASE_DECK_TOTAL);
-  for (const def of Object.values(CARD_CATALOG)) {
-    if (!packs.includes(def.pack)) continue;
-    DECK_TOTAL[def.sub] = (DECK_TOTAL[def.sub] || 0) + def.count;
-  }
   DECK_SIZE = Object.values(DECK_TOTAL).reduce((s, n) => s + n, 0);
   pubVer = -1; // 强制重算公开牌池缓存
 }
@@ -170,7 +147,7 @@ export function expectedCount(me: number, t: number, subs: string | string[]): n
   return tp.hand.length * pUnseen(me, subs);
 }
 
-/** 我方手牌中可当【杀】使用的张数（含转化技由调用方自行叠加） */
+/** 我方手牌中可当【攻击】使用的张数（含转化技由调用方自行叠加） */
 export function countSub(pIdx: number, subs: string | string[]): number {
   const p = G.players[pIdx];
   if (!p) return 0;

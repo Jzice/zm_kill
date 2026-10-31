@@ -68,7 +68,6 @@ function validate(raw) {
     if (typeof c.subject !== 'string' || !c.subject.trim()) errors.push(`${t}.subject 缺失`);
     if (typeof c.hp !== 'number' || c.hp < 2 || c.hp > 5) errors.push(`${t}.hp 应在 2~5`);
     if (typeof c.avatar !== 'string' || !c.avatar) errors.push(`${t}.avatar 缺失`);
-    if (typeof c.grade !== 'string' || !c.grade.trim()) errors.push(`${t}.grade 缺失`);
     if (!Array.isArray(c.skills) || !c.skills.length) errors.push(`${t}.skills 至少 1 条`);
     (c.skills || []).forEach((s, si) => {
       const st = `${t}.技能[${si}]`;

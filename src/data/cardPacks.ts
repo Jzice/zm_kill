@@ -1,13 +1,14 @@
 /* ==================== 牌库扩展包（Cards Pack） ====================
  * 与「角色扩展包」(src/data/packets.ts 的 PacketId) 相互独立：
- *   - PacketId  决定**角色池**（按年级 / 初中 / 高中 / 全部）
- *   - CardPackId 决定**牌堆构成**（在基础牌堆之上追加哪些扩展卡牌）
+ *   - PacketId  决定**角色池**（首版仅 'all'，即全部原著角色）
+ *   - CardPackId 决定**牌堆构成**（在修真牌堆之上追加哪些扩展卡牌）
  * 两者命名与用途完全分离，避免 UI 与联机同步串线。
  *
- * core 为恒启用基础包（现有 125 张牌），不可关闭；
+ * core 为恒启用基础包（修真基础牌堆），不可关闭；
  * 其余包默认关闭，由房主开局勾选（联机随房间状态同步给加入方）。
  */
 import type { CardDef } from './cardCatalog';
+import { ZML_DECK_TOTAL } from './zml/cards.zml';
 
 /** 牌库扩展包标识 */
 export type CardPackId = 'core' | 'junzheng' | 'shenhua' | 'sp' | 'yingbian' | 'guozhan';
@@ -26,14 +27,14 @@ export const CARD_PACKS: CardPack[] = [
     id: 'core',
     name: '基础牌堆',
     icon: '🂠',
-    desc: '现有 125 张标准牌堆，恒启用且不可关闭',
-    origin: '标准版 + 已并入的军争篇卡牌',
+    desc: `现有 ${ZML_DECK_TOTAL} 张修真牌堆，恒启用且不可关闭`,
+    origin: '掌门路全修真牌堆（基本牌 / 锦囊 / 兵器法宝 / 法宝）',
   },
   {
     id: 'junzheng',
     name: '军争篇',
     icon: '⚔️',
-    desc: '延时锦囊与长射程武器：兵粮寸断 · 麒麟弓 · 朱雀羽扇',
+    desc: '延时锦囊与长射程武器：哼哈真言 · 麒麟弓 · 朱雀羽扇',
     origin: '军争篇 / 神话再临补完',
   },
   {
@@ -61,7 +62,7 @@ export const CARD_PACKS: CardPack[] = [
     id: 'guozhan',
     name: '国战篇',
     icon: '🏳️',
-    desc: '国战专属锦囊：无懈可击·国 · 调虎离山 · 联军盛宴 · 敕令',
+    desc: '国战专属锦囊：不在算中·国 · 调虎离山 · 联军盛宴 · 敕令',
     origin: '国战（仅引入卡牌，不含双将 / 野心家等模式规则）',
   },
 ];

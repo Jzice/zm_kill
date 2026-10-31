@@ -90,28 +90,28 @@ async function findRoster(wantIds, maxTries = 60) {
 // 先开一局，让 G 进入可用状态
 await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);
 
-// ---- 1. 墨子【非攻】：免疫万箭齐发 / 南蛮入侵 + 敌人武器防具失效 ----
+// ---- 1. 墨子【非攻】：免疫万剑钻心 / 魔灾泛起 + 敌人武器防具失效 ----
 let roster = await findRoster(['mozi']);
 check('开到含墨子的一局', !!roster, roster ? roster.join(',') : '未开到');
 if (roster) {
   const moziIdx = roster.indexOf('mozi');
   const r = await page.evaluate(
     (i) => ({
-      wanjian: window.xtsV21.cardImmune(i, '万箭齐发'),
-      nanman: window.xtsV21.cardImmune(i, '南蛮入侵'),
-      lebu: window.xtsV21.cardImmune(i, '乐不思蜀'),
-      trickAsWanjian: window.xtsV21.canBeTarget(i, 'trick', '万箭齐发'),
+      wanjian: window.xtsV21.cardImmune(i, '万剑钻心'),
+      nanman: window.xtsV21.cardImmune(i, '魔灾泛起'),
+      lebu: window.xtsV21.cardImmune(i, '七星定身阵'),
+      trickAsWanjian: window.xtsV21.canBeTarget(i, 'trick', '万剑钻心'),
       weaponVoid: window.xtsV21.equipVoid(i, 'weapon'),
       armorVoid: window.xtsV21.equipVoid(i, 'armor'),
       horseVoid: window.xtsV21.equipVoid(i, 'horsePlus'),
-      trickStillTargetable: window.xtsV21.canBeTarget(i, 'trick', '过河拆桥'),
+      trickStillTargetable: window.xtsV21.canBeTarget(i, 'trick', '破阵符'),
       trickRedirect: window.xtsV21.trickRedirect(i),
     }),
     moziIdx,
   );
-  check('墨子免疫【万箭齐发】', r.wanjian && !r.trickAsWanjian);
-  check('墨子免疫【南蛮入侵】', r.nanman);
-  check('墨子不免疫【乐不思蜀】（仅群体 AOE）', !r.lebu);
+  check('墨子免疫【万剑钻心】', r.wanjian && !r.trickAsWanjian);
+  check('墨子免疫【魔灾泛起】', r.nanman);
+  check('墨子不免疫【七星定身阵】（仅群体 AOE）', !r.lebu);
   check('墨子免疫仅限 AOE，单体锦囊仍可指定', r.trickStillTargetable);
   check('墨子令敌人武器失效', r.weaponVoid);
   check('墨子令敌人防具失效', r.armorVoid);
@@ -119,18 +119,18 @@ if (roster) {
   check('墨子【兼爱】可转移锦囊', r.trickRedirect);
 }
 
-// ---- 2. 法拉第【避雷针】：免疫【闪电】 ----
+// ---- 2. 法拉第【避雷针】：免疫【天劫】 ----
 roster = await findRoster(['faraday']);
 check('开到含法拉第的一局', !!roster, roster ? roster.join(',') : '未开到');
 if (roster) {
   const i = roster.indexOf('faraday');
   const r = await page.evaluate((i) => ({
-    shandian: window.xtsV21.cardImmune(i, '闪电'),
-    wanjian: window.xtsV21.cardImmune(i, '万箭齐发'),
-    trickAsShandian: window.xtsV21.canBeTarget(i, 'trick', '闪电'),
+    shandian: window.xtsV21.cardImmune(i, '天劫'),
+    wanjian: window.xtsV21.cardImmune(i, '万剑钻心'),
+    trickAsShandian: window.xtsV21.canBeTarget(i, 'trick', '天劫'),
   }), i);
-  check('法拉第免疫【闪电】', r.shandian && !r.trickAsShandian);
-  check('法拉第不免疫【万箭齐发】', !r.wanjian);
+  check('法拉第免疫【天劫】', r.shandian && !r.trickAsShandian);
+  check('法拉第不免疫【万剑钻心】', !r.wanjian);
 }
 
 // ---- 3. 徐霞客【探险】：距离陷阱 ----
@@ -176,8 +176,8 @@ check('开到含巴斯德的一局', !!roster);
 if (roster) {
   const i = roster.indexOf('baside');
   const r = await page.evaluate((i) => ({
-    d: window.xtsV21.canBeTarget(i, 'trick', '过河拆桥', '♦'),
-    spade: window.xtsV21.canBeTarget(i, 'trick', '过河拆桥', '♠'),
+    d: window.xtsV21.canBeTarget(i, 'trick', '破阵符', '♦'),
+    spade: window.xtsV21.canBeTarget(i, 'trick', '破阵符', '♠'),
   }), i);
   check('巴斯德免疫 ♦方片牌', !r.d);
   check('巴斯德不免疫 ♠黑桃牌', r.spade);

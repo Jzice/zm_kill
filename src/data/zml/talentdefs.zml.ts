@@ -75,7 +75,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '诡代',
     kind: 'convert',
     timing: 'passive',
-    desc: '你可将一张锦囊牌当【杀】使用或打出，每回合限一次（诡代本命：以假代真）。出处：L-诡代法.md',
+    desc: '你可将一张锦囊牌当【攻击】使用或打出，每回合限一次（诡代本命：以假代真）。出处：L-诡代法.md',
     effects: [{ kind: 'convert', from: { type: 'skill' }, to: 'sha', limit: 'perTurn' }],
   },
   {
@@ -118,7 +118,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '血仇',
     kind: 'trigger',
     timing: 'onDamaged',
-    desc: '你被【杀】造成伤害后，对来源造成 1 点伤害（展元遗腹子，手刃血刀）。出处：楚秦门·展仇条目',
+    desc: '你被【攻击】造成伤害后，对来源造成 1 点伤害（展元遗腹子，手刃血刀）。出处：楚秦门·展仇条目',
     effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }],
   },
   {
@@ -235,7 +235,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '器符城铸剑',
     kind: 'convert',
     timing: 'passive',
-    desc: '你可将一张装备牌当【杀】使用或打出，每回合限一次（离火盟出身，器符城主）。出处：白山·古熔条目',
+    desc: '你可将一张装备牌当【攻击】使用或打出，每回合限一次（离火盟出身，器符城主）。出处：白山·古熔条目',
     effects: [{ kind: 'convert', from: { type: 'equip' }, to: 'sha', limit: 'perTurn' }],
   },
   {
@@ -350,7 +350,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '雷厉风行',
     kind: 'active',
     timing: 'active',
-    desc: '出牌阶段限一次：你本回合下一张【杀】伤害 +1（北路军指挥）。出处：大周书院·姬兴德条目',
+    desc: '出牌阶段限一次：你本回合下一张【攻击】伤害 +1（北路军指挥）。出处：大周书院·姬兴德条目',
     limit: 'perTurn',
     effects: [{ kind: 'nextShaBonus', n: 1 }],
   },
@@ -370,7 +370,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
     name: '剑疯',
     kind: 'passive',
     timing: 'passive',
-    desc: '你使用【杀】无次数限制，每回合最多额外 1 张，每张额外杀弃 1 张手牌（战力前五）。出处：青莲剑宗·聂疯子条目',
+    desc: '你使用【攻击】无次数限制，每回合最多额外 1 张，每张额外攻击弃 1 张手牌（战力前五）。出处：青莲剑宗·聂疯子条目',
     effects: [{ kind: 'shaUnlimited', maxExtra: 1, extraCostHand: 1 }],
   },
   {
@@ -520,7 +520,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
    */
 
   /* ---- 齐妆 ---- */
-  { id: 'zml_qizhuang_xiazhong', name: '匣中万剑', kind: 'passive', timing: 'passive', desc: '你的【杀】无次数限制，每多出一张须弃 1 张手牌，每回合最多额外 2 张（本命【鎏花幻月剑匣】天赋）。出处：docs/md/角色/楚秦门/03.金丹/齐妆.md', effects: [{ kind: 'shaUnlimited', maxExtra: 2, extraCostHand: 1 }] },
+  { id: 'zml_qizhuang_xiazhong', name: '匣中万剑', kind: 'passive', timing: 'passive', desc: '你的【攻击】无次数限制，每多出一张须弃 1 张手牌，每回合最多额外 2 张（本命【鎏花幻月剑匣】天赋）。出处：docs/md/角色/楚秦门/03.金丹/齐妆.md', effects: [{ kind: 'shaUnlimited', maxExtra: 2, extraCostHand: 1 }] },
   { id: 'zml_qizhuang_guizhen', name: '归真经', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，可弃 1 张手牌摸 2 张（返璞归真，剑心不乱）。出处：B-归真经（齐妆所修功法）', effects: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }] },
 
   /* ---- 秦长风 ---- */
@@ -531,7 +531,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
   { id: 'zml_gutan_shezhan', name: '舌战', kind: 'active', timing: 'active', desc: '出牌阶段限一次：与一名其他角色拼点，赢的你夺取其 1 张手牌（九星坊舌战群修，一夫当关）。出处：docs/md/角色/楚秦门/03.金丹/顾叹.md', limit: 'perTurn', effects: [{ kind: 'pointDuel', win: [{ kind: 'stealFrom', max: 1 }], lose: [] }] },
 
   /* ---- 沙诺 ---- */
-  { id: 'zml_shanuo_guzhong', name: '青铜古钟', kind: 'passive', timing: 'onTargetSha', desc: '每回合限一次：你成为【杀】的目标时，可展示一张手牌，若其点数不小于该【杀】的点数则该【杀】无效（废本命【青铜古钟】钟鸣护体）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', limit: 'perTurn', effects: [{ kind: 'numGuard', op: 'ge', against: 'shaNum', limit: 'perTurn' }] },
+  { id: 'zml_shanuo_guzhong', name: '青铜古钟', kind: 'passive', timing: 'onTargetSha', desc: '每回合限一次：你成为【攻击】的目标时，可展示一张手牌，若其点数不小于该【攻击】的点数则该【攻击】无效（废本命【青铜古钟】钟鸣护体）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', limit: 'perTurn', effects: [{ kind: 'numGuard', op: 'ge', against: 'shaNum', limit: 'perTurn' }] },
   { id: 'zml_shanuo_sanhun', name: '散魂棺', kind: 'trigger', timing: 'onDeath', desc: '每当一名角色阵亡，你摸 3 张牌（散魂棺聚敛魂魄；曾以此湮灭齐妆的聚魂棺）。出处：docs/md/角色/楚秦门/03.金丹/沙诺.md', attr: 'guiwu', effects: [{ kind: 'soulSeize', on: 'death', draw: 3 }] },
 
   /* ---- 明真 ---- */
@@ -551,7 +551,7 @@ export const ZML_TALENT_LIST: TalentDef[] = [
   { id: 'zml_xiongshisi_shouwei', name: '首位金丹', kind: 'trigger', timing: 'onDamaged', desc: '你受到伤害后，可弃 1 张手牌摸 2 张（熊氏首位金丹，结丹后底气自生）。出处：docs/md/角色/楚秦门/03.金丹/熊十四.md', effects: [{ kind: 'costCard', n: 1 }, { kind: 'selfDraw', n: 2 }] },
 
   /* ---- 赵瑶 ---- */
-  { id: 'zml_zhaoyao_yisha', name: '以杀证道', kind: 'trigger', timing: 'onShaHit', desc: '你用【杀】造成伤害后，可摸 1 张牌（白山深处独杀上千凶兽以杀证道）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_zhaoyao_yisha', name: '以杀证道', kind: 'trigger', timing: 'onShaHit', desc: '你用【攻击】造成伤害后，可摸 1 张牌（白山深处独杀上千凶兽以杀证道）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'selfDraw', n: 1 }] },
   { id: 'zml_zhaoyao_rumo', name: '入魔', kind: 'awaken', timing: 'awaken', desc: '觉醒技：准备阶段若你已受伤，减 1 点体力上限并获得【魔化】。出处：赵瑶魔筑基、化名小红；docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'awaken', replaceWith: 'zml_zhaoyao_mohua', minusMaxHp: 1 }] },
   { id: 'zml_zhaoyao_mohua', name: '魔化', kind: 'passive', timing: 'passive', desc: '你造成的伤害 +1（魔筑基，双瞳变红）。出处：docs/md/角色/楚秦门/02.筑基/赵瑶.md', effects: [{ kind: 'damageMod', delta: 1 }] },
 
@@ -602,11 +602,11 @@ export const ZML_TALENT_LIST: TalentDef[] = [
 
   /* ---- 南宫嫣然 ---- */
   { id: 'zml_nangongyanran_lianyin', name: '联姻', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色摸 1 张牌，然后你摸 1 张（南宫家以联姻换取楚秦门参与探宝）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', limit: 'perTurn', effects: [{ kind: 'targetDraw', n: 1 }, { kind: 'selfDraw', n: 1 }] },
-  { id: 'zml_nangongyanran_hushen', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你被【杀】造成伤害后，对伤害来源造成 1 点伤害（伪六道空间中护身项链反击，杀死秦思瑶）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }] },
+  { id: 'zml_nangongyanran_hushen', name: '护身项链', kind: 'trigger', timing: 'onDamaged', desc: '你被【攻击】造成伤害后，对伤害来源造成 1 点伤害（伪六道空间中护身项链反击，杀死秦思瑶）。出处：docs/md/角色/齐云/02.筑基/南宫嫣然.md', effects: [{ kind: 'reflect', n: 1, when: 'hurtBySha' }] },
 
   /* ---- 法引 ---- */
   { id: 'zml_fayin_xuncha', name: '巡察使', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色选择：弃置 1 张手牌，或令你观看其手牌（受齐休安置为楚秦巡察使，立誓震慑众家主）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'targetChoose', maxTargets: 1, options: [[{ kind: 'targetDiscard', n: 1 }], [{ kind: 'peekHand', then: 'toDeckTop' }]] }] },
-  { id: 'zml_fayin_hongyuan', name: '大宏愿', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色本回合结束时若未使用过【杀】，则你摸 2 张牌（「一日不清和太平，一日不归本寺，不登极乐」）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'pledge', onTurnEnd: [{ kind: 'selfDraw', n: 2 }] }] },
+  { id: 'zml_fayin_hongyuan', name: '大宏愿', kind: 'active', timing: 'active', desc: '出牌阶段限一次：令一名其他角色本回合结束时若未使用过【攻击】，则你摸 2 张牌（「一日不清和太平，一日不归本寺，不登极乐」）。出处：docs/md/角色/白山/03.金丹/法引.md', limit: 'perTurn', effects: [{ kind: 'pledge', onTurnEnd: [{ kind: 'selfDraw', n: 2 }] }] },
 
   /* ---- 玉鹤 ---- */
   { id: 'zml_yuhe_qingxin', name: '清心寡欲', kind: 'passive', timing: 'passive', desc: '你的手牌上限 +2（证道元婴后踏上清心寡欲无情道）。出处：docs/md/角色/御兽门/04.元婴/玉鹤.md', effects: [{ kind: 'handLimit', n: 2 }] },

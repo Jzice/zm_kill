@@ -14,7 +14,6 @@
       "subject": "物理",
       "hp": 4,
       "avatar": "🏃",
-      "grade": "初二上",
       "skills": [
         {
           "id": "custom_runner_sk",
@@ -48,7 +47,6 @@
       "subject": "物理",
       "hp": 4,
       "avatar": "🥇",
-      "grade": "初二下",
       "skills": [
         {
           "id": "custom_thrower_sk",

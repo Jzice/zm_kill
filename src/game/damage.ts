@@ -160,7 +160,7 @@ async function zmlAttrDelta(
 }
 
 /**
- * 实际扣血结算：防具修正 → 属性攻防（道统 / 卡牌属性，仅掌门路）→ 护盾/学识吸收 → 扣血 → 铁索连环传导。
+ * 实际扣血结算：防具修正 → 属性攻防（道统 / 卡牌属性，仅掌门路）→ 护盾/学识吸收 → 扣血 → 混元剑狱传导。
  * allowChain=false 用于传导伤害本身，避免连环互相触发形成死循环。
  */
 /**
@@ -180,7 +180,7 @@ async function applyDamage(
   if (!tgt || !tgt.alive) return false;
   let dmg = amount;
   // 防具修正：白银狮子（每次受到的伤害最多 1 点）/ 藤甲（火焰伤害 +1）
-  // 青釭剑（ignoreArmor）无视目标防具，上述修正整体失效
+  // 青釭剑（ignoreArmor）无视目标护身法器，上述修正整体失效
   // 巴斯德【免疫】：火 / 雷属性伤害 −1（最低 1 点）
   if (type !== 'normal' && dmg > 1) {
     const cut = reduceDamageOf(tgt, type);
@@ -197,7 +197,7 @@ async function applyDamage(
     }
     if (armor === 'tengjia' && type === 'fire') {
       dmg += 1;
-      addLog(`【藤甲】${tgt.name} 受到火焰伤害 +1`, 'dmg');
+      addLog(`【映雪冰风阵】${tgt.name} 受到火焰伤害 +1`, 'dmg');
     }
     // 【明光铠】：每次受到的伤害 -1（最低 1 点）
     if (armor === 'mingguang' && dmg > 1) {
@@ -210,7 +210,7 @@ async function applyDamage(
       dmg = 0;
     }
   } else if (armor) {
-    addLog(`【青釭剑】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
+    addLog(`【七芯蝎尾夺】无视 ${tgt.name} 的防具（${armor}）`, 'hl');
   }
   // 掌门路【红玉阵盘】（已按特性归类为防具/阵法）：可支付 1 灵石令本次伤害 -1
   if (isZml(G.mode) && tgt.equip.armor?.skill === 'hongyu' && dmg > 1) {
@@ -269,7 +269,7 @@ async function applyDamage(
     if (tgt.hp <= 0) await dyingPhase(tgtIdx, srcIdx);
   }
   render();
-  // 铁索连环：属性伤害命中连环角色 → 传导给所有连环角色并各自重置
+  // 混元剑狱：属性伤害命中连环角色 → 传导给所有连环角色并各自重置
   if (allowChain && type !== 'normal' && tgt.chained) {
     await propagateChain(tgtIdx, amount, type);
   }
@@ -280,7 +280,7 @@ async function applyDamage(
 async function propagateChain(originIdx: number, amount: number, type: DamageType): Promise<void> {
   const chained = G.players.map((p, i) => ({ p, i })).filter((x) => x.p.chained);
   if (!chained.length) return;
-  addLog(`【铁索连环】属性伤害传导（${chained.length} 名连环角色）`, 'hl');
+  addLog(`【混元剑狱】属性伤害传导（${chained.length} 名连环角色）`, 'hl');
   chained.forEach((x) => {
     x.p.chained = false;
   });
@@ -307,7 +307,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
   while (p.hp <= 0) {
     // 限定技自救（李时珍·行医）
     if (await tryRevive(idx)) continue;
-    // 濒死自救：转化技（屠呦呦·青蒿素 / 李时珍·本草纲目）可把手牌当【桃】
+    // 濒死自救：转化技（屠呦呦·青蒿素 / 李时珍·本草纲目）可把手牌当【恢复】
     const outside = G.current !== idx;
     if (p.isAI) {
       // 大模型接管座位：由模型决定「用哪张桃自救」或「放弃自救」；调用失败才回退「有桃必自救」
@@ -363,7 +363,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         if (t2) {
           discardCard(q, t2);
           p.hp++;
-          addLog(`${q.name} 使用【桃】救 ${p.name}`, 'heal');
+          addLog(`${q.name} 使用【恢复】救 ${p.name}`, 'heal');
           FX.healGlow(idx);
           noteSave(i, idx);
           saved = true;
@@ -388,7 +388,7 @@ export async function dyingPhase(idx: number, srcIdx: number): Promise<void> {
         .filter((c) => c.sub === 'tao' || c.sub === 'jiu' || canConvertAs(p, c, 'tao', outside))
         .forEach((c) =>
           opts.push({
-            label: c.sub === 'tao' || c.sub === 'jiu' ? `【${c.name}】` : `【${c.name}】当【桃】`,
+            label: c.sub === 'tao' || c.sub === 'jiu' ? `【${c.name}】` : `【${c.name}】当【恢复】`,
             value: 'card_' + c.id,
           }),
         );

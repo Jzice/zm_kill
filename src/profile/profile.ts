@@ -358,8 +358,7 @@ export function showAchievements(p: Profile | PublicProfile, title: string, opts
     <div class="rule-section"><h4>🏅 成就（${achCount(p)}/${ACHIEVEMENTS.length}）</h4>
       <div class="ach-grid">${grid}</div>
     </div>
-    ${opts?.editor ? `<div class="rule-section"><h4>🎨 个性化资料</h4><div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">设置后的信息会展示在主界面名片上，联机时其他玩家也能看到。</div><div id="profileEditor"></div></div>` : ''}
-    ${opts?.editor ? '<div class="rule-section" id="wrongBookBox"></div>' : ''}`;
+    ${opts?.editor ? `<div class="rule-section"><h4>🎨 个性化资料</h4><div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">设置后的信息会展示在主界面名片上，联机时其他玩家也能看到。</div><div id="profileEditor"></div></div>` : ''}`;
   document.getElementById('profileModal')!.classList.add('show');
 }
 

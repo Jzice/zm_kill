@@ -121,7 +121,7 @@ export const ZML_POOL_TALENT_LIST: TalentDef[] = [
   { id: 'zml_hantianqing_dandao', name: '丹道', kind: 'passive', timing: 'onDraw', desc: '摸牌阶段额外摸 1 张（丹道精深，药到自成）。出处：docs/md/角色/白山/04.元婴/韩天青.md', effects: [{ kind: 'extraDraw', n: 1 }] },
   /* 血刀（补 2：血影邪功 / 血影遁 → 4） */
   { id: 'zml_xuedao_xuedun', name: '血遁', kind: 'active', timing: 'active', limit: 'perTurn', cost: { hand: 1 }, desc: '出牌阶段限一次：弃 1 张手牌，对一名其他角色造成 1 点鬼物属性伤害（血遁伤人，鬼物侵体）。出处：docs/md/角色/魔修/血刀.md', attr: 'guiwu', effects: [{ kind: 'targetDamage', n: 1, attr: 'guiwu' }] },
-  { id: 'zml_xuedao_shiyan', name: '嗜血', kind: 'trigger', timing: 'onShaHit', desc: '你用【杀】造成伤害后，摸 1 张牌（血影邪修，嗜血而强）。出处：docs/md/角色/魔修/血刀.md', effects: [{ kind: 'selfDraw', n: 1 }] },
+  { id: 'zml_xuedao_shiyan', name: '嗜血', kind: 'trigger', timing: 'onShaHit', desc: '你用【攻击】造成伤害后，摸 1 张牌（血影邪修，嗜血而强）。出处：docs/md/角色/魔修/血刀.md', effects: [{ kind: 'selfDraw', n: 1 }] },
 
   /* ==================== 御兽门 ==================== */
   /* 喀尔威明（补 2：光明大道 / 光明护体 → 4） */

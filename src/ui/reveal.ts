@@ -15,7 +15,7 @@ export interface CharCardOpts {
   /** 是否在武将卡内部显示「🎲 换一个」按钮；缺省时跟随 random。
    *  亮将弹窗底部已有可用的换将按钮，故弹窗内传 false 避免重复且失效的卡内按钮。 */
   cardReroll?: boolean;
-  /** 学分解锁的扩展包角色：展示解锁来源与条件进度 */
+  /** 是否展示扩展包角色来源信息（扩展包角色标注其所属扩展包 id） */
   expanded: boolean;
 }
 

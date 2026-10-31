@@ -15,7 +15,7 @@ import { G } from './state';
 import { attackRange, inRange } from './rules';
 import { ROLE_CONFIG } from '../data/characters';
 import { beliefProbs, favorOf, grudgeOf, pickAiTarget as legacyPickAiTarget, roundOf } from './aibrain';
-import { binomCdf, countSub, pAtLeastOne, pUnseen } from './aicounts';
+import { binomCdf, countSub, DECK_SIZE, pAtLeastOne, pUnseen } from './aicounts';
 import { AIPOLICY } from './aipolicy';
 import { SHA_SUBS } from '../data/cards';
 
@@ -202,7 +202,7 @@ export function threatOf(j: number): number {
 
 /* ---------------- 机会节点：各动作的 EV ---------------- */
 
-/** 目标闪避一次【杀】的概率（含八卦阵判定、藤甲免疫等修正） */
+/** 目标闪避一次【攻击】的概率（含八卦阵判定、藤甲免疫等修正） */
 export function dodgeProb(i: number, t: number, elemental: boolean): number {
   const tp = G.players[t];
   if (!tp) return 1;
@@ -213,7 +213,7 @@ export function dodgeProb(i: number, t: number, elemental: boolean): number {
   return Math.max(0, Math.min(1, 1 - pNoDodge));
 }
 
-/** 出【杀】的 EV */
+/** 出【攻击】的 EV */
 export function evSha(i: number, t: number, dmg = 1, elemental = false): number {
   const tp = G.players[t];
   if (!tp || !tp.alive) return -99;
@@ -250,7 +250,7 @@ export function evDuel(i: number, t: number): number {
   return pWin * gain - (1 - pWin) * loss;
 }
 
-/** 火攻 EV：目标展示一张手牌，我方需弃置同花色牌才能造成 1 点火焰伤害 */
+/** 极寒碧火诀 EV：目标展示一张手牌，我方需弃置同花色牌才能造成 1 点火焰伤害 */
 export function evHuogong(i: number, t: number): number {
   const me = G.players[i];
   const tp = G.players[t];
@@ -290,10 +290,10 @@ function expectedUnseenTotal(me: number): number {
   known += G.discard.length;
   const mine = G.players[me];
   if (mine) known += mine.hand.length;
-  return Math.max(0, 125 - known);
+  return Math.max(0, DECK_SIZE - known);
 }
 
-/** AOE（南蛮入侵 / 万箭齐发）EV：逐座位累加期望伤害收益，天然处理「误伤队友」 */
+/** AOE（魔灾泛起 / 万剑钻心）EV：逐座位累加期望伤害收益，天然处理「误伤队友」 */
 export function evAoe(i: number, sub: 'nanman' | 'wanjian'): number {
   const need = sub === 'nanman' ? SHA_SUBS : 'shan';
   let ev = 0;
@@ -306,7 +306,7 @@ export function evAoe(i: number, sub: 'nanman' | 'wanjian'): number {
   return ev - AIPOLICY.exposureW * 0.5;
 }
 
-/** 铁索连环 EV：横置一 / 两名目标（对其本人无直接伤害，价值在后续属性伤害传导） */
+/** 混元剑狱 EV：横置一 / 两名目标（对其本人无直接伤害，价值在后续属性伤害传导） */
 export function evTiesuo(i: number, targets: number[]): number {
   let ev = 0;
   for (const t of targets) {
@@ -320,7 +320,7 @@ export function evTiesuo(i: number, targets: number[]): number {
   return ev;
 }
 
-/** 留一张【闪】到手里的边际防守价值 */
+/** 留一张【防御】到手里的边际防守价值 */
 export function shanMarginalValue(i: number): number {
   const me = G.players[i];
   if (!me || !me.alive) return 0;
@@ -335,8 +335,8 @@ export function shanMarginalValue(i: number): number {
 }
 
 /**
- * 是否值得把一张「非闪」牌（转化技）当作【闪】打出。
- * 保留原「真闪必出」不变，只对**转化**做 EV 门控，避免白扔一张【杀】。
+ * 是否值得把一张「非闪」牌（转化技）当作【防御】打出。
+ * 保留原「真闪必出」不变，只对**转化**做 EV 门控，避免白扔一张【攻击】。
  */
 export function shouldConvertToShan(i: number, dmg: number, card: Card): boolean {
   const me = G.players[i];
@@ -344,7 +344,7 @@ export function shouldConvertToShan(i: number, dmg: number, card: Card): boolean
   if (dmg >= me.hp) return true; // 致命：必挡
   if (me.hp <= 2) return true; // 残血：必挡
   if (dmg >= 2) return true;
-  // 低价值牌（装备 / 酒）转化不心疼；【杀】等到伤害更高时再用
+  // 低价值牌（装备 / 酒）转化不心疼；【攻击】等到伤害更高时再用
   return card.type === 'equip' || card.sub === 'jiu';
 }
 

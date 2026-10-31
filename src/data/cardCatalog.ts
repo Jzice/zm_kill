@@ -1,12 +1,12 @@
 /* ==================== 扩展卡牌目录（纯数据 · 新增卡牌的唯一真源） ====================
- * 定位：在基础牌堆（core，现有 125 张）之上补齐原版三国杀缺失的卡牌。
+ * 定位：在修真基础牌堆（core）之上补齐扩展卡牌。
  *
  * 设计约定：
  *   1. 装备牌的 `sub` **必须是槽位名**（weapon / armor / horse+ / horse- / fabao），
  *      装备写入哪个槽由 sub 决定（见 game/turn.ts 与 game/ai.ts 的装备分支）；
  *      具体是哪一件装备由 `extra.skill` 区分。锦囊 / 基本牌的 `sub` 沿用原版英文 key。
  *      由此 `Card` 结构不变 → `state_sync` 序列化结构不变，旧版客户端可正常解包。
- *   2. `name` **直接使用《三国杀》原版卡名**（不做学堂化改名），规则书、出牌选项与战斗日志同源。
+ *   2. `name` **直接使用通用卡牌命名**（不做修真化改名），规则书、出牌选项与战斗日志同源。
  *   3. 规则内核严格沿用原版；存在分歧或需要额外交互的少数卡牌已在 desc 中标注「简化实现」，
  *      详见 docs/卡牌扩展包清单.md。
  *   4. 本模块为纯数据，**无顶层副作用**（保持 ui ↔ game ↔ net 的模块循环安全）。
@@ -23,7 +23,7 @@ import type { CardPackId } from './cardPacks';
 export interface CardDef {
   /** 卡牌内部 key（沿用原版英文，联机结构兼容的关键） */
   sub: string;
-  /** 卡名，与《三国杀》原版一致 */
+  /** 卡名，与通用卡牌命名一致 */
   name: string;
   type: CardType;
   /** 归属扩展包 */
@@ -46,7 +46,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 军争篇 ---------------- */
   bingliang: {
     sub: 'bingliang',
-    name: '兵粮寸断',
+    name: '哼哈真言',
     type: 'skill',
     pack: 'junzheng',
     count: 2,
@@ -62,7 +62,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { range: 5, skill: 'qilin' },
     resolve: 'equip',
-    desc: '攻击范围 5；你使用【杀】造成伤害后，可弃置目标装备区里的一张坐骑牌',
+    desc: '攻击范围 5；你使用【攻击】造成伤害后，可弃置目标装备区里的一张坐骑牌',
   },
   zhuque: {
     sub: 'weapon',
@@ -72,7 +72,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { range: 4, skill: 'zhuque' },
     resolve: 'equip',
-    desc: '攻击范围 4；你可将一张普通【杀】当【火杀】使用',
+    desc: '攻击范围 4；你可将一张普通【攻击】当【烈火攻击】使用',
   },
 
   /* ---------------- 神话再临（风火林山） ---------------- */
@@ -84,7 +84,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { range: 3, skill: 'yinyue' },
     resolve: 'equip',
-    desc: '攻击范围 3；你使用【杀】造成伤害后，可令目标不能使用或打出与该【杀】同花色的手牌，直到其下个回合开始',
+    desc: '攻击范围 3；你使用【攻击】造成伤害后，可令目标不能使用或打出与该【攻击】同花色的手牌，直到其下个回合开始',
   },
   qixing: {
     sub: 'weapon',
@@ -94,7 +94,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { range: 2, skill: 'qixing' },
     resolve: 'equip',
-    desc: '攻击范围 2；你使用【杀】造成伤害后，可令目标弃置一张手牌',
+    desc: '攻击范围 2；你使用【攻击】造成伤害后，可令目标弃置一张手牌',
   },
   taiping: {
     sub: 'armor',
@@ -104,7 +104,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { skill: 'taiping' },
     resolve: 'equip',
-    desc: '防具·锁定技：你不能成为【乐不思蜀】【兵粮寸断】等延时锦囊的目标',
+    desc: '护身法器·锁定技：你不能成为【七星定身阵】【哼哈真言】等延时锦囊的目标',
   },
   mingguang: {
     sub: 'armor',
@@ -114,7 +114,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { skill: 'mingguang' },
     resolve: 'equip',
-    desc: '防具：你每次受到的伤害 -1（最低 1 点）；【青釭剑】可无视',
+    desc: '防具：你每次受到的伤害 -1（最低 1 点）；【七芯蝎尾夺】可无视',
   },
 
   /* ---------------- SP · 一将成名 ---------------- */
@@ -126,7 +126,7 @@ export const CARD_CATALOG: Record<string, CardDef> = {
     count: 1,
     extra: { range: 2, skill: 'wuliu' },
     resolve: 'equip',
-    desc: '攻击范围 2；你使用【杀】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
+    desc: '攻击范围 2；你使用【攻击】造成伤害后，可弃置一张手牌，对其追加 1 点伤害',
   },
   muyu: {
     sub: 'fabao',
@@ -260,12 +260,12 @@ export const CARD_CATALOG: Record<string, CardDef> = {
   /* ---------------- 国战篇（仅卡牌，不含模式规则） ---------------- */
   wuxieguo: {
     sub: 'wuxieguo',
-    name: '无懈可击·国',
+    name: '不在算中·国',
     type: 'skill',
     pack: 'guozhan',
     count: 2,
     resolve: 'switch',
-    desc: '响应牌：抵消一张锦囊对所有角色的效果（不可被再次无懈）',
+    desc: '响应牌：抵消一张锦囊对所有角色的效果（不可被再次抵消）',
   },
   diaohu: {
     sub: 'diaohu',
@@ -307,7 +307,7 @@ export const ALL_TARGET_TRICKS: string[] = ['lianjun', 'chiling'];
 /** 响应牌：只能被动打出，不出现在出牌阶段的可选列表 */
 export const RESPONSE_ONLY_SKILLS: string[] = ['wuxieguo'];
 
-/** 可被【无懈可击】响应的扩展锦囊（延时类不在此列，与既有 lebu / shandian 口径一致） */
+/** 可被【不在算中】响应的扩展锦囊（延时类不在此列，与既有 lebu / shandian 口径一致） */
 export const COUNTERABLE_EXTRA_TRICKS: string[] = Object.values(CARD_CATALOG)
   .filter((d) => d.type === 'skill' && d.resolve === 'switch' && d.sub !== 'wuxieguo')
   .map((d) => d.sub);

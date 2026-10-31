@@ -67,11 +67,11 @@ export type SkillTiming =
   | 'beforeJudge' // 判定牌生效前：改判
   | 'beforeDamage' // 伤害结算前：减伤 / 免伤
   | 'onDamaged' // 受到伤害后
-  | 'onTargetSha' // 成为【杀】的目标时：点数对抗免伤
-  | 'onUseShan' // 使用或打出【闪】后
-  | 'onShaHit' // 使用【杀】造成伤害后
+  | 'onTargetSha' // 成为【攻击】的目标时：点数对抗免伤
+  | 'onUseShan' // 使用或打出【防御】后
+  | 'onShaHit' // 使用【攻击】造成伤害后
   | 'onUseSkill' // 使用锦囊牌后
-  | 'onSkillCountered' // 自己的锦囊被【无懈可击】抵消后
+  | 'onSkillCountered' // 自己的锦囊被【不在算中】抵消后
   | 'onLoseHand' // 失去最后一张手牌时
   | 'onEquip' // 装备一张装备牌后
   | 'onLoseEquip' // 失去装备区的牌后
@@ -232,17 +232,17 @@ export type SkillEffect =
       outsideTurn?: boolean;
     }
   /* ---- 杀 / 闪交互 ---- */
-  /** 无双：每回合第一张【杀】需 n 张【闪】才能抵消 */
+  /** 无双：每回合第一张【攻击】需 n 张【防御】才能抵消 */
   | { kind: 'shaNeedShan'; n: number; perTurnFirst: boolean }
-  /** 咆哮：使用【杀】无次数限制，每回合最多额外 maxExtra 张，每张额外杀弃 extraCostHand 张 */
+  /** 咆哮：使用【攻击】无次数限制，每回合最多额外 maxExtra 张，每张额外攻击弃 extraCostHand 张 */
   | { kind: 'shaUnlimited'; maxExtra: number; extraCostHand: number }
-  /** 点数对抗：展示手牌点数 ≥ 该【杀】点数则该杀无效 */
+  /** 点数对抗：展示手牌点数 ≥ 该【攻击】点数则该杀无效 */
   | { kind: 'numGuard'; op: 'ge'; against: 'shaNum'; limit?: 'perTurn' }
-  /** 反伤：被【杀】造成伤害后对来源造成 n 点伤害 */
+  /** 反伤：被【攻击】造成伤害后对来源造成 n 点伤害 */
   | { kind: 'reflect'; n: number; when: 'hurtBySha' }
   /** 无视防具造成伤害；目标无防具时改为执行 noArmor */
   | { kind: 'armorPierceDamage'; n: number; noArmor?: SkillEffect[] }
-  /** 用【杀】造成伤害时可防止此伤害，改为执行 then */
+  /** 用【攻击】造成伤害时可防止此伤害，改为执行 then */
   | { kind: 'preventShaDamage'; then: SkillEffect[] }
   /* ---- 点数与花色 ---- */
   | { kind: 'pointDuel'; win: SkillEffect[]; lose: SkillEffect[] }
@@ -287,7 +287,7 @@ export type SkillEffect =
   | { kind: 'turnFace'; draw: number }
   /** 将 n 张手牌交给一名角色；交给 ≥healIfSpread 名不同角色时自己回复 1 点体力 */
   | { kind: 'giveHand'; n: number; healIfSpread?: number }
-  /** 交给一名角色 1 张手牌，若为【闪】则自己摸 selfDraw 张（朱自清·背影） */
+  /** 交给一名角色 1 张手牌，若为【防御】则自己摸 selfDraw 张（朱自清·背影） */
   | { kind: 'giveHandIfShan'; selfDraw: number }
   /** 与一名角色各交换一张手牌 */
   | { kind: 'exchangeHand'; n: number }
@@ -324,21 +324,21 @@ export type SkillEffect =
   | { kind: 'addMark'; mark: string; n: number }
   /** 回合开始结算标记：移除 1 枚并造成 damage 点伤害 */
   | { kind: 'tickMark'; mark: string; damage: number }
-  /** 军令状：目标本回合结束时若未使用过【杀】则执行 onTurnEnd */
+  /** 军令状：目标本回合结束时若未使用过【攻击】则执行 onTurnEnd */
   | { kind: 'pledge'; onTurnEnd: SkillEffect[] }
   /** 免疫：不能成为某类牌的目标 */
   | { kind: 'immune'; scope: 'skill' | 'shaAndJuedou' | 'equip' }
-  /** 空城：没有手牌时不能成为【杀】或【决斗】的目标 */
+  /** 空城：没有手牌时不能成为【攻击】或【决斗】的目标 */
   | { kind: 'noHandImmune' }
-  /** 指定牌名免疫：不能成为这些牌的目标（诸葛亮·东风 免疫万箭齐发；法拉第 免疫闪电；墨子·非攻 免疫万箭/南蛮） */
+  /** 指定牌名免疫：不能成为这些牌的目标（诸葛亮·东风 免疫万剑钻心；法拉第 免疫天劫；墨子·非攻 免疫万箭/南蛮） */
   | { kind: 'cardImmune'; names: string[] }
   /** 指定花色的牌对你无效（黑牌/红牌免疫） */
   | { kind: 'suitImmune'; suits: ('♠' | '♥' | '♣' | '♦')[] }
-  /** 距离陷阱：计算距离大于 min 的角色不能对你使用【杀】 */
+  /** 距离陷阱：计算距离大于 min 的角色不能对你使用【攻击】 */
   | { kind: 'distTrap'; min: number }
   /** 转移锦囊：你成为锦囊牌目标时，可将其转移给另一名角色（墨子·兼爱） */
   | { kind: 'skillRedirect' }
-  /** 转移杀：你成为【杀】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
+  /** 转移杀：你成为【攻击】目标时，可将其转移给另一名角色（卢瑟福·散射偏转） */
   | { kind: 'shaRedirect' }
   /** 装备失效：其他角色装备区中指定槽位的牌对你无效（墨子·非攻：收缴兵器） */
   | { kind: 'enemyEquipVoid'; slots: ('weapon' | 'armor' | 'horsePlus' | 'horseMinus')[] }
@@ -357,9 +357,9 @@ export type SkillEffect =
   | { kind: 'selfHeal'; n: number; cond?: SkillCond }
   /** 群体回复：所有已受伤角色各回复 n 点体力 */
   | { kind: 'allHeal'; n: number }
-  /** 本回合下一张【杀】伤害 +n */
+  /** 本回合下一张【攻击】伤害 +n */
   | { kind: 'nextShaBonus'; n: number }
-  /** 本回合下一张【杀】不可被闪避 */
+  /** 本回合下一张【攻击】不可被闪避 */
   | { kind: 'nextShaUnblockable' }
   /** 攻击范围 +n */
   | { kind: 'rangePlus'; n: number }
@@ -367,7 +367,7 @@ export type SkillEffect =
   | { kind: 'distPlusToMe'; n: number }
   /** 计算距离时无视其他角色的 +1 马 */
   | { kind: 'ignoreHorsePlus' }
-  /** 使用【顺手牵羊】无距离限制 */
+  /** 使用【敛息诀】无距离限制 */
   | { kind: 'shunshouNoDist' }
   /* ---- 掌门路原著机制（齐休 / 楚无影 / 玉鹤 / 姜炎 / 南宫木 / 沙诺 / 醒狮 等共用） ---- */
   /**
@@ -387,7 +387,7 @@ export type SkillEffect =
    */
   | { kind: 'soulSeize'; on: 'kill' | 'death'; draw?: number; heal?: number };
 
-/** 消耗类道具定义（局末清空，不进牌堆，不可被顺手牵羊等卡牌影响） */
+/** 消耗类道具定义（局末清空，不进牌堆，不可被敛息诀等卡牌影响） */
 export interface ItemDef {
   id: string;
   name: string;
@@ -444,7 +444,7 @@ export interface Character {
   lingshou?: boolean;
 }
 
-/** 伤害属性：普通 / 火 / 雷（属性伤害可被【藤甲】放大，并触发【铁索连环】传导） */
+/** 伤害属性：普通 / 火 / 雷（属性伤害可被【映雪冰风阵】放大，并触发【混元剑狱】传导） */
 export type DamageType = 'normal' | 'fire' | 'thunder';
 
 /* ---------------- 属性攻防体系（仅掌门路模式生效） ----------------
@@ -460,12 +460,12 @@ export type Element = 'metal' | 'wood' | 'water' | 'fire' | 'earth';
 export type Attr = Element | 'lei' | 'shou' | 'daode' | 'guiwu' | 'feng' | 'du';
 
 /* ---------------- 掌门路（修真规则层） ----------------
- * 仅在「掌门路模式」下生效；经典模式所有字段均为空，结构与序列化完全不变。
+ * 仅在「掌门路 / 开辟战争」模式下生效；结构与序列化完全不变。
  * 出处：docs/md/设定/修行体系.md、本命.md、灵石.md；docs/md/物事/ 各词表。
  */
 
-/** 对局模式：classic=经典（原版三国杀，零改动）；zml=掌门路身份局；war=开辟战争 */
-export type GameMode = 'classic' | 'zml' | 'war';
+/** 对局模式：zml=掌门路身份局；war=开辟战争（均基于修真内核） */
+export type GameMode = 'zml' | 'war';
 
 /**
  * 修真境界（唯一序列，两套成长线共用）：
@@ -525,7 +525,7 @@ export interface Card {
   skill?: string;
   dist?: number;
   judgeType?: 'lebu' | 'shandian' | 'bingliang';
-  /** 该牌造成的伤害属性（火杀/雷杀/火攻/闪电），缺省按普通伤害处理 */
+  /** 该牌造成的伤害属性（火杀/雷杀/极寒碧火诀/天劫），缺省按普通伤害处理 */
   damageType?: DamageType;
   /** 掌门路模式：卡面副题（修真设定，如 火杀＝「碧磷斩」）；经典模式为空 */
   subtitle?: string;
@@ -571,13 +571,13 @@ export interface PlayerFlags {
   extraDamage: number;
   skipPlay: boolean;
   noSha: boolean;
-  /** 本回合是否已使用过【酒】（每回合限一次，与额外伤害一起在回合初重置） */
+  /** 本回合是否已使用过【增益】（每回合限一次，与额外伤害一起在回合初重置） */
   jiuUsed: boolean;
   /** 局前装备加成（由配装注入，整局有效）：护甲减伤次数 */
   dmgReduce?: number;
   /** 局前武器加成：出杀/伤害 +n（整局） */
   bonusDmg?: number;
-  /** 【出师表】军令状：回合结束时若本回合未使用过【杀】则失去 1 点体力 */
+  /** 【出师表】军令状：回合结束时若本回合未使用过【攻击】则失去 1 点体力 */
   pledge?: boolean;
   /** 本回合使用牌数（顺序连锁 / 军令状判据），回合初清零 */
   playedCount?: number;
@@ -589,7 +589,7 @@ export interface PlayerFlags {
   skillCount?: number;
   /** 本回合使用的最后一张牌类型（朱自清·荷塘月色判据） */
   lastCardType?: CardType | null;
-  /** 【兵粮寸断】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
+  /** 【哼哈真言】生效：跳过本回合的摸牌阶段（回合初随 skipPlay 一并清零） */
   skipDraw?: boolean;
   /** 【银月枪】封锁花色：本角色不能使用或打出该花色的手牌，直到其下个回合开始 */
   blockSuit?: string | null;
@@ -624,9 +624,9 @@ export interface Player {
   talentPool?: string[];
   peerId: string | null;
   flags: PlayerFlags;
-  /** 铁索连环·横置：处于连环状态，受到属性伤害时传导给所有连环角色并各自重置 */
+  /** 混元剑狱·横置：处于连环状态，受到属性伤害时传导给所有连环角色并各自重置 */
   chained?: boolean;
-  /** 翻面：跳过一个回合（严格原版：与连环相互独立，不由铁索连环触发） */
+  /** 翻面：跳过一个回合（严格原版：与连环相互独立，不由混元剑狱触发） */
   turned?: boolean;
   /** 局内携带的消耗类道具：道具 id → 数量（局末清空，不进牌堆） */
   items?: Record<string, number>;
@@ -681,7 +681,7 @@ export interface GameState {
   llmEnabled?: boolean;
   /** 房主的大模型接管范围：是否接管全部 AI 座位（客人端只读展示） */
   llmTakeoverAll?: boolean;
-  /** 掌门路模式：对局模式（classic 时该字段为 undefined，经典局零改动） */
+  /** 掌门路模式：对局模式（zml / war，均基于修真内核） */
   mode?: GameMode;
   /** 掌门路模式：场上灵地盘（开局布置，可开辟 / 攻夺，按阶产灵石） */
   grounds?: SpiritGround[];
