@@ -125,8 +125,8 @@ const factions = await page.locator('#factionPicker .faction-card').count();
 // 掌门路第十势力「蛮荒」（承载醒狮等化神古兽）已加入，故为 10 门派
 check('修真势力选择（子界面）', factions === 10, `${factions} 个势力`);
 const packBtns = await page.locator('#packetPicker .opt-btn').count();
-// 年级扩展包已移除，角色池只剩「全部角色」单项；选角改由门派筛选（#factionPicker，10 门派）
-check('角色池选择器仅剩「全部角色」', packBtns === 1, `${packBtns} 个选项`);
+// 扩展包选择面板已从界面移除（底层 packet 机制保留）；选角仍由门派筛选（#factionPicker，10 门派）
+check('扩展包选择面板已移除', packBtns === 0, `${packBtns} 个选项`);
 
 // 1.3 随机武将预览卡：完整展示（技能/主公技）+ 换将
 const rcpSkills = await page.locator('#charPreview .rcp-skill').count();

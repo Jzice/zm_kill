@@ -1,10 +1,10 @@
-// 冒烟测试：卡牌扩展包（牌库扩展包开关 + 缺卡补齐 + 零回归）
+// 冒烟测试：牌堆机制与扩展包界面移除（零回归 + 底层 buildDeck 保留）
 // 用法：node scripts/smoke-cards.mjs [html文件名]
-// 断言重点：
-//   1. 不启用扩展包时 buildDeck() 产物与基础 125 张**逐项一致**（零回归底线）
-//   2. 各卡包勾选后对应卡牌按张数进入牌堆
-//   3. 选择面板 / 本地记忆 / 规则书文案
-//   4. 全卡包开局后 AI 能持续推进、无控制台报错（新卡不会让回合卡死）
+// 断言重点（扩展包选择界面已移除，底层 buildDeck(packs) 机制保留）：
+//   1. buildDeck() 产物与修真牌堆基准逐项一致（零回归底线）
+//   2. 传入任意扩展包参数时 buildDeck 仍返回统一修真牌堆（底层机制保留、不投放未修真化扩展卡）
+//   3. 扩展包相关界面入口已移除（面板 / 规则书分区 / tab）
+//   4. 开局后 AI 能持续推进、无控制台报错
 import { chromium } from 'playwright-core';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -194,42 +194,32 @@ for (const pack of Object.keys(EXPECT_TARGET)) {
   );
 }
 
-/* ---------- 3. 选择面板与本地记忆 ---------- */
+/* ---------- 3. 扩展包界面入口已移除（底层机制保留） ---------- */
 await page.click('#modePicker .mode-card[data-mode="single"]');
 await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
 const cpBtns = await page.locator('#cardPackPicker .opt-btn').count();
-check('牌库扩展包面板渲染（6 个卡包）', cpBtns === 6, `${cpBtns} 个`);
-const coreClickable = await page.locator('#cardPackPicker .opt-btn[data-cardpack="core"]').getAttribute('onclick');
-check('基础牌堆恒启用且不可关闭', coreClickable === null || coreClickable === '');
+check('牌库扩展包面板已移除', cpBtns === 0, `${cpBtns} 个卡包按钮`);
+const cpHintCount = await page.locator('#cardPackHint').count();
+check('牌库扩展包提示已移除', cpHintCount === 0, `${cpHintCount} 个提示节点`);
+// 底层切换函数仍在（便于后续恢复界面）；仅校验存在性，不触发副作用
+const keepMechanism = await page.evaluate(
+  () => typeof window.toggleCardPack === 'function' && typeof window.__xtsDeckStats === 'function',
+);
+check('底层扩展包机制保留（toggleCardPack / __xtsDeckStats 仍可用）', keepMechanism);
 
-await page.evaluate(() => window.toggleCardPack('junzheng'));
-await page.evaluate(() => window.toggleCardPack('guozhan'));
-const cpActive = await page.locator('#cardPackPicker .opt-btn.active').count();
-check('多选勾选生效（军争篇 + 国战篇）', cpActive === 2, `${cpActive} 个已启用`);
-const cpHint = (await page.textContent('#cardPackHint')) || '';
-check('面板提示反映当前牌库', cpHint.includes('军争篇') && cpHint.includes('国战'), cpHint.trim().slice(0, 40));
-const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('xuetangsha_setup_v1') || '{}').cardPacks || []);
-check('勾选结果持久化到 localStorage', saved.includes('junzheng') && saved.includes('guozhan'), saved.join(','));
-
-/* ---------- 4. 规则书「卡牌说明」含扩展卡 ---------- */
+/* ---------- 4. 规则书不再展示牌库扩展包分区 ---------- */
 await page.evaluate(() => window.openRules());
 await page.waitForSelector('#rulesModal.show', { timeout: 3000 });
 await page.click('.rule-tab[data-tab="cards"]');
 await page.waitForTimeout(150);
 const cardsTxt = (await page.textContent('#rulesContent')) || '';
-check('规则书含「牌库扩展包」分区', cardsTxt.includes('牌库扩展包'));
-check(
-  '规则书含扩展卡包卡名（哼哈真言 / 不在算中·国 / 木牛流马）',
-  cardsTxt.includes('哼哈真言') && cardsTxt.includes('不在算中·国') && cardsTxt.includes('木牛流马'),
-);
+check('规则书不再含「牌库扩展包」分区', !cardsTxt.includes('牌库扩展包'));
+const packsTab = await page.locator('.rule-tab[data-tab="packs"]').count();
+check('规则书「扩展包」tab 已移除', packsTab === 0, `${packsTab} 个 tab`);
 await page.click('#rulesModal .rules-close');
 await page.waitForTimeout(150);
 
-/* ---------- 5. 全卡包开局：AI 不卡死、无报错 ---------- */
-// 前一步已勾选 junzheng / guozhan，此处只补勾其余三个（toggle 为开关，不可重复点已启用的）
-await page.evaluate(() => {
-  for (const p of ['shenhua', 'sp', 'yingbian']) window.toggleCardPack(p);
-});
+/* ---------- 5. 全卡包入池（底层机制保留）：牌堆仍为统一修真牌堆 + 可正常开局 ---------- */
 const allStats = await page.evaluate(() => window.__xtsDeckStats(['junzheng', 'shenhua', 'sp', 'yingbian', 'guozhan']));
 check(
   '全卡包启用后牌堆仍为统一修真牌堆',

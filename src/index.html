@@ -48,7 +48,6 @@
         <button class="tb-icon" onclick="openLlmSettings()" title="大模型接管 AI 设置">🤖</button>
       </span>
       <span class="tb-actions">
-        <button class="tb-icon" onclick="openPackMenu()" title="自定义扩展包">🧩</button>
         <button class="tb-icon" onclick="openRules()" title="规则说明">📖</button>
         <button class="tb-icon tb-game-only" onclick="exitGame()" title="退出重开">🚪</button>
         <button class="tb-icon tb-notify" onclick="toggleNotifyPanel()" title="消息通知">🔔<span class="notify-badge" id="notifyBadge"></span></button>
@@ -130,20 +129,10 @@
   </div>
 
   <div id="hostConfig">
-  <div class="panel">
-    <h3>◈ 选择扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（决定可选角色的范围）</span></h3>
-    <div class="opt-row" id="packetPicker"></div>
-    <div class="scope-hint" id="packetHint"></div>
-  </div>
     <div class="panel">
       <h3>◈ 对局模式 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（默认：掌门路＝修真牌堆 + 原著角色 + 灵石 / 境界 / 灵地 / 本命 / 家族 / 器灵 / 载具；开辟战争＝按门派分队以灵地占领为胜负）</span></h3>
       <div class="opt-row" id="ruleModePicker"></div>
       <div class="scope-hint" id="ruleModeHint"></div>
-    </div>
-    <div class="panel">
-      <h3>◈ 牌库扩展包 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（在修真基础牌堆之上追加扩展卡牌，可多选；房主勾选后随房间同步）</span></h3>
-      <div class="opt-row" id="cardPackPicker"></div>
-      <div class="scope-hint" id="cardPackHint"></div>
     </div>
     <div class="panel">
       <h3>◈ 回合限时 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（开启后每次决策单独计时，超时自动按默认处理）</span></h3>
@@ -204,7 +193,6 @@
     </div>
   </div>
   <div id="joinConfig" style="display:none;">
-    <div class="panel" id="extraPackPanel"></div>
     <div class="panel">
       <h3>◈ 选择你的科目阵营 ◈ <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;">（会同步给房主）</span></h3>
       <div class="faction-grid" id="joinFactionPicker"></div>
@@ -344,38 +332,6 @@
   </div>
 </div>
 
-<!-- 自定义扩展包管理（二级菜单） -->
-<div id="packModal" class="rules-modal">
-  <div class="rules-box" style="max-width:600px">
-    <div class="rules-header"><span>🧩 自定义扩展包</span><button onclick="closePackMenu()" class="rules-close">✕</button></div>
-    <div class="rules-content">
-      <div class="bank-info">自定义扩展包「仅单机 / 房主」可用：联机加入方由房主统一携带，自己无需安装。</div>
-      <div id="packList" class="pack-list"></div>
-      <div class="input-row" style="margin:8px 0 6px">
-        <input type="text" id="packUrlInput" placeholder="扩展包 URL（.json）">
-      </div>
-      <div class="opt-row" style="margin-bottom:0;flex-wrap:wrap">
-        <button class="btn" style="flex:1" onclick="loadPackFromUrl()">🌐 从 URL 加载</button>
-        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('packFileInput').click()">📂 导入本地文件</button>
-        <button class="btn" style="flex:0 0 auto" onclick="editPackFromMenu()">🧩 新建 / 编辑器</button>
-        <button class="btn" style="flex:0 0 auto" onclick="clearAllPacksConfirm()">🗑️ 清空全部</button>
-      </div>
-      <input type="file" id="packFileInput" class="file-input" accept=".json" onchange="importPackFile(event)">
-    </div>
-    <div class="menu-footer"><button class="btn btn-sm btn-accent" onclick="closePackMenu()">完成</button></div>
-  </div>
-</div>
-
-<!-- 自定义扩展包 Web 表单编辑器 -->
-<div id="packEditorModal" class="rules-modal">
-  <div class="rules-box" style="max-width:680px">
-    <div class="rules-header"><span>🧩 扩展包编辑器</span><button onclick="closePackEditor()" class="rules-close">✕</button></div>
-    <div class="rules-content"><div id="packEditorBody"></div></div>
-  </div>
-</div>
-
-
-
 <!-- 大模型接管设置弹窗 -->
 <div id="llmSettingsModal" class="rules-modal">
   <div class="rules-box" style="max-width:560px">
@@ -394,7 +350,6 @@
       <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌说明</button>
       <button class="rule-tab" data-tab="chars" onclick="switchRulesTab('chars')">角色技能</button>
       <button class="rule-tab" data-tab="ach" onclick="switchRulesTab('ach')">成就</button>
-      <button class="rule-tab" data-tab="packs" onclick="switchRulesTab('packs')">扩展包</button>
     </div>
     <div class="rules-content" id="rulesContent"></div>
   </div>

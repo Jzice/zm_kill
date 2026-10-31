@@ -18,11 +18,9 @@ import {
 import { REALM_TIERS } from '../profile/realm';
 import { defOf } from '../data/talentdefs';
 import { unlockEquipNameOf, upgradeDefsOfChar } from '../data/zml/upgradeTalents.zml';
-import { CARD_PACKS } from '../data/cardPacks';
-import { CARD_CATALOG } from '../data/cardCatalog';
 
 /** 各 tab（顺序即高度测量顺序） */
-const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach', 'packs'];
+const RULE_TABS = ['basic', 'factions', 'cards', 'chars', 'ach'];
 
 /** 知识点锦囊规则书分区（首版仅保留直接生效的策略型） */
 function knowledgeTrickHtml(): string {
@@ -31,28 +29,6 @@ function knowledgeTrickHtml(): string {
   const lis = items.map((d) => `<li><b>【${d.name}】</b>${d.desc}</li>`).join('');
   return `<div class="rule-section"><h4>📚 知识点锦囊</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">由知识点凝练的锦囊；均可被【不在算中】抵消。</div><ul>${lis}</ul></div>`;
 }
-/**
- * 牌库扩展包规则书分区：按卡包分组渲染全部扩展卡（卡名沿用通用卡牌命名）。
- * 与知识点锦囊同构——纯数据驱动，新增卡牌只加 CARD_CATALOG 一条记录即自动出现。
- */
-function cardPackHtml(): string {
-  const groups = CARD_PACKS.filter((p) => p.id !== 'core')
-    .map((p) => {
-      const items = Object.values(CARD_CATALOG).filter((d) => d.pack === p.id);
-      if (!items.length) return '';
-      const lis = items
-        .map(
-          (d) =>
-            `<li><b>【${d.name}】</b><span style="font-size:10px;color:var(--muted)">×${d.count}</span> ${d.desc}</li>`,
-        )
-        .join('');
-      return `<div style="padding:6px 8px;background:rgba(0,0,0,.18);border-radius:6px;border-left:3px solid #b57fff;margin-bottom:6px"><div style="font-size:12px;font-weight:700;color:#b57fff">${p.icon} ${p.name} · ${p.origin}</div><div style="font-size:10px;color:var(--muted);margin:2px 0">${p.desc}</div><ul style="margin-top:2px">${lis}</ul></div>`;
-    })
-    .join('');
-  if (!groups) return '';
-  return `<div class="rule-section"><h4>🂠 牌库扩展包（需在「牌库扩展包」中勾选启用）</h4><div style="font-size:11px;color:var(--muted);margin-bottom:5px">以下卡牌在修真基础牌堆之上追加，卡名与规则内核一致。</div>${groups}</div>`;
-}
-
 /** 各 tab 内容自然高度的最大值（与视口无关，缓存以免重复测量） */
 let rulesNaturalMax = 0;
 /** 视口尺寸变化监听（窗口变小/变大时重新套用 85vh 上限） */
@@ -173,7 +149,7 @@ function renderRulesContent(tab: string): void {
     <div class="rule-section"><h4>🛡️ 装备</h4><ul><li><b>灵狐剑匣</b>：出攻击次数无限制</li><li><b>洼角云刀</b>：攻击被防御后可再出攻击</li><li><b>七剑斩元星</b>：两张手牌当攻击</li><li><b>七芯蝎尾夺</b>：无视目标护身法器</li><li><b>心生蜂云剑</b>：对异性用攻击，对方令你摸一张或自弃一张</li><li><b>青铜长戟</b>：攻击被防御后弃两张牌强制命中</li><li><b>月影玄冰剑</b>：弃两张牌改为令其弃两张牌</li><li><b>一剑碧环星</b>：目标无手牌时伤害+1</li><li><b>猴面金身法像</b>：判定红视为防御</li><li><b>清风法袍</b>：黑色攻击无效</li><li><b>映雪冰风阵</b>：普通攻击/群攻锦囊无效，火属性伤害+1</li><li><b>乙木御风梭 / 载具</b>：影响距离</li></ul></div>
     <div class="rule-section"><h4>🗡️ 本命法宝与升级天赋</h4><ul><li><b>升级天赋</b>：不在角色天赋池内，<b>不参与开局随机</b>，也不占破境机缘名额，只由<b>解锁条件</b>触发获得。</li><li><b>本期条件 = 装备</b>：装备对应法宝当刻自动解锁并记入战报；法宝被替换 / 被拆 / 被夺即<b>立刻失去</b>该技能。</li><li><b>日 / 月 / 星 / 影四剑</b>：幻日无形剑 → 齐休【五感剥夺】；幻月无形剑 → 齐妆【月华】；幻星无形剑 → 秦长风【星遁】；幻影无形剑 → 楚无影【影遁】。四剑各 1 张，随牌堆抽取，需角色本人装备。</li><li><b>丹药 / 悟道</b>类解锁条件已在数据层预留，后续版本开放。</li></ul></div>
     <div class="rule-section"><h4>📏 距离与攻击范围</h4><ul><li><b>攻击范围</b> = 武器范围 + 天赋「攻击范围 +n」加成（此前该加成未生效，本版修复）。</li><li><b>防守距离</b>：天赋「其他角色计算与你的距离 +n」等效于防守距离 +n，与 +1 马叠加。</li><li>技能描述中的「攻击距离 +n」即攻击范围加成，「防守距离 +n」即他人对你的距离加成。</li></ul></div>
-    <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【混元剑狱】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>${cardPackHtml()}`;
+    <div class="rule-section"><h4>🔗 连环与翻面</h4><ul><li><b>连环（横置）</b>：被【混元剑狱】横置的角色受到属性伤害时，伤害传导给所有横置角色，随后全部重置</li><li><b>翻面</b>：与连环相互独立；翻面角色跳过其下一个回合并翻回正面</li></ul></div>`;
   } else if (tab === 'chars') {
     let html = '';
     const byFaction = new Map<FactionId, typeof CHARACTERS>();
@@ -228,14 +204,5 @@ function renderRulesContent(tab: string): void {
         return `<div class="ach-item ${un ? 'unlocked' : 'locked'}"><div class="ach-icon">${un ? a.icon : '🔒'}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
       }).join('')
     }</div></div>`;
-  } else if (tab === 'packs') {
-    el.innerHTML = `<div class="rule-section"><h4>🎁 扩展包</h4><ul>
-      <li><b>全部</b>：掌门路原著角色池范围选项（免费并列）。</li>
-      <li>切换扩展包会即时刷新可选角色池，联机时加入方可在房主基础包之上叠加。</li>
-    </ul></div>
-    <div class="rule-section"><h4>👥 联机：房主统一选包 + 个人叠加</h4><ul>
-      <li>房主统一选<b>基础包</b>；每位玩家可在基础包之上<b>叠加启用</b>扩展包，角色池 = 基础 ∪ 个人叠加。</li>
-      <li>中途加入接管 AI 角色；重新开局前可重选已启用扩展包内的任意角色。</li>
-    </ul></div>`;
   }
 }
