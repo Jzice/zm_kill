@@ -12,6 +12,7 @@
  */
 import type { Talent, TalentDef, SkillE, SkillTiming, SkillType } from '../core/types';
 import { ZML_TALENT_LIST } from './zml/talentdefs.zml';
+import { ZML_POOL_TALENT_LIST } from './zml/talentdefs.pool';
 
 /** 展示类型 → 出牌阶段是否作为「主动技按钮」出现 */
 export function skillTypeOf(d: TalentDef): SkillType {
@@ -2587,6 +2588,7 @@ export const TALENT_DEFS: Record<string, TalentDef> = Object.fromEntries(
     SUB_QUWEI,
     // 掌门路原著角色技能（48 人，词条全部取自 docs/）
     ...ZML_TALENT_LIST,
+    ...ZML_POOL_TALENT_LIST,
   ].map((d) => [d.id, d]),
 );
 

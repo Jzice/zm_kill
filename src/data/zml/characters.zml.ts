@@ -247,12 +247,96 @@ const LINGSHOU_IDS: string[] = [
   'zml_kaerweiming', // 御兽门光明大道化神
 ];
 
-/** 角色池：在原始定义之上换入道统 / 灵兽标签（声明式，不修改源数组） */
-export const ZML_CHARACTERS: ZmlCharacter[] = RAW_CHARACTERS.map((c) => ({
-  ...c,
-  taoism: TAOISM_MAP[c.id] ?? c.taoism,
-  lingshou: LINGSHOU_IDS.includes(c.id) ? true : c.lingshou,
-}));
+/**
+ * 天赋池扩展：为每名角色补充 1~2 门天赋，使天赋池 >3。
+ * - 一部分取自 talentdefs.zml.ts 中「已定义但未接入角色池」的既有天赋；
+ * - 另一部分为 talentdefs.pool.ts 新增的原著向天赋。
+ * 最终天赋池 = 原定义 talents（2~3）∪ 本表，开局再从中随机激活 2~3 门。
+ */
+const POOL_EXTRA: Record<string, string[]> = {
+  /* 楚秦门 */
+  zml_qixiu: ['zml_qixiu_buzai', 'zml_qixiu_qiaoxin'],
+  zml_qizhuang: ['zml_qizhuang_fengyun', 'zml_qizhuang_hunyuan'],
+  zml_chuwuying: ['zml_chuwuying_wanying', 'zml_chuwuying_yingxi'],
+  zml_qinchangfeng: ['zml_qinchangfeng_canxiu', 'zml_qinchangfeng_xingxue'],
+  zml_gutan: ['zml_gutan_mouzhu', 'zml_gutan_zhinang'],
+  zml_duoluosen: ['zml_duoluosen_liandan', 'zml_duoluosen_muling'],
+  zml_shanuo: ['zml_shanuo_baisha', 'zml_shanuo_guiqi'],
+  zml_mingzhen: ['zml_mingzhen_qingxin', 'zml_mingzhen_jinzhen'],
+  zml_mojianxin: ['zml_mojianxin_bingyuan', 'zml_mojianxin_yueying'],
+  zml_qinweiyu: ['zml_qinweiyu_tongcan', 'zml_qinweiyu_nixi'],
+  zml_zhangshishi: ['zml_zhangshishi_cangjing', 'zml_zhangshishi_zhuji'],
+  zml_zhanchou: ['zml_zhanchou_pingzhong', 'zml_zhanchou_yigu'],
+  zml_xiongdai: ['zml_xiongdai_zengdan', 'zml_xiongdai_lingzhi'],
+  zml_heyu: ['zml_heyu_shuitu', 'zml_heyu_tongcan'],
+  zml_xiongshisi: ['zml_xiongshisi_zhongjia', 'zml_xiongshisi_fuyong'],
+  zml_zhaoyao: ['zml_zhaoyao_guifan', 'zml_zhaoyao_xiaohong'],
+  zml_zhanjianfeng: ['zml_zhanjianfeng_junzhen', 'zml_zhanjianfeng_leiyin'],
+  zml_baixiaosheng: ['zml_baixiaosheng_cangjingge', 'zml_baixiaosheng_menzhu'],
+  /* 齐云 */
+  zml_chuhongshang: ['zml_chuhongshang_huoni', 'zml_chuhongshang_huoyu'],
+  zml_chuzhen: ['zml_chuzhen_huchi', 'zml_chuzhen_weiyan'],
+  zml_nangongzhi: ['zml_nangongzhi_bihu', 'zml_nangongzhi_yuping'],
+  zml_jiangyan: ['zml_jiangyan_chongying', 'zml_jiangyan_fenxin'],
+  zml_chuduo: ['zml_chuduo_duo', 'zml_chuduo_handu'],
+  zml_chushentong: ['zml_chushentong_moulve', 'zml_chushentong_zhenfa'],
+  zml_chuwen: ['zml_chuwen_jianzhen', 'zml_chuwen_zhanxing'],
+  zml_xingxi: ['zml_xingxi_zhifa2', 'zml_xingxi_guiju'],
+  zml_tiandifeng: ['zml_tiandifeng_yizhang', 'zml_tiandifeng_weiyan'],
+  zml_nangongmu: ['zml_nangongmu_muda', 'zml_nangongmu_longzhu'],
+  zml_nangongmeng: ['zml_nangongmeng_bihu', 'zml_nangongmeng_konggu'],
+  zml_nangongyanran: ['zml_nangongyanran_weiliu', 'zml_nangongyanran_hulian'],
+  zml_xingjian: ['zml_xingjian_zhifa2', 'zml_xingjian_xingjia'],
+  zml_jianghuan: ['zml_jianghuan_gongzhu', 'zml_jianghuan_bihu2'],
+  zml_fengzhen: ['zml_fengzhen_leijie', 'zml_fengzhen_mingyun'],
+  zml_peiwen: ['zml_peiwen_shuilian', 'zml_peiwen_runze'],
+  /* 白山 */
+  zml_jiachanggeng: ['zml_jiachanggeng_shuang', 'zml_jiachanggeng_guangzhu'],
+  zml_fayin: ['zml_fayin_chanzhang', 'zml_fayin_jiasha'],
+  zml_gurong: ['zml_gurong_lianqi', 'zml_gurong_duanzao'],
+  zml_chaiyi: ['zml_chaiyi_lingzhi', 'zml_chaiyi_muling'],
+  zml_sikongshou: ['zml_sikongshou_xingchen', 'zml_sikongshou_zhaixing2'],
+  zml_yingbo: ['zml_yingbo_qingtong', 'zml_yingbo_dandao'],
+  zml_hantianqing: ['zml_hantianqing_yuanyingdan', 'zml_hantianqing_dandao'],
+  zml_xuedao: ['zml_xuedao_xuedun', 'zml_xuedao_shiyan'],
+  /* 御兽门 */
+  zml_yuhe: ['zml_yuhe_wuxing', 'zml_yuhe_dao'],
+  zml_kaerweiming: ['zml_kaerweiming_kongque', 'zml_kaerweiming_yushou'],
+  zml_laozhong: ['zml_laozhong_shouxing', 'zml_laozhong_linjia'],
+  zml_fengxu: ['zml_fengxu_jingyu', 'zml_fengxu_daozhu'],
+  zml_huoguan: ['zml_huoguan_xunshou', 'zml_huoguan_huojia'],
+  /* 大周书院 */
+  zml_jixinlong: ['zml_jixinlong_shuyuan', 'zml_jixinlong_tanhe'],
+  zml_wenxin: ['zml_wenxin_rufa', 'zml_wenxin_qianfu'],
+  zml_jixingde: ['zml_jixingde_junzhen', 'zml_jixingde_leiting'],
+  zml_jiyuliang: ['zml_jiyuliang_ruyi', 'zml_jiyuliang_xunshi'],
+  /* 青莲剑宗 */
+  zml_niefengzi: ['zml_niefengzi_fengdian'],
+  zml_liyuanying: ['zml_liyuanying_qinglianjian', 'zml_liyuanying_lianhua'],
+  /* 南林寺 */
+  zml_kurong: ['zml_kurong_puti'],
+  zml_miaoqing: ['zml_miaoqing_fomen', 'zml_miaoqing_lianhua'],
+  /* 外海 */
+  zml_longyueyun: ['zml_longyueyun_longwei', 'zml_longyueyun_haiyu'],
+  zml_qinxizhao: ['zml_qinxizhao_haidong', 'zml_qinxizhao_junwu2'],
+  zml_qinlaozu: ['zml_qinlaozu_haidongcheng'],
+  /* 天理门 / 黑风谷 */
+  zml_tufeng: ['zml_tufeng_yinfeng'],
+  zml_tianlihuashen: ['zml_tianli_shenpan', 'zml_tianli_fali'],
+  /* 蛮荒 */
+  zml_xingshi: ['zml_xingshi_yuanhou', 'zml_xingshi_shihou'],
+};
+
+/** 角色池：在原始定义之上换入道统 / 灵兽标签，并扩充天赋池（声明式，不修改源数组） */
+export const ZML_CHARACTERS: ZmlCharacter[] = RAW_CHARACTERS.map((c) => {
+  const extra = (POOL_EXTRA[c.id] || []).map((id) => talentOf(id));
+  return {
+    ...c,
+    taoism: TAOISM_MAP[c.id] ?? c.taoism,
+    lingshou: LINGSHOU_IDS.includes(c.id) ? true : c.lingshou,
+    talents: [...c.talents, ...extra],
+  };
+});
 
 /** 按 charId 取道统（属性结算 / 徽标共用；未知 id 返回 undefined） */
 export function charTaoismOf(id: string): Taoism | undefined {

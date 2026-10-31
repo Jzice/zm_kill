@@ -1,5 +1,5 @@
 /* ==================== 开局装配 / 启动 ==================== */
-import type { Card, Character, EquipSlot, Loadout, Player, PlayerIdentity, Role } from '../core/types';
+import type { Card, Character, EquipSlot, Loadout, Player, PlayerIdentity, Role, Talent } from '../core/types';
 import type { PacketId } from '../data/packets';
 import type { CardPackId } from '../data/cardPacks';
 import { withCore } from '../data/cardPacks';
@@ -53,6 +53,25 @@ import { consumePackUse } from '../profile/packMeter';
 import { Sound } from '../core/sound';
 import { llmEnabledForSeat } from '../llm/config';
 import { resetLlmFailStreak } from '../llm/agent';
+
+/**
+ * 天赋池 → 本局激活天赋。
+ * 池 >3 时随机取 2~3 个本局生效（其余留作境界突破时觉醒）；≤3 时全部激活。
+ * 随机只在房主端 setup 装配玩家时执行一次，结果随 state_sync 下发，保证联机一致。
+ */
+function activateTalentPool(pool: Talent[]): { active: Talent[]; remaining: string[] } {
+  if (pool.length <= 3) return { active: [...pool], remaining: [] };
+  const n = 2 + (Math.random() < 0.5 ? 0 : 1); // 2 或 3
+  const order = pool.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const chosen = new Set(order.slice(0, n));
+  const active = pool.filter((_, i) => chosen.has(i));
+  const remaining = pool.filter((_, i) => !chosen.has(i)).map((t) => t.id);
+  return { active, remaining };
+}
 
 /** 应用开局选项：回合限时（开关 + 秒数），联机由房主下发给客人 */
 function applyTimerSetting(): void {
@@ -175,7 +194,9 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
     identity: PlayerIdentity | null = null,
     self: boolean = false,
   ): Player => {
-    let talents = [...char.talents];
+    // 天赋池 → 本局随机激活（池 >3 抽 2~3 个，其余留作突破觉醒）
+    const { active, remaining } = activateTalentPool(char.talents);
+    const talents: Talent[] = active;
     if (role === 'lord') {
       const ls = FACTIONS[char.faction].lordSkill;
       if (!talents.some((s) => s.id === ls.id)) talents.push({ ...ls });
@@ -198,6 +219,7 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
       alive: true,
       isAI,
       talents,
+      talentPool: remaining,
       peerId: peerId || null,
       flags: { shaUsed: 0, skillUsed: false, extraDamage: 0, skipPlay: false, noSha: false, jiuUsed: false },
       chained: false,
@@ -269,6 +291,12 @@ function setupPlayers(playerCount: number, localChar: Character, localName: stri
   resetLlmFailStreak(); // 新对局：清空大模型连续失败计数（解除上一局可能的自动降级）
   applyLlmModes(); // 依据当前大模型配置标记各 AI 座位的决策模式
   G.players.forEach((p) => drawCards(p, 4));
+  // 本局天赋随机激活结果：开局所见即所得；剩余天赋记入天赋池，待境界突破时觉醒
+  G.players.forEach((pl) => {
+    const names = pl.talents.map((t) => t.name).join('、');
+    const rest = pl.talentPool?.length ? `｜天赋池待觉醒 ${pl.talentPool.length} 门` : '';
+    addLog(`🎲${pl.name} 本局天赋：${names}${rest}`, 'sys');
+  });
   // 掌门路模式：写入对局模式、布置灵地盘、为每位玩家注入修真状态（境界 / 本命 / 家族）
   G.mode = SELECTED_RULE_MODE;
   if (isZml(SELECTED_RULE_MODE)) {

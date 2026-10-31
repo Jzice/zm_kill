@@ -22,6 +22,8 @@ import { G } from '../state';
 import { addLog } from '../log';
 import { discardCard, drawCards } from '../rules';
 import { render } from '../../ui/render';
+import { waitChoice } from '../choice';
+import { defOf, talentOf } from '../../data/talentdefs';
 
 /** 取玩家的修真状态（经典模式为 undefined） */
 export function cultOf(p: Player) {
@@ -76,8 +78,8 @@ export function checkBreakthrough(idx: number): BreakthroughCheck {
   return { ok: true, next, reason: '' };
 }
 
-/** 执行突破：涨上限、回体力、解锁下一阶 */
-export function doBreakthrough(idx: number): boolean {
+/** 执行突破：涨上限、回体力、解锁下一阶；成功后给一次「破境机缘」（觉醒天赋 / 涨上限） */
+export async function doBreakthrough(idx: number): Promise<boolean> {
   const p = G.players[idx];
   const chk = checkBreakthrough(idx);
   if (!p?.cult || !chk.ok || !chk.next) return false;
@@ -93,8 +95,90 @@ export function doBreakthrough(idx: number): boolean {
   p.hp = Math.min(p.maxHp, p.hp + req.heal);
   addLog(`🆙${p.name} 突破至【${REALM_LABEL[next]}】！体力上限 +${req.hpUp}，回复 ${req.heal} 点`, 'hl');
   render();
+  await grantBreakthroughReward(idx);
   return true;
 }
+
+/** 破境机缘：从「再觉醒 1 个天赋池天赋 / 体力上限 +1」中二选一（AI 自动择优，无剩余则直接涨上限） */
+async function grantBreakthroughReward(idx: number): Promise<void> {
+  const p = G.players[idx];
+  if (!p?.cult) return;
+  const pool = p.talentPool || [];
+  if (!pool.length) {
+    addMaxHp(idx, 1);
+    return;
+  }
+  const opts = [
+    { label: `📜再悟一门天赋（池中剩 ${pool.length} 门）`, value: 'talent' },
+    { label: '❤ 体力上限 +1（并回 1 点体力）', value: 'maxhp' },
+  ];
+  const pick =
+    p.isAI ? 'talent' : String(await waitChoice(idx, opts, 'list'));
+  if (pick === 'talent') {
+    let id = pool[0];
+    if (pool.length > 1) {
+      if (p.isAI) {
+        id = pool[Math.floor(Math.random() * pool.length)];
+      } else {
+        const tops = pool.map((tid) => ({ label: talentNameOf(tid), value: tid }));
+        id = String(await waitChoice(idx, tops, 'list'));
+      }
+    }
+    activatePoolTalent(idx, id);
+  } else {
+    addMaxHp(idx, 1);
+  }
+}
+
+function talentNameOf(id: string): string {
+  return defOf(id)?.name || id;
+}
+
+/** 从天赋池再觉醒一个天赋（加入已激活列表并从剩余池移除） */
+function activatePoolTalent(idx: number, id: string): void {
+  const p = G.players[idx];
+  if (!p) return;
+  const pool = p.talentPool || [];
+  const pos = pool.indexOf(id);
+  if (pos < 0) return;
+  if (p.talents.some((t) => t.id === id && !t.copied)) return;
+  p.talents.push(talentOf(id));
+  pool.splice(pos, 1);
+  p.talentPool = pool;
+  addLog(`📜${p.name} 破境悟道，觉醒天赋【${talentNameOf(id)}】`, 'hl');
+  render();
+}
+
+/** 体力点数上限 +n 并回血 */
+function addMaxHp(idx: number, n: number): void {
+  const p = G.players[idx];
+  if (!p) return;
+  p.maxHp += n;
+  p.hp = Math.min(p.maxHp, p.hp + n);
+  addLog(`❤${p.name} 破境强身，体力上限 +${n}（回 ${n} 点）`, 'hl');
+  render();
+}
+
+/* ---------------- 悟道（出牌阶段修为行动） ---------------- */
+
+/** 悟道：出牌阶段限一次，静心参悟 +1 修为（可借此凑够突破条件） */
+export function canWudao(idx: number): boolean {
+  const p = G.players[idx];
+  if (!p?.cult || !isZml(G.mode)) return false;
+  return !p.skillUse?.['zml_wudao'];
+}
+
+export function doWudao(idx: number): boolean {
+  const p = G.players[idx];
+  if (!p || !canWudao(idx)) return false;
+  p.skillUse = p.skillUse || {};
+  p.skillUse['zml_wudao'] = 1;
+  gainExp(idx, 1);
+  addLog(`🧘${p.name} 静心悟道，修为 +1`, 'hl');
+  render();
+  return true;
+}
+
 
 /* ---------------- 灵地 ---------------- */
 

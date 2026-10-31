@@ -83,19 +83,19 @@ check('天赋定义数量充足（≥250）', audit.total >= 250, `${audit.total
 check('所有角色 / 主公技均有定义', audit.missing.length === 0, audit.missing.join(','));
 check('天赋 id 唯一', audit.duplicates.length === 0, audit.duplicates.join(','));
 
-// 2. 齐休双天赋（明己心 / 见人性）——「哼哈真言」已移作兵粮寸断锦囊卡
-check('齐休为双天赋角色（明己心 / 见人性）',
-  audit.qixiu.length === 2 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_jianrenxing'),
+// 2. 齐休天赋池（含明己心 / 见人性；重做后池 >3，开局随机激活 2~3 门）——「哼哈真言」已移作兵粮寸断锦囊卡
+check('齐休天赋池含 明己心 / 见人性 且 >3',
+  audit.qixiu.length > 3 && audit.qixiu.includes('zml_qixiu_mingjixin') && audit.qixiu.includes('zml_qixiu_jianrenxing'),
   audit.qixiu.join(','));
-// 28 位主要角色重做后每人 2~3 个本命天赋，其余天赋已拆为通用技能 / 法宝卡
-check('多天赋角色数量合理（3~20 名）', audit.multi.length >= 3 && audit.multi.length <= 20, `${audit.multi.length} 名`);
+// 天赋池重做后：每名角色天赋池 >3（开局随机激活 2~3 门，其余留待突破觉醒）
+check('多数角色天赋池 >3', audit.multi.length >= 40, `${audit.multi.length} 名`);
 
 // 2.1 角色池（掌门路原著 61 人，不再有年级 / 学科分桶）
 const pool = await page.evaluate(() => window.xtsSeniorPool());
 check('角色池全量加载', pool.count === 61, `${pool.count} 名`);
 const factionNames = Object.keys(pool.byFaction || {});
 check('角色按势力分布', factionNames.length >= 10, `${factionNames.length} 个势力`);
-check('角色均为 1~3 个天赋', pool.chars.every((c) => c.talents.length >= 1 && c.talents.length <= 3), '');
+check('角色天赋池均为 4~8 门', pool.chars.every((c) => c.talents.length >= 4 && c.talents.length <= 8), '');
 const allSkills = pool.chars.flatMap((c) => c.talents.map((s) => s.id));
 check('角色天赋无缺失定义', pool.chars.every((c) => c.talents.every((s) => s.kind !== '')), `${allSkills.length} 个`);
 

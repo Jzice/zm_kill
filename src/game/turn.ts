@@ -33,11 +33,13 @@ import { defOf } from '../data/talentdefs';
 import { GROUND_CLAIM_COST, MARKET_COST, REALM_LABEL, isZml } from '../core/mode';
 import {
   canMarket,
+  canWudao,
   checkBreakthrough,
   claimableGrounds,
   doBreakthrough,
   doClaimGround,
   doMarket,
+  doWudao,
   zmlTurnStart,
 } from './zml/economy';
 import {
@@ -289,9 +291,10 @@ export async function playPhase(idx: number): Promise<void> {
     if (canSha && p.equip.weapon?.skill === 'zhangba' && p.hand.length >= 2) {
       opts.push({ label: '【丈八蛇矛】两张手牌当杀', value: 'zhangba' });
     }
-    // 掌门路：出牌阶段追加的修真行动（坊市 / 突破 / 开辟灵地）
+    // 掌门路：出牌阶段追加的修真行动（坊市 / 悟道 / 突破 / 开辟灵地）
     if (isZml(G.mode)) {
       if (canMarket(idx)) opts.push({ label: `🏪坊市：付 ${MARKET_COST} 灵石摸 1 张`, value: 'zml_market' });
+      if (canWudao(idx)) opts.push({ label: '🧘悟道：修为 +1（每回合 1 次）', value: 'zml_wudao' });
       const bt = checkBreakthrough(idx);
       if (bt.ok && bt.next) opts.push({ label: `🆙突破至【${REALM_LABEL[bt.next]}】`, value: 'zml_break' });
       for (const g of claimableGrounds(idx))
@@ -305,8 +308,12 @@ export async function playPhase(idx: number): Promise<void> {
       doMarket(idx);
       continue;
     }
+    if (ch === 'zml_wudao') {
+      doWudao(idx);
+      continue;
+    }
     if (ch === 'zml_break') {
-      doBreakthrough(idx);
+      await doBreakthrough(idx);
       continue;
     }
     if (String(ch).startsWith('zml_ground_')) {

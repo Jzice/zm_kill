@@ -1,4 +1,4 @@
-/* ==================== 掌门路修真牌堆（234 张） ====================
+/* ==================== 掌门路修真牌堆（237 张） ====================
  * 选词规则：所有卡名均出自 docs/（详见 docs/掌门路规则设计.md 的出处审计表）。
  *   - 基本牌按功能拆为修真变体（杀/火杀/雷杀/闪/桃/酒 各由功法、符箓、身法、丹药代替），sub 沿用引擎 key
  *   - 锦囊取自 功法(B) / 技能(K) / 符箓(C) / 本命天赋 / 原著灾劫
@@ -87,10 +87,12 @@ export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'mingyan', name: '命演术', type: 'skill', count: 2, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'docs/md/技能/命演术.md（以十年阳寿推演命运之问）' },
   { sub: 'tongshi', name: '通明身识', type: 'skill', count: 2, desc: '本回合内你不能成为锦囊牌的目标', src: 'docs/md/技能/通明身识.md（融伪装、防御、隐匿为一体）' },
   { sub: 'quanzhi', name: '全知天眼', type: 'skill', count: 1, desc: '观看目标手牌并公开其本命；目标对你 +1 敌意（探听本命即结怨）', src: 'docs/md/物事/法器.md · 通明幻镜【全知天眼】；docs/md/设定/本命.md' },
+  /* ---- 修为丹药（新增 sub 'dan'，服用后提升修为，可借此冲击境界突破） ---- */
+  { sub: 'dan', name: '筑基丹', subtitle: '修为丹', type: 'skill', count: 3, desc: '服用后修为 +2（辅助冲击筑基的关键丹药；修为满足时可在出牌阶段突破）', src: 'docs/md/物事/丹药.md · 筑基丹（一阶极品，辅助冲击筑基）；docs/md/技能/筑基丹.md' },
 ];
 
 /** 新增修真锦囊的 sub（需在 actions.ts 中结算） */
-export const ZML_NEW_TRICK_SUBS: string[] = ['guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi'];
+export const ZML_NEW_TRICK_SUBS: string[] = ['guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi', 'dan'];
 
 /* ---------------- 装备牌 31 张 ---------------- */
 export const ZML_EQUIP: ZmlCardDef[] = [
@@ -242,7 +244,7 @@ export const ZML_FABAO_DEF: ZmlCardDef[] = [
 
 export const ZML_ALL: ZmlCardDef[] = [...ZML_BASIC, ...ZML_TRICK, ...ZML_EQUIP, ...ZML_FABAO_ATK, ...ZML_FABAO_DEF, ...ZML_SKILL_EXTRA];
 
-/** 掌门路牌堆总张数（234） */
+/** 掌门路牌堆总张数（237，含新增 3 张筑基丹） */
 export const ZML_DECK_TOTAL: number = ZML_ALL.reduce((s, d) => s + d.count, 0);
 
 /** 按 sub 取首条定义（锦囊 / 基本牌文案兜底） */

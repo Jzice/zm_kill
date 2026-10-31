@@ -40,7 +40,7 @@ export function charCardHtml(c: Character, opts: CharCardOpts): string {
       <span class="rcp-label">${escapeHtml(opts.label)}</span>
     </div>
     <div class="rcp-meta" style="color:${f.color}">${f.icon} ${escapeHtml(f.name)} · 体力 ${c.hp}</div>
-    <div class="rcp-talents">${talents}</div>
+    <div class="rcp-talents"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">天赋池（本局随机激活 2~3 门）</div>${talents}</div>
     <div class="rcp-lord">👑 主公技 <b>${escapeHtml(f.lordSkill.name)}</b>：${escapeHtml(f.lordSkill.desc)}</div>
     ${(opts.cardReroll ?? opts.random) ? '<button class="btn btn-sm rcp-reroll" onclick="rerollRandomChar()">🎲 换一个</button>' : ''}
   </div>`;

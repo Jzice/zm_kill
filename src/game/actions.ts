@@ -52,6 +52,7 @@ import { triggerDamageMod } from './skillfx';
 import { runSkillEffects } from './skillfx';
 import { expansionItemById } from '../data/expansion';
 import { waitChoice } from './choice';
+import { gainExp } from './zml/economy';
 import { NET, scheduleSync, syncStateToClients } from '../net/network';
 
 /** 结算一次【杀】的伤害值（精忠 / 古锭刀 / 酒·额外伤害），并消耗额外伤害 */
@@ -537,6 +538,12 @@ export async function useSkill(
       drawCards(a, 2);
       drawFx(attackerIdx, 2);
       addLog(`${a.name} 摸2张牌`);
+      break;
+    }
+    case 'dan': {
+      // 筑基丹：服用提升修为（掌门路模式生效；修为充足后可在出牌阶段选择突破）
+      gainExp(attackerIdx, 2);
+      addLog(`💊${a.name} 服下【筑基丹】，修为 +2`, 'hl');
       break;
     }
     case 'guohe': {

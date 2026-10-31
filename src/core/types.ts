@@ -426,6 +426,11 @@ export interface Character {
   faction: FactionId;
   hp: number;
   avatar: string;
+  /**
+   * 天赋池：本角色可拥有的全部天赋（3~6 个，取自原著功法 / 技能 / 符箓 / 本命天赋 / 设定）。
+   * 开局时按池大小随机激活（见 setup.ts）：池 >3 抽 2~3 个本局生效，其余留待境界突破时觉醒。
+   * 注意：局内实际生效的是 Player.talents（已激活子集），本字段仅作「池」使用。
+   */
   talents: Talent[];
   /** 预留修真机制扩展点（首版不实现，仅占位） */
   cultivation?: '练气' | '筑基' | '金丹' | '元婴' | '化神';
@@ -613,7 +618,10 @@ export interface Player {
   isAI: boolean;
   /** 决策提供者：'heuristic' = 原启发式 AI；'llm' = 由大模型接管（仅当 isAI 时生效） */
   aiMode?: 'heuristic' | 'llm';
+  /** 本局已激活天赋（开局由天赋池随机选出；境界突破可再觉醒 1 个） */
   talents: Talent[];
+  /** 掌门路模式：本局尚未激活的天赋 id（天赋池剩余，突破时可选其一觉醒）；经典模式为空 */
+  talentPool?: string[];
   peerId: string | null;
   flags: PlayerFlags;
   /** 铁索连环·横置：处于连环状态，受到属性伤害时传导给所有连环角色并各自重置 */
