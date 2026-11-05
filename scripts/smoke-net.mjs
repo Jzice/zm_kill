@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const file = process.argv[2] || '掌门杀.html';
 const PORT = 8902;
-const url = `http://127.0.0.1:${PORT}/${encodeURIComponent(file)}`;
+const url = `http://127.0.0.1:${PORT}/${encodeURIComponent(file)}?debug=1`;
 
 const server = spawn(process.execPath, [path.join(dirname, 'serve-dist.mjs'), String(PORT)], {
   cwd: path.resolve(dirname, '..'),
@@ -170,6 +170,27 @@ await host.waitForTimeout(500);
 const hostSeats = await host.locator('#seatRing .p-card').count();
 const guestSeats = await guest.locator('#seatRing .p-card').count();
 check('双方座位渲染一致（4人）', hostSeats === 4 && guestSeats === 4, `房主${hostSeats} 客人${guestSeats}`);
+
+// —— 特效事件全端同步（?debug=1 探针）——
+// 房主逻辑发射一次 fx_event：本地播放一次 + 广播；客人端只在收到事件时播放。
+const fxHost0 = (await host.evaluate(() => window.__fxDebug?.stats())) || { emitted: 0, received: 0, played: 0, skipped: 0 };
+const fxGuest0 = (await guest.evaluate(() => window.__fxDebug?.stats())) || { emitted: 0, received: 0, played: 0, skipped: 0 };
+const fxStageHost = await host.evaluate(() => window.__fxDebug?.stage());
+const fxStageGuest = await guest.evaluate(() => window.__fxDebug?.stage());
+check('特效探针与粒子舞台双端就绪', fxStageHost?.mounted === true && fxStageGuest?.mounted === true,
+  `房主=${fxStageHost?.mounted} 客人=${fxStageGuest?.mounted}`);
+await host.evaluate(() => window.__fxDebug.ping(0));
+await guest
+  .waitForFunction((n) => (window.__fxDebug?.stats().received ?? 0) > n, fxGuest0.received, { timeout: 8000 })
+  .catch(() => {});
+const fxHost1 = (await host.evaluate(() => window.__fxDebug?.stats())) || fxHost0;
+const fxGuest1 = (await guest.evaluate(() => window.__fxDebug?.stats())) || fxGuest0;
+check('客人端收到并播放 fx_event', fxGuest1.received > fxGuest0.received && fxGuest1.played > fxGuest0.played,
+  `received ${fxGuest0.received}→${fxGuest1.received}，played ${fxGuest0.played}→${fxGuest1.played}`);
+check('房主本地播放且不重复接收', fxHost1.played > fxHost0.played && fxHost1.received === fxHost0.received,
+  `played ${fxHost0.played}→${fxHost1.played}，received=${fxHost1.received}`);
+const seatsAfterFx = await guest.locator('#seatRing .p-card').count();
+check('特效事件不影响状态同步', seatsAfterFx === 4, `客人座位 ${seatsAfterFx} 个`);
 
 // 客人应能看到自己的手牌与操作提示（房主权威同步）
 const guestHand = await guest.locator('#handRow .card').count();

@@ -157,15 +157,15 @@ export const ZML_SKILL_EXTRA: ZmlCardDef[] = [
   { sub: 'guanding', name: '通明剑诀并注', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回', src: 'B-通明剑诀并注；docs/md/角色/楚秦门/03.金丹/秦长风.md' },
   { sub: 'nanman', name: '魔化', type: 'skill', count: 1, desc: '群攻（堕入魔道，魔气席卷），需打出【攻击】抵御', src: 'docs/md/角色/楚秦门/03.金丹/沙诺.md（逃入魔井遇元婴魔蛇）' },
   { sub: 'guohe', name: '传送阵', type: 'skill', count: 1, desc: '弃置目标一张牌（装备优先）—— 传送阵法截断其护持', src: 'docs/md/角色/散修/03.金丹/何玉.md（北丁申山传送遁走）' },
-  { sub: 'nanman', name: '楚秦军阵', type: 'skill', count: 1, desc: '群攻（楚秦军阵压境），需打出【攻击】抵御', src: 'docs/md/角色/楚秦门/02.筑基/展剑锋.md（总理楚秦军阵）' },
-  { sub: 'lebu', name: '楚秦门规', type: 'skill', count: 1, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段（五级身份制，门规森严）', src: 'docs/md/角色/楚秦门/02.筑基/白晓生.md（定楚秦五级身份制）' },
-  { sub: 'wuzhong', name: '明心见性诀楚慧心改', type: 'skill', count: 1, desc: '摸 2 张牌（楚慧心改版，南楚传承）', src: 'B-明心见性诀楚慧心改；docs/md/角色/齐云/04.元婴/楚红裳.md' },
-  { sub: 'guohe', name: '本家孤女', type: 'skill', count: 1, desc: '弃置目标一张牌（装备优先）—— 以「本家孤女」名义掩人耳目', src: 'docs/md/角色/齐云/03.金丹/楚夺.md（盗婴案掩饰手法）' },
+  { sub: 'nanman', name: '反五行大阵', type: 'skill', count: 1, desc: '群攻（千人军用大阵，灵力风暴席卷），需打出【攻击】抵御', src: 'docs/整理/物事总表.md（技能·反五行大阵，楚秦门千人军用阵）' },
+  { sub: 'guanding', name: '黄庭经', type: 'skill', count: 1, desc: '观看牌堆顶 3 张，将其中 1 张加入手牌，其余按原顺序放回（黄庭悟道）', src: 'docs/整理/物事总表.md（功法·黄庭经，楚秦门道书）' },
+  { sub: 'wuzhong', name: '七窍玲珑心', type: 'skill', count: 1, desc: '摸 2 张牌（七窍玲珑，洞察先机）', src: 'docs/整理/物事总表.md（技能·七窍玲珑心，齐休诡代本命）' },
+  { sub: 'wuzhong', name: '通明经', type: 'skill', count: 1, desc: '摸 2 张牌（通明观照，照见前路）', src: 'docs/整理/物事总表.md（功法·通明经，齐休等道书）' },
   { sub: 'huogong', name: '业火焚心', type: 'skill', count: 1, extra: { damageType: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害', src: 'docs/md/角色/齐云/03.金丹/姜炎.md（红莲业火焚心）' },
   { sub: 'mingyan', name: '命演术', type: 'skill', count: 1, desc: '指定一名其他角色：该角色判定，♥红桃则你查看其隐藏身份（仅你可见）；你失去 1 点体力，每局限使用一次', src: 'docs/md/技能/命演术.md；docs/md/角色/齐云/05.化神/南宫木.md（借赤尻马猴施命演术）' },
   { sub: 'lebu', name: '六道轮回', type: 'skill', count: 1, extra: { judgeType: 'lebu' }, desc: '延时：判定若不为♥红桃，则跳过其出牌阶段（黑河峰底六道轮回空间）', src: 'docs/md/角色/齐云/02.筑基/南宫嫣然.md' },
   { sub: 'huogong', name: '星陨火球', type: 'skill', count: 1, extra: { damageType: 'fire' }, desc: '目标展示一张手牌，你弃置同花色手牌则其受到 1 点火属性伤害（大火星陨）', src: 'K-星陨火球；docs/md/角色/白山/05.化神/贾长庚.md' },
-  { sub: 'nanman', name: '潜意识扑击', type: 'skill', count: 1, desc: '群攻（昏睡中的本能扑击，瞬杀元婴），需打出【攻击】抵御', src: 'docs/md/角色/蛮荒/05.化神/醒狮.md' },
+  { sub: 'nanman', name: '混元剑冢', type: 'skill', count: 1, desc: '群攻（混元剑冢·万剑归宗），需打出【攻击】抵御', src: 'docs/整理/物事总表.md（技能·混元剑冢，齐妆剑阵）' },
 ];
 
 /* ---------------- 法宝·进攻（装备进武器槽） ----------------

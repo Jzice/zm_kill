@@ -6,7 +6,7 @@
  * 本文件不再包含任何按技能 id 的 switch 分支。
  */
 import { G } from './state';
-import { FX, floatTextFx } from '../core/fx';
+import { FX } from '../core/fxBus';
 import { FACTIONS } from '../data/factions';
 import { defOf } from '../data/talentdefs';
 import { addLog, addPlayLog } from './log';

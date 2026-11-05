@@ -13,7 +13,7 @@ import { backToRoomForRematch, hostHandleRematchRequest } from '../ui/settle';
 import { applyLlmModes } from '../game/setup';
 import { resolveChoice } from '../game/choice';
 import { identityFromProfile, localIdentity, maybeSettle, publicProfile } from '../profile/profile';
-import { FX } from '../core/fx';
+import { FX, claimFx, playFxEvent } from '../core/fxBus';
 import { getLlmConfig } from '../llm/config';
 import { ROLES } from '../data/characters';
 
@@ -476,9 +476,10 @@ export function onClientData(data: NetMessage): void {
     }
     if (G.gameOver) maybeSettle();
     render();
-    // 新阵亡者：客人端补播阵亡动画（身份 + 击杀者），与房主端表现一致
+    // 新阵亡者：客人端补播阵亡动画（身份 + 击杀者）。
+    // 房主已通过 fx_event 广播同一动画，此处仅作旧协议 / 事件丢失时的兜底，靠短时窗口去重。
     G.players.forEach((p, i) => {
-      if (prevAlive[i] && !p.alive) {
+      if (prevAlive[i] && !p.alive && claimFx('death', String(i))) {
         void FX.death(i, ROLES[p.role].name, p.killedBy ? `被 ${p.killedBy} 击杀` : '');
       }
     });
@@ -511,6 +512,9 @@ export function onClientData(data: NetMessage): void {
     setTimeout(() => {
       location.reload();
     }, 400);
+  } else if (data.type === 'fx_event') {
+    // 纯表现层：不触碰 G、不触发 render、不阻塞客人端的选择逻辑
+    if (data.event && typeof data.event.seq === 'number') void playFxEvent(data.event);
   } else if (data.type === 'join_rejected') {
     // 房主拒绝加入：对局进行中且真人席位已满，无 AI 席位可接管/顶替
     alert('⚠️ 对局已开始，且没有可加入的席位（真人已满）');

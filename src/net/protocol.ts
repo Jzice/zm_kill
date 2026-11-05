@@ -2,6 +2,7 @@
  * 房主权威模式：host 运行游戏逻辑并广播 state_sync；
  * 客户端发送 choose_response 等响应类消息。
  */
+import type { FxEvent } from '../core/fxEvent';
 import type {
   Card,
   ChoiceOption,
@@ -42,6 +43,8 @@ export type NetMessage =
   // ---- 房主 → 客户端 ----
   | { type: 'chat'; name: string; text: string; avatar?: string; moodIcon?: string; mood?: string }
   | { type: 'play_log'; entry: LogEntry }
+  /** 纯表现层事件：房主广播，客人端按本地座位坐标重放；不携带任何状态更新 */
+  | { type: 'fx_event'; event: FxEvent }
   | RoomStateMsg
   | {
       type: 'start_game';

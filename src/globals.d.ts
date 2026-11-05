@@ -37,6 +37,9 @@ declare global {
     closeThemePanel: () => void;
     setThemeMode: (m: string) => void;
     setThemeStyle: (s: string) => void;
+    /** 出牌特效强度：full 华丽 / lite 标准 / off 关闭 */
+    setFxLevel: (level: string) => void;
+    getFxLevel: () => string;
     // 大厅
     startSingle: () => Promise<void>;
     createRoom: () => Promise<void>;

@@ -1,7 +1,7 @@
 /* ==================== 伤害 & 濒死 ==================== */
 import type { Attr, Card, ChoiceOption, DamageType, Player, Taoism } from '../core/types';
 import { G } from './state';
-import { FX, floatTextFx, resultBanner } from '../core/fx';
+import { FX, floatTextFx, resultBanner } from '../core/fxBus';
 import { Sound } from '../core/sound';
 import { localPlayerWin } from '../profile/profile';
 import { ROLES } from '../data/characters';

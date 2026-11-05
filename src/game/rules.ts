@@ -4,7 +4,7 @@ import { G } from './state';
 import { shuffle } from '../data/cards';
 import { CHAR_GENDER } from '../data/characters';
 import { Sound } from '../core/sound';
-import { discardFx, drawFx } from '../core/fx';
+import { discardFx, drawFx } from '../core/fxBus';
 import { triggerDistMod, triggerHandLimit } from './skillfx';
 import {
   distModOf,

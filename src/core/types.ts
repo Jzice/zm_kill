@@ -617,6 +617,8 @@ export interface PlayerFlags {
   skipDraw?: boolean;
   /** 【银月枪】封锁花色：本角色不能使用或打出该花色的手牌，直到其下个回合开始 */
   blockSuit?: string | null;
+  /** 【通明幻镜】每局限 1 次的判定替换是否已用（整局有效，回合初不清零） */
+  tongmingUsed?: boolean;
 }
 
 export interface Player {

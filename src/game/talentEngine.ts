@@ -19,7 +19,7 @@ import type {
   SkillTiming,
 } from '../core/types';
 import { G } from './state';
-import { FX, drawFx } from '../core/fx';
+import { FX, drawFx } from '../core/fxBus';
 import { addLog, addPlayLog } from './log';
 import { drawCards, discardCard } from './rules';
 import { dealDamage, checkWin, dyingPhase } from './damage';
@@ -1658,6 +1658,35 @@ export async function tryReplaceJudge(judgeOwner: number, judgeCard: Card): Prom
     }
   }
   return judgeCard;
+}
+
+/** 掌门路【通明幻镜】：装备者（被判定者本人）每局限 1 次，判定牌生效前可用一张手牌替换之 */
+export async function tryReplaceJudgeTongming(ownerIdx: number, judgeCard: Card): Promise<Card> {
+  const p = G.players[ownerIdx];
+  if (!p || !p.alive) return judgeCard;
+  if (p.equip.armor?.skill !== 'tongming') return judgeCard;
+  if (p.flags.tongmingUsed) return judgeCard;
+  if (!p.hand.length) return judgeCard;
+  let use = true;
+  if (!p.isAI) {
+    const ch = await waitChoice(
+      ownerIdx,
+      [
+        { label: '【通明幻镜】打出一张手牌替换判定牌（每局限一次）', value: 'yes', skill: true },
+        { label: '不发动', value: 'no' },
+      ],
+      'list',
+    );
+    use = ch === 'yes';
+  }
+  if (!use) return judgeCard;
+  const c = await pickHandCard(ownerIdx, '替换判定牌');
+  if (!c) return judgeCard;
+  p.flags.tongmingUsed = true;
+  discardCard(p, c, false);
+  G.discard.push(judgeCard);
+  addLog(`【通明幻镜】${p.name} 用 ${cardLabel(c)} 替换判定牌`, 'hl');
+  return c;
 }
 
 /** 兼爱：用【攻击】造成伤害时可防止伤害改为令目标摸牌 */

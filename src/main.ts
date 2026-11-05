@@ -30,6 +30,9 @@ import {
   skillRedirectOf,
 } from './game/talentEngine';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
+import { FX as FxFacade, equipFx, getFxDebug, getFxLevel, initFxStage, setFxLevel, setFxTransport, trickCast } from './core/fxBus';
+import { getFxStageStats } from './core/fxStage';
+import { NET } from './net/network';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
 import { activeLoopCount } from './game/loop';
@@ -144,6 +147,8 @@ window.openThemePanel = openThemePanel;
 window.closeThemePanel = closeThemePanel;
 window.setThemeMode = setThemeMode;
 window.setThemeStyle = setThemeStyle;
+window.setFxLevel = setFxLevel;
+window.getFxLevel = getFxLevel;
 window.clickHandCard = clickHandCard;
 window.clickTargetSeat = clickTargetSeat;
 window.handleLocalChoice = handleLocalChoice;
@@ -556,6 +561,14 @@ function bindPlayLogRelayout(): void {
 /* ---- 2. 初始化序列（顺序与原版脚本底部一致） ---- */
 function init(): void {
   applyTheme();
+  // 特效层：须在主题变量写入 body 后初始化（Canvas 调色板读取 CSS 变量）
+  initFxStage();
+  // 仅联机房主广播特效事件；单机与客人端不广播，避免重复播放
+  setFxTransport((event) => {
+    if (NET.isHost && NET.mode === 'host') {
+      NET.broadcast({ type: 'fx_event', event });
+    }
+  });
   restoreSetupPrefs(); // 恢复上次选择的玩家总数 / 回合限时（须在渲染选择器与绑定滑块前）
   initPacks(); // 重建自定义扩展包的运行时注册表（须在选将池渲染前）
   loadSoundPref();
@@ -606,5 +619,20 @@ if (new URLSearchParams(location.search).has('debug')) {
     dealDamage,
     checkWin,
     useSkill,
+  };
+  (window as unknown as { __fxDebug: unknown }).__fxDebug = {
+    stats: getFxDebug,
+    stage: getFxStageStats,
+    level: getFxLevel,
+    /** 冒烟测试主动触发一次特效（房主端会广播 fx_event） */
+    ping: (from = 0) => FxFacade.skillWave(from),
+    /** 五套主题的可视化验收入口 */
+    fx: {
+      blade: (i = 0) => FxFacade.slash(i),
+      ward: (i = 0) => FxFacade.shield(i),
+      spirit: (i = 0) => FxFacade.healGlow(i),
+      talisman: (i = 0) => trickCast(i, '敕令符', 'test'),
+      relic: (i = 0) => equipFx(i, '本命法宝'),
+    },
   };
 }

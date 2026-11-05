@@ -1112,6 +1112,177 @@ sub{bottom:-.16em}
 .kp-detail-title{display:flex;align-items:center;gap:6px;color:var(--gold);font-size:12px;font-weight:700;margin-bottom:2px}
 .kp-detail-unit{font-size:9.5px;color:var(--muted);margin-bottom:4px}
 
+/* ==================================================================
+   仙侠法术特效层 v2：DOM 光环 + Canvas 粒子 + 符箓牌面
+   追加于文件末尾，同特异性下覆盖旧「特效层」规则；旧规则保留作静态降级
+   ================================================================== */
+body{--fx-main:var(--gold);--fx-glow:#d89a20;--fx-spark:var(--parch)}
+.fx-theme-blade{--fx-main:#ffcf7a;--fx-glow:#ff7a4a;--fx-spark:#fff2c8}
+.fx-theme-talisman{--fx-main:#c79bff;--fx-glow:#8a5bff;--fx-spark:#f0dcff}
+.fx-theme-ward{--fx-main:#7fd8ff;--fx-glow:#4a8cff;--fx-spark:#dff4ff}
+.fx-theme-spirit{--fx-main:#7fe7d2;--fx-glow:#3fbf9a;--fx-spark:#dcfff3}
+.fx-theme-relic{--fx-main:var(--gold);--fx-glow:#d89a20;--fx-spark:var(--accent-strong)}
+.fx-theme-neutral{--fx-main:var(--gold);--fx-glow:#8a6d3b;--fx-spark:var(--parch)}
+.fx-layer{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+.fx-layer .fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;mix-blend-mode:screen}
+#themePanel .fx-levels{padding-bottom:10px}
+#themePanel .fx-level{letter-spacing:1px}
+#themePanel .fx-level.active{box-shadow:0 0 14px var(--gold)}
+
+/* 起手蓄光 / 命中十字剑气 */
+.p-card.fx-charge{box-shadow:0 0 22px var(--fx-main),0 0 52px var(--fx-glow),inset 0 0 18px rgba(255,207,122,.35)!important}
+.fx-impact{position:fixed;width:90px;height:90px;z-index:1001;pointer-events:none;animation:fxImpact .55s ease-out forwards}
+.fx-impact .fi-cross{position:absolute;left:50%;top:50%;width:88px;height:3px;transform:translate(-50%,-50%) rotate(-34deg);background:linear-gradient(90deg,transparent,var(--fx-spark),var(--fx-main),transparent);box-shadow:0 0 16px var(--fx-glow);border-radius:2px}
+.fx-impact .fi-cross.b{height:2px;transform:translate(-50%,-50%) rotate(48deg);opacity:.82}
+@keyframes fxImpact{0%{opacity:0;transform:scale(.3)}22%{opacity:1;transform:scale(1.14)}100%{opacity:0;transform:scale(1.75)}}
+
+/* 飞牌：朱砂符牌 + 剑气拖尾 */
+.fly-card{position:fixed;width:52px;height:72px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;pointer-events:none;z-index:1000;font-family:"STKaiti","KaiTi",serif;
+  background:linear-gradient(150deg,#2b160f,#5a2418 46%,#170b08);border:1px solid var(--fx-main);color:var(--fx-spark);
+  box-shadow:0 0 14px var(--fx-glow),0 0 38px rgba(255,122,74,.42),inset 0 0 16px rgba(255,207,122,.22)}
+.fly-card::before{content:'';position:absolute;inset:3px;border:1px solid rgba(255,207,122,.32);border-radius:3px}
+.fly-card .fc-trail{position:absolute;left:50%;top:50%;width:150px;height:3px;transform:translate(-50%,-50%) rotate(-34deg);background:linear-gradient(90deg,transparent,var(--fx-main),var(--fx-spark),transparent);filter:blur(1px);opacity:.9}
+.fly-card .fc-glyph{font-size:25px;line-height:1;color:var(--fx-spark);text-shadow:0 0 12px var(--fx-glow);z-index:1}
+.fly-card .fc-name{font-size:8px;letter-spacing:1px;max-width:46px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;z-index:1;opacity:.9}
+.fly-card.draw{background:linear-gradient(150deg,#3a2a10,#1a1006);border-color:var(--fx-main);box-shadow:0 0 16px var(--fx-glow)}
+.fly-card.draw .fc-glyph{font-size:20px}
+.fly-card.discard{border-color:#7a6a50;filter:brightness(.8);box-shadow:0 0 10px #000}
+
+/* 命中剑气：光核 + 双斜刃 + 斩字 */
+.fx-slash{position:fixed;width:120px;height:120px;z-index:1001;pointer-events:none;animation:fxSlash .85s cubic-bezier(.3,1.5,.5,1) forwards}
+.fx-slash .sl-core{position:absolute;left:50%;top:50%;width:78px;height:78px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--fx-spark),var(--fx-main) 32%,transparent 72%);filter:blur(3px);opacity:.7}
+.fx-slash .sl-cut{position:absolute;left:50%;top:50%;width:140px;height:6px;z-index:1;transform:translate(-50%,-50%) rotate(-33deg);background:linear-gradient(90deg,transparent,var(--fx-spark),var(--fx-main),var(--fx-spark),transparent);box-shadow:0 0 22px var(--fx-glow),0 0 8px var(--fx-spark);border-radius:3px}
+.fx-slash .sl-cut.b{width:100px;height:4px;transform:translate(-50%,-50%) rotate(52deg)}
+.fx-slash .sl-word{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);font:900 44px "STKaiti","KaiTi",serif;color:var(--fx-spark);text-shadow:0 0 18px var(--fx-glow),0 0 40px var(--fx-glow)}
+@keyframes fxSlash{0%{opacity:0;transform:scale(.3) rotate(-12deg)}22%{opacity:1;transform:scale(1.24) rotate(0)}55%{transform:scale(1.05)}100%{opacity:0;transform:scale(1.6) translateY(-24px)}}
+
+/* 八卦护罩 */
+.shield-fx{position:fixed;width:124px;height:124px;border-radius:50%;pointer-events:none;z-index:1000;border:1px solid var(--fx-main);
+  background:radial-gradient(circle,rgba(127,216,255,.2),rgba(74,140,255,.07) 60%,transparent 74%);
+  box-shadow:0 0 32px var(--fx-glow),inset 0 0 28px rgba(127,216,255,.3);animation:fxWard .72s ease-out forwards}
+.shield-fx::before{content:'';position:absolute;inset:9px;border:1px dashed rgba(127,216,255,.62);border-radius:50%;animation:fxSpin 2s linear infinite}
+.shield-fx .ward-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 28px "STKaiti","KaiTi",serif;color:var(--fx-spark);text-shadow:0 0 16px var(--fx-glow)}
+.shield-fx .ward-trigram{position:absolute;left:50%;top:50%;font-size:13px;font-style:normal;color:var(--fx-main);text-shadow:0 0 8px var(--fx-glow);transform:translate(-50%,-50%) rotate(calc(var(--i) * 45deg)) translateY(-50px)}
+@keyframes fxWard{0%{opacity:0;transform:scale(.35)}28%{opacity:1;transform:scale(1.12)}100%{opacity:0;transform:scale(1.55)}}
+@keyframes fxSpin{to{transform:rotate(360deg)}}
+
+/* 青碧灵光 */
+.heal-fx{position:fixed;width:92px;height:92px;border-radius:50%;pointer-events:none;z-index:1000;
+  background:radial-gradient(circle,rgba(127,231,210,.55),rgba(63,191,154,.16) 54%,transparent 72%);
+  box-shadow:0 0 30px var(--fx-glow);animation:fxHeal .95s ease-out forwards}
+.heal-fx .heal-orbit{position:absolute;inset:12px;border:1px solid rgba(127,231,210,.6);border-radius:50%;animation:fxSpin 1.5s linear infinite}
+.heal-fx .heal-orbit.b{inset:22px;border-style:dashed;animation-direction:reverse}
+.heal-fx .heal-rune{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 24px "STKaiti","KaiTi",serif;color:var(--fx-spark);text-shadow:0 0 14px var(--fx-glow)}
+@keyframes fxHeal{0%{opacity:0;transform:scale(.3)}38%{opacity:1;transform:scale(1.24)}100%{opacity:0;transform:scale(1.7) translateY(-26px)}}
+
+/* 法阵涟漪 / 连击剑环 */
+.skill-ripple{position:fixed;width:156px;height:156px;border-radius:50%;pointer-events:none;z-index:1000;border:2px solid var(--fx-main);
+  background:repeating-conic-gradient(from 0deg,rgba(199,155,255,.16) 0deg 5deg,transparent 5deg 18deg);
+  box-shadow:0 0 36px var(--fx-glow),inset 0 0 26px rgba(199,155,255,.24);animation:fxRipple .9s ease-out forwards}
+.skill-ripple .sr-disc{position:absolute;inset:16px;border:1px solid rgba(240,220,255,.6);border-radius:50%}
+.skill-ripple .sr-rune{position:absolute;left:50%;top:50%;font:700 15px "STKaiti","KaiTi",serif;font-style:normal;color:var(--fx-spark);text-shadow:0 0 10px var(--fx-glow);transform:translate(-50%,-50%) rotate(calc(var(--i) * 90deg)) translateY(-58px)}
+.skill-ripple.combo{border-color:#ffd166;box-shadow:0 0 40px #ffd166}
+@keyframes fxRipple{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1.1) rotate(60deg)}100%{opacity:0;transform:scale(1.8) rotate(150deg)}}
+
+/* 判定符牌 */
+.judge-fx{position:fixed;width:64px;height:92px;border-radius:5px;pointer-events:none;z-index:1001;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--ink);font-weight:600;background:linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--fx-main);
+  box-shadow:0 0 26px var(--fx-glow),inset 0 0 18px rgba(138,91,255,.18);animation:fxJudgeFlip .9s cubic-bezier(.3,1.4,.5,1) forwards}
+.judge-fx .jf-seal{position:absolute;top:4px;right:5px;font:700 11px "STKaiti","KaiTi",serif;font-style:normal;color:#b02a1a;border:1px solid rgba(176,42,26,.65);border-radius:2px;padding:0 2px;transform:rotate(8deg)}
+.judge-fx .jsuit{font-size:20px}.judge-fx .jnum{font-size:11px;color:#7a6a50}
+.judge-fx .jname{font-size:8px;margin-top:3px;color:#8a1a10;border-top:1px solid #c0b090;padding-top:2px;width:80%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.judge-fx.red{color:#c0392b}.judge-fx.black{color:#1a1a1a}
+@keyframes fxJudgeFlip{0%{opacity:0;transform:translateY(30px) rotateY(180deg) scale(.5)}30%{opacity:1;transform:translateY(0) rotateY(360deg) scale(1.1)}70%{opacity:1;transform:translateY(0) rotateY(360deg) scale(1.1)}100%{opacity:0;transform:translateY(-50px) rotateY(360deg) scale(.9)}}
+
+/* 阵亡：墨色碎光 */
+.death-fx{position:fixed;width:190px;text-align:center;pointer-events:none;z-index:1002;font-family:"STKaiti","KaiTi",serif;animation:fxDeath 1.25s ease-out forwards}
+.death-fx .df-title{font-size:46px;font-weight:900;color:#cfc4b0;text-shadow:0 0 18px #000,0 0 38px var(--fx-glow);line-height:1.1;letter-spacing:8px}
+.death-fx .df-role{margin-top:4px;font-size:19px;font-weight:800;color:var(--gold);text-shadow:0 0 14px #000,0 0 26px #c0392b}
+.death-fx .df-killer{margin-top:3px;font-size:13px;color:var(--parch2);text-shadow:0 0 10px #000;opacity:.92}
+.death-fx .df-shard{position:absolute;top:-8px;width:8px;height:8px;background:var(--fx-main);box-shadow:0 0 10px var(--fx-glow);animation:fxShard 1.2s linear forwards}
+.death-fx .df-shard.s1{left:18%}.death-fx .df-shard.s2{left:50%;animation-delay:.14s}.death-fx .df-shard.s3{left:82%;animation-delay:.28s}
+@keyframes fxShard{0%{transform:translateY(0) rotate(0);opacity:0}18%{opacity:.9}100%{transform:translateY(120px) rotate(280deg);opacity:0}}
+@keyframes fxDeath{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.35)}100%{opacity:0;transform:scale(.85) translateY(-70px)}}
+
+/* 浮字 */
+.float-text{position:fixed;font-size:28px;font-weight:900;pointer-events:none;z-index:1001;font-family:"STKaiti","KaiTi",serif;animation:fxFloatUp 1.1s cubic-bezier(.2,1,.5,1) forwards;text-shadow:0 0 12px currentColor,2px 2px 6px #000}
+@keyframes fxFloatUp{0%{opacity:0;transform:translateY(0) scale(.3)}15%{opacity:1;transform:translateY(-15px) scale(1.3)}35%{transform:translateY(-25px) scale(1.1)}100%{opacity:0;transform:translateY(-80px) scale(.9)}}
+
+/* 技能释放：符箓 + 双层逆转法阵 */
+.trick-fx{position:fixed;pointer-events:none;z-index:1001}
+.trick-ring{position:absolute;left:0;top:0;width:132px;height:132px;border-radius:50%;border:2px solid var(--fx-main);transform:translate(-50%,-50%);box-shadow:0 0 24px var(--fx-glow),inset 0 0 20px rgba(199,155,255,.28)}
+.trick-ring.tr2{width:100px;height:100px;border-style:dashed;opacity:.8}
+.trick-card{position:absolute;left:0;top:0;transform:translate(-50%,-50%);width:62px;height:86px;border-radius:5px;border:2px solid var(--fx-main);
+  background:linear-gradient(155deg,#f4e6c8,#e2d0a8 55%,#c9b58c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-shadow:0 0 26px var(--fx-glow),inset 0 0 14px rgba(138,91,255,.2)}
+.trick-card::before{content:'';position:absolute;inset:3px;border:1px solid rgba(176,42,26,.45);border-radius:3px}
+.trick-card .tc-seal{position:absolute;top:4px;left:5px;font:700 10px "STKaiti","KaiTi",serif;font-style:normal;color:#b02a1a;border:1px solid rgba(176,42,26,.7);padding:0 2px;transform:rotate(-9deg)}
+.trick-card .tc-glyph{font:900 26px "STKaiti","KaiTi",serif;color:#7a1c12;text-shadow:0 0 8px rgba(176,42,26,.5)}
+.trick-card .tc-name{font-size:9px;font-weight:700;color:#5a2418;max-width:54px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 群攻法阵扩散 */
+.aoe-wave{position:fixed;width:86px;height:86px;border-radius:50%;border:3px solid var(--fx-main);transform:translate(-50%,-50%);pointer-events:none;z-index:1000;
+  box-shadow:0 0 28px var(--fx-glow),inset 0 0 22px rgba(199,155,255,.3)}
+.aoe-wave .aw-rune{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 24px "STKaiti","KaiTi",serif;font-style:normal;color:var(--fx-spark);text-shadow:0 0 14px var(--fx-glow)}
+
+/* 法宝凝形 */
+.equip-fx{position:fixed;transform:translate(-50%,-50%);pointer-events:none;z-index:1001;display:flex;align-items:center;gap:5px;font-family:"STKaiti","KaiTi",serif}
+.equip-fx .eq-seal{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--fx-main);border-radius:50%;font:700 14px "STKaiti","KaiTi",serif;font-style:normal;color:var(--fx-spark);box-shadow:0 0 16px var(--fx-glow)}
+.equip-fx .eq-name{font-size:12px;font-weight:700;color:var(--fx-spark);text-shadow:0 0 10px var(--fx-glow),2px 2px 4px #000;white-space:nowrap}
+
+/* 结算横幅 */
+.result-banner{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:1003;pointer-events:none;display:flex;align-items:center;gap:12px;padding:14px 30px;border-radius:10px;
+  background:linear-gradient(150deg,rgba(30,16,10,.96),rgba(9,6,12,.96));border:1px solid var(--gold);
+  box-shadow:0 0 46px rgba(245,197,66,.42),inset 0 0 26px rgba(245,197,66,.12);overflow:hidden}
+.result-banner .rb-ray{position:absolute;inset:-60%;background:repeating-conic-gradient(from 0deg,rgba(245,197,66,.1) 0deg 4deg,transparent 4deg 18deg);animation:fxSpin 8s linear infinite}
+.result-banner .rb-icon{position:relative;font-size:34px;color:var(--gold);text-shadow:0 0 20px var(--gold)}
+.result-banner .rb-text{position:relative;font-size:24px;font-weight:900;letter-spacing:6px;color:var(--accent-strong);font-family:"STKaiti","KaiTi",serif;text-shadow:0 0 18px rgba(245,197,66,.7)}
+.result-banner.lose{border-color:#8a8070;box-shadow:0 0 30px rgba(0,0,0,.7)}
+.result-banner.lose .rb-text{color:#b0a898;text-shadow:none}
+
+/* 胜利动画：卦符 + 仙霞光柱（沿用既有 vic-* 动画关键帧） */
+.vic-fx .vic-icon{font-family:"STKaiti","KaiTi",serif;color:var(--accent-strong);text-shadow:0 0 24px var(--gold),0 0 54px var(--gold);font-size:58px}
+.vic-fx .vic-word{font-family:"STKaiti","KaiTi",serif;color:var(--accent-strong);text-shadow:0 0 16px var(--gold),0 2px 10px #000}
+.vic-rebel .vic-fire{font-size:0;width:120px;height:120px;left:50%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,207,122,.75),rgba(255,122,74,.35) 45%,transparent 72%);filter:blur(4px)}
+.vic-spy .vic-cards{font-family:"STKaiti","KaiTi",serif;color:#e2c8ff;text-shadow:0 0 18px #8a5bff}
+.vic-lose .vic-shard{background:linear-gradient(140deg,#cfc4b0,#6a5f52);box-shadow:0 0 10px rgba(0,0,0,.6)}
+
+/* 出牌区：符箓纸纹 + 朱砂印 + 灵光描边 */
+.play-card{width:42px;height:58px;position:relative;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(155deg,#f4e6c8,#e2d0a8 55%,#cbb68e);border:1px solid var(--gold);border-radius:4px;color:var(--ink);font-weight:600;font-size:10px;
+  box-shadow:0 0 14px rgba(245,197,66,.55),0 0 30px rgba(245,197,66,.22),0 2px 7px rgba(0,0,0,.7);
+  animation:fxCardIn .42s cubic-bezier(.3,1.4,.5,1)}
+.play-card::before{content:'';position:absolute;inset:2px;border:1px solid rgba(176,42,26,.28);border-radius:2px;pointer-events:none}
+.play-card::after{content:'';position:absolute;inset:-2px;border-radius:6px;background:linear-gradient(120deg,transparent 20%,rgba(255,240,184,.55) 50%,transparent 80%);opacity:0;pointer-events:none;animation:fxCardSheen 1.8s ease-in-out .35s 2}
+.play-card .pc-seal{position:absolute;top:3px;left:3px;font:700 8px "STKaiti","KaiTi",serif;font-style:normal;color:#b02a1a;border:1px solid rgba(176,42,26,.6);border-radius:2px;padding:0 1px;transform:rotate(-10deg);opacity:.85}
+.play-card .pcsuit{position:absolute;top:2px;right:3px;font-size:7px}
+.play-card .pcnum{position:absolute;top:2px;left:15px;font-size:6px;color:#7a6a50}
+.play-card .pcname{font-family:"STKaiti","KaiTi",serif;color:#7a1c12;font-size:10px;text-align:center;line-height:1.1;max-width:38px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
+.play-card .pcowner{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:5.5px;color:#6a5238;background:rgba(255,255,255,.35);border-radius:0 0 2px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-card.red .pcsuit{color:#c0392b}
+.play-card.skill{border-color:#b57fff;box-shadow:0 0 14px rgba(181,127,255,.7),0 0 30px rgba(181,127,255,.28),0 2px 7px rgba(0,0,0,.7)}
+.play-card.equip{border-color:#7fe7d2;box-shadow:0 0 14px rgba(127,231,210,.65),0 2px 7px rgba(0,0,0,.7)}
+.play-card.fade-out{animation:fxCardOut .4s ease-in forwards}
+@keyframes fxCardIn{from{opacity:0;transform:translateY(28px) scale(.4) rotate(-16deg)}60%{opacity:1;transform:translateY(-4px) scale(1.1)}to{opacity:1;transform:none}}
+@keyframes fxCardOut{to{opacity:0;transform:translateY(-22px) scale(.5) rotate(12deg)}}
+@keyframes fxCardSheen{0%,100%{opacity:0}45%{opacity:.7}}
+
+/* 减弱动效 / 窄屏降级 */
+@media (prefers-reduced-motion:reduce){
+  .fx-layer .fx-canvas{display:none}
+  .fx-impact,.fx-slash,.shield-fx,.heal-fx,.skill-ripple,.judge-fx,.death-fx,.float-text,.play-card,.result-banner .rb-ray,.vic-fx>*{animation:none!important}
+  .play-card::after{display:none}
+}
+@media (max-width:600px){
+  .shield-fx{width:100px;height:100px}
+  .shield-fx .ward-trigram{font-size:11px;transform:translate(-50%,-50%) rotate(calc(var(--i) * 45deg)) translateY(-40px)}
+  .skill-ripple{width:120px;height:120px}
+  .skill-ripple .sr-rune{transform:translate(-50%,-50%) rotate(calc(var(--i) * 90deg)) translateY(-44px)}
+  .trick-ring{width:104px;height:104px}.trick-ring.tr2{width:78px;height:78px}
+  .fly-card{width:44px;height:62px}.fly-card .fc-trail{width:100px}
+  .fx-slash{transform:scale(.8)}
+}
+
 /* ===== 大模型接管：思考指示 + 设置弹窗 ===== */
 .p-card.thinking{border-color:#f5c542 !important;box-shadow:0 0 14px rgba(245,197,66,.55),inset 0 0 20px rgba(0,0,0,.6);animation:thinkPulse 1.4s ease-in-out infinite}
 @keyframes thinkPulse{0%,100%{box-shadow:0 0 8px rgba(245,197,66,.35),inset 0 0 20px rgba(0,0,0,.6)}50%{box-shadow:0 0 20px rgba(245,197,66,.8),inset 0 0 20px rgba(0,0,0,.6)}}

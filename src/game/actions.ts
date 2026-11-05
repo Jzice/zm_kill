@@ -1,7 +1,7 @@
 /* ==================== 出牌 ==================== */
 import type { Attr, Card, ChoiceOption, DamageType, EquipSlot, Player } from '../core/types';
 import { G } from './state';
-import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fx';
+import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fxBus';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
@@ -37,6 +37,7 @@ import {
   tryPreventShaDamage,
   tryReflect,
   tryReplaceJudge,
+  tryReplaceJudgeTongming,
 } from './talentEngine';
 import { dyingPhase } from './damage';
 import { isZml } from '../core/mode';
@@ -493,9 +494,9 @@ export async function useSkill(
     card.name,
     card.sub,
     card.sub === 'nanman' || card.sub === 'wanjian'
-      ? '#e74c3c'
+      ? '#c79bff'
       : card.sub === 'taoyuan'
-        ? '#27ae60'
+        ? '#7fe7d2'
         : card.sub === 'lebu' || card.sub === 'shandian'
           ? '#f5c542'
           : '#b57fff',
@@ -591,7 +592,7 @@ export async function useSkill(
         if (!canBeTarget(i, 'skill', '魔灾泛起', card.suit)) continue;
         targets.push(i);
       }
-      await aoeFx(attackerIdx, targets, '#e74c3c');
+      await aoeFx(attackerIdx, targets, '#c79bff');
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
@@ -615,7 +616,7 @@ export async function useSkill(
         if (!canBeTarget(i, 'skill', '万剑钻心', card.suit)) continue;
         targets.push(i);
       }
-      await aoeFx(attackerIdx, targets, '#f39c12');
+      await aoeFx(attackerIdx, targets, '#ffcf7a');
       for (const i of targets) {
         const t = G.players[i];
         if (!t.alive) continue;
@@ -1020,6 +1021,7 @@ export async function useSkill(
       // 目标判定（目标可改判，与延时锦囊口径一致）
       let mjc = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
       mjc = await tryReplaceJudge(targetIdx, mjc);
+      mjc = await tryReplaceJudgeTongming(targetIdx, mjc);
       addLog(`${mt.name} 判定：${mjc.suit}${mjc.num}`, 'hl');
       await FX.judge(targetIdx, mjc);
       G.discard.push(mjc);

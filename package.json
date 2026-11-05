@@ -18,6 +18,7 @@
     "smoke:net": "node scripts/smoke-net.mjs",
     "smoke:net:settle": "node scripts/smoke-net-settle.mjs",
     "smoke:cards": "node scripts/smoke-cards.mjs",
+    "smoke:fx": "node scripts/smoke-fx.mjs",
     "smoke:zml": "node scripts/smoke-zml.mjs",
     "smoke:tiesuo": "node scripts/smoke-tiesuo.mjs",
     "ai:eval": "node scripts/ai-eval.mjs",

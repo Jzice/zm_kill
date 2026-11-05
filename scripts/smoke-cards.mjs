@@ -94,11 +94,13 @@ const BASE = {
   // 基本牌（攻击 / 防御 / 恢复 / 增益）
   sha: 20, huo: 5, lei: 5, shan: 15, tao: 8, jiu: 5,
   // 通用锦囊
-  wuzhong: 7, guohe: 8, shunshou: 5, juedou: 3, nanman: 6, wanjian: 2,
-  taoyuan: 2, wuxie: 4, lebu: 5, shandian: 2, jiedao: 2, wugu: 2,
+  // ZML_SKILL_EXTRA 删5补5 后的子类分布：七窍玲珑心 / 通明经 改挂 wuzhong，
+  // 楚秦门规（lebu）与本家孤女（guohe）移除，黄庭经改挂 guanding
+  wuzhong: 8, guohe: 7, shunshou: 5, juedou: 3, nanman: 6, wanjian: 2,
+  taoyuan: 2, wuxie: 4, lebu: 4, shandian: 2, jiedao: 2, wugu: 2,
   tiesuo: 6, huogong: 6, bingliang: 2,
   // 角色专属 / 机制锦囊（命演术改用 mingyan 新效；观顶三卡迁至 guanding）
-  mingyan: 1, guanding: 3, tongshi: 2, guidai: 2, daizheng: 1, quanzhi: 1, dan: 3,
+  mingyan: 1, guanding: 4, tongshi: 2, guidai: 2, daizheng: 1, quanzhi: 1, dan: 3,
   // 装备（兵器 / 防具 / 坐骑 / 法宝）
   weapon: 16, armor: 7, 'horse+': 6, 'horse-': 5, fabao: 62,
 };

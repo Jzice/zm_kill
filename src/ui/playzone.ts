@@ -1,5 +1,6 @@
 /* ==================== 出牌区 ==================== */
 import type { PlayCardView } from '../core/types';
+import { escapeHtml } from '../core/dom';
 import { attrChip, taoismChip } from '../data/zml/attr';
 
 export function showPlayCard(card: PlayCardView, ownerName: string, ownerColor: string): void {
@@ -14,7 +15,7 @@ export function showPlayCard(card: PlayCardView, ownerName: string, ownerColor: 
   if (ownerColor) e.style.borderColor = ownerColor;
   // 掌门路：属性 / 道统徽标（经典模式无字段，不渲染）
   const chips = `${card.attr ? attrChip(card.attr) : ''}${card.taoism ? taoismChip(card.taoism) : ''}`;
-  e.innerHTML = `${chips}<span class="pcsuit">${card.suit}</span><span class="pcnum">${card.num}</span><span class="pcname">${card.name}</span><span class="pcowner">${ownerName || ''}</span>`;
+  e.innerHTML = `<i class="pc-seal">敕</i>${chips}<span class="pcsuit">${escapeHtml(card.suit)}</span><span class="pcnum">${escapeHtml(card.num)}</span><span class="pcname">${escapeHtml(card.name)}</span><span class="pcowner">${escapeHtml(ownerName || '')}</span>`;
   while (z.querySelectorAll('.play-card').length >= 4) {
     const f = z.querySelector('.play-card');
     if (f) f.remove();

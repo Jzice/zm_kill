@@ -1,7 +1,7 @@
 /* ==================== 回合流程 ==================== */
 import type { Card, ChoiceOption, DamageType, PendingType } from '../core/types';
 import { G } from './state';
-import { FX } from '../core/fx';
+import { FX } from '../core/fxBus';
 import { FACTIONS } from '../data/factions';
 import { C, SHA_SUBS } from '../data/cards';
 import { trickDefOf } from '../data/knowledgeTricks';
@@ -18,7 +18,7 @@ import {
   fabaoSkillOf,
 } from './rules';
 import { Sound } from '../core/sound';
-import { equipFx } from '../core/fx';
+import { equipFx } from '../core/fxBus';
 import { render } from '../ui/render';
 import { showPlayCard } from '../ui/playzone';
 import { EQUIP_DESC, showPlayHint } from '../ui/hint';
@@ -64,6 +64,7 @@ import {
   shunshouNoDist,
   tryReplaceDraw,
   tryReplaceJudge,
+  tryReplaceJudgeTongming,
   cleanupCopiedTalents,
 } from './talentEngine';
 import { NET, scheduleSync } from '../net/network';
@@ -151,6 +152,8 @@ export async function judgePhase(p: (typeof G.players)[number]): Promise<void> {
     let card = G.deck.pop() || C('判定', 'basic', 'none', '♠', 1);
     // 改判（张衡·地动仪 / 笛卡尔·我思故我在）：判定牌生效前可用手牌替换
     card = await tryReplaceJudge(G.players.indexOf(p), card);
+    // 掌门路【通明幻镜】：被判定者本人每局限 1 次用手牌替换判定牌
+    card = await tryReplaceJudgeTongming(G.players.indexOf(p), card);
     addLog(`${p.name} 判定：${card.suit}${card.num}`, 'hl');
     await FX.judge(G.players.indexOf(p), card);
     if (j.judgeType === 'lebu') {
@@ -506,7 +509,7 @@ export async function playPhase(idx: number): Promise<void> {
         tgt = tgts[0];
         second = tgts[1] ?? null;
       } else if (
-        ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'mingyan'].includes(card.sub) ||
+        ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'mingyan', 'guidai', 'daizheng', 'quanzhi'].includes(card.sub) ||
         ONE_TARGET_TRICKS.includes(card.sub) ||
         DELAY_TRICK_SUBS.includes(card.sub) ||
         trickDefOf(card.sub)?.target === 'one'

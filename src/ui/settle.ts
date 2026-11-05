@@ -6,7 +6,7 @@ import { ROLES, ROLE_ICON } from '../data/characters';
 import { FACTIONS } from '../data/factions';
 import { NET } from '../net/network';
 import { G } from '../game/state';
-import { victoryFx, type WinCamp } from '../core/fx';
+import { victoryFx, claimFx, type WinCamp } from '../core/fxBus';
 import { clearPlayZone } from './playzone';
 import { renderSetupSummary } from './lobby';
 import { refreshProfileUI } from '../profile/profile';
@@ -132,7 +132,8 @@ export function showSettle(info: SettleInfo): void {
       <button class="btn" onclick="settleReturn()">返回</button>
     </div>`;
   modal.classList.add('show');
-  victoryFx(camp, 'settleHero');
+  // 房主广播的胜利特效可能先于本地结算面板到达，用短时窗口认领避免双播
+  if (claimFx('victory', camp)) victoryFx(camp, 'settleHero');
 }
 
 /** 关闭结算面板 */

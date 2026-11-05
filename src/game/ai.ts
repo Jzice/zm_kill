@@ -3,7 +3,7 @@ import type { Card, Player } from '../core/types';
 import { G } from './state';
 import { sleep } from '../core/dom';
 import { Sound } from '../core/sound';
-import { equipFx } from '../core/fx';
+import { equipFx } from '../core/fxBus';
 import { FACTIONS } from '../data/factions';
 import { addChat } from './chat';
 import { addLog, addPlayLog } from './log';

@@ -7,7 +7,7 @@
  */
 import type { Player, Talent, SkillEffect } from '../core/types';
 import { G } from './state';
-import { FX } from '../core/fx';
+import { FX } from '../core/fxBus';
 import { addLog, addPlayLog } from './log';
 import { hasTalent, drawCards, discardCard } from './rules';
 import { render } from '../ui/render';
