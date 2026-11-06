@@ -130,6 +130,12 @@ function addFavor(saved: number, saver: number): void {
   m.set(saver, (m.get(saver) || 0) + 1);
 }
 
+/** 外部事件记仇（如【全知天眼】探听本命 → 目标对使用者 +1 敌意） */
+export function noteGrudge(victim: number, attacker: number): void {
+  if (victim < 0 || attacker < 0 || victim === attacker) return;
+  addGrudge(victim, attacker);
+}
+
 export function grudgeOf(o: number, t: number): number {
   return grudges.get(o)?.get(t) || 0;
 }

@@ -21,6 +21,17 @@ export function C(
 export const SHA_SUBS: string[] = ['sha', 'huo', 'lei'];
 
 /**
+ * 掌门路原生「必须指定单个目标」的锦囊 sub。
+ * 出牌阶段目标选择（turn.ts）与【兼爱】转移名单（actions.ts）共用这一份，
+ * 避免两份硬编码名单漂移导致「可选目标却不可转移」。
+ * 扩展包单体锦囊见 `cardCatalog.ONE_TARGET_TRICKS`，延时类见 `DELAY_TRICK_SUBS`。
+ */
+export const ZML_SINGLE_TARGET_SUBS: string[] = [
+  'guohe', 'shunshou', 'juedou', 'lebu', 'huogong',
+  'mingyan', 'guidai', 'daizheng', 'quanzhi',
+];
+
+/**
  * 构建牌堆。
  *
  * 掌门路（zml）/ 开辟战争（war）统一走修真牌堆 `buildZmlDeck`（见 src/data/zml/cards.zml.ts）。
@@ -31,7 +42,7 @@ export function buildDeck(_opts?: { packs?: CardPackId[]; mode?: GameMode }): Ca
 }
 
 /**
- * 掌门路修真牌堆（234 张）：按 src/data/zml/cards.zml.ts 的定义投放。
+ * 掌门路修真牌堆（229 张）：按 src/data/zml/cards.zml.ts 的定义投放。
  * 所有 sub 复用现有引擎 key，因此结算 / 判定 / AI 分支无需任何改动；
  * 仅 name（修真卡名）与 subtitle（卡面副题）不同。
  */

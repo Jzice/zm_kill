@@ -31,6 +31,8 @@ export function timerActionText(type: PendingType): string {
       return '取消选择';
     case 'shan':
       return '承受伤害';
+    case 'response':
+      return '放弃出牌';
     case 'rescue':
       return '放弃自救';
     case 'discard':
@@ -60,6 +62,8 @@ export function defaultChoiceFor(type: PendingType, options: ChoiceOption[]): st
       return has('none') ?? byLabel(['承受']) ?? last;
     case 'rescue':
       return has('giveup') ?? byLabel(['放弃']) ?? last;
+    case 'response':
+      return has('pass') ?? byLabel(['放弃']) ?? last;
     case 'discard':
       return options[0].value; // 自动弃置一张，循环继续直到满足手牌上限
     default:

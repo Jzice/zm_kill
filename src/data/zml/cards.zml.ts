@@ -64,7 +64,7 @@ export const ZML_BASIC: ZmlCardDef[] = [
   { sub: 'jiu', name: '三才培元丹', subtitle: '增益', type: 'basic', count: 1, desc: '本回合下一张【攻击】伤害 +1；濒死时可当【回春丹】', src: 'docs/md/物事/丹药.md · 三才培元丹（增金丹修为）' },
 ];
 
-/* ---------------- 锦囊牌 55 张 ---------------- */
+/* ---------------- 锦囊牌 56 张（通用 47 + 原著机制 9） ---------------- */
 export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'wuxie', name: '不在算中', type: 'skill', count: 4, desc: '抵消一张锦囊：对方推演落空、算计不着', src: 'docs/md/角色/楚秦门/03.金丹/齐休.md【不在算中】；docs/md/技能/命隐符.md' },
   { sub: 'wuzhong', name: '趋吉避凶诀', subtitle: '趋吉避凶诀', type: 'skill', count: 4, desc: '摸 2 张牌', src: 'docs/md/物事/功法.md · 趋吉避凶诀楚慧心改（一阶上品）' },
@@ -90,14 +90,16 @@ export const ZML_TRICK: ZmlCardDef[] = [
   { sub: 'dan', name: '筑基丹', subtitle: '修为丹', type: 'skill', count: 3, desc: '服用后修为 +2（辅助冲击筑基的关键丹药；修为满足时可在出牌阶段突破）', src: 'docs/md/物事/丹药.md · 筑基丹（一阶极品，辅助冲击筑基）；docs/md/技能/筑基丹.md' },
 ];
 
-/** 新增修真锦囊的 sub（需在 actions.ts 中结算） */
-export const ZML_NEW_TRICK_SUBS: string[] = ['guidai', 'daizheng', 'mingyan', 'tongshi', 'quanzhi', 'dan'];
+/** 新增修真锦囊的 sub（需在 actions.ts 的 switch 中逐条结算） */
+export const ZML_NEW_TRICK_SUBS: string[] = [
+  'guidai', 'daizheng', 'mingyan', 'guanding', 'tongshi', 'quanzhi', 'dan',
+];
 
-/* ---------------- 装备牌 36 张 ---------------- */
+/* ---------------- 装备牌 38 张 ---------------- */
 export const ZML_EQUIP: ZmlCardDef[] = [
   /* 兵器法宝 15（品阶映射攻击范围；仅作装备；含新增 5 把无形剑 / 七星斩元剑） */
   { sub: 'weapon', name: '灵狐剑匣', type: 'equip', count: 2, extra: { range: 1, skill: 'liannu' }, desc: '攻击范围 1；【匣中万剑】你使用【攻击】无次数限制', src: 'docs/md/物事/法宝/法宝列表.md（齐妆本命法宝）' },
-  { sub: 'weapon', name: '伪无形剑', type: 'equip', count: 1, extra: { range: 4 }, desc: '攻击范围 4；【无形】不可被【破阵符】/【敛息诀】指定', src: 'docs/md/物事/法器.md（莫剑心冰源岛炼制三十年）' },
+  { sub: 'weapon', name: '伪无形剑', type: 'equip', count: 1, extra: { range: 4, wuxing: true }, desc: '攻击范围 4；【无形】不可被【破阵符】/【敛息诀】指定', src: 'docs/md/物事/法器.md（莫剑心冰源岛炼制三十年）' },
   { sub: 'weapon', name: '月影玄冰剑', type: 'equip', count: 1, extra: { range: 2, skill: 'hanbing' }, desc: '攻击范围 2；命中后改为弃置目标 2 张牌', src: 'docs/md/技能/月影玄冰剑.md（二阶上品，【冰封刃】）' },
   { sub: 'weapon', name: '心生蜂云剑', type: 'equip', count: 1, extra: { range: 3, skill: 'cixiong' }, desc: '攻击范围 3；命中后可令目标弃 1 张牌', src: 'docs/md/技能/心生蜂云剑.md（三十六把二阶极品飞剑）' },
   { sub: 'weapon', name: '洼角云刀', type: 'equip', count: 1, extra: { range: 3, skill: 'qinglong' }, desc: '攻击范围 3；目标打出【防御】后你可再出【攻击】', src: 'docs/md/技能/洼角云刀.md（三阶极品，内有电光）' },
@@ -108,20 +110,20 @@ export const ZML_EQUIP: ZmlCardDef[] = [
   { sub: 'weapon', name: '七剑斩元星', type: 'equip', count: 1, extra: { range: 2, skill: 'zhangba' }, desc: '攻击范围 2；可弃 2 张牌当【攻击】使用', src: 'docs/md/技能/七剑斩元星.md' },
 
   /* 幻日 / 幻月 / 幻星 / 幻影四剑与七星斩元剑（四阶无形剑，属性见 docs/md/物事/法器.md） */
-  { sub: 'weapon', name: '幻日无形剑', type: 'equip', count: 1, extra: { range: 4, skill: 'qinggang' }, desc: '攻击范围 4；【破甲】你使用的【攻击】无视目标护身法器；【无形】不可被【破阵符】/【敛息诀】指定（四阶主剑，幻日照耀方入无形）', src: 'docs/md/物事/法器.md · 四阶法器（幻日无形）' },
-  { sub: 'weapon', name: '幻月无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'hanbing' }, desc: '攻击范围 3；命中后改为弃置目标 2 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻月无形）' },
-  { sub: 'weapon', name: '幻星无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'cixiong' }, desc: '攻击范围 3；命中后可令目标弃 1 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻星无形）' },
-  { sub: 'weapon', name: '幻影无形剑', type: 'equip', count: 1, extra: { range: 2, skill: 'qinglong' }, desc: '攻击范围 2；目标打出【防御】后你可再出【攻击】；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻影无形）' },
+  { sub: 'weapon', name: '幻日无形剑', type: 'equip', count: 1, extra: { range: 4, skill: 'qinggang', wuxing: true }, desc: '攻击范围 4；【破甲】你使用的【攻击】无视目标护身法器；【无形】不可被【破阵符】/【敛息诀】指定（四阶主剑，幻日照耀方入无形）', src: 'docs/md/物事/法器.md · 四阶法器（幻日无形）' },
+  { sub: 'weapon', name: '幻月无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'hanbing', wuxing: true }, desc: '攻击范围 3；命中后改为弃置目标 2 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻月无形）' },
+  { sub: 'weapon', name: '幻星无形剑', type: 'equip', count: 1, extra: { range: 3, skill: 'cixiong', wuxing: true }, desc: '攻击范围 3；命中后可令目标弃 1 张牌；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻星无形）' },
+  { sub: 'weapon', name: '幻影无形剑', type: 'equip', count: 1, extra: { range: 2, skill: 'qinglong', wuxing: true }, desc: '攻击范围 2；目标打出【防御】后你可再出【攻击】；【无形】不可被【破阵符】/【敛息诀】指定（需幻日照耀）', src: 'docs/md/物事/法器.md · 四阶法器（幻影无形）' },
   { sub: 'weapon', name: '七星斩元剑', type: 'equip', count: 1, extra: { range: 2, skill: 'guding' }, desc: '攻击范围 2；目标无手牌时伤害 +1（七星剑诀·斩元星）', src: 'docs/md/角色/齐云/04.元婴/楚问.md（斩元剑）；docs/md/技能/七剑斩元星.md' },
 
-  /* 护身法器 6（法袍 / 法像 / 阵法） */
+  /* 护身法器 5 种 6 张（法袍 / 法像 / 阵法） */
   { sub: 'armor', name: '猴面金身法像', type: 'equip', count: 1, extra: { skill: 'bagua', attr: 'metal' }, desc: '护身：手中无【防御】时判定，红色视为打出【防御】（【极坚固】+ 三花防御罩）', src: 'docs/md/技能/猴面金身法像.md（三阶成对，抵挡飞剑）' },
   { sub: 'armor', name: '清风法袍', type: 'equip', count: 1, extra: { skill: 'renwang', attr: 'feng' }, desc: '护身：黑色【攻击】对你无效（【风罩】符阵）', src: 'docs/md/技能/清风法袍.md（一阶中品道袍）' },
   { sub: 'armor', name: '映雪冰风阵', type: 'equip', count: 2, extra: { skill: 'tengjia', attr: 'water' }, desc: '护身：普通【攻击】与群攻锦囊对你无效；受到火属性伤害 +1（冰惧火）', src: 'docs/md/物事/法阵.md（二阶下品防护法阵，楚秦山）' },
   { sub: 'armor', name: '玄水归土阵', type: 'equip', count: 1, extra: { skill: 'xuanshui', attr: 'earth' }, desc: '护身：雷属性伤害（【天劫】/【雷霆攻击】）对你无效', src: 'docs/md/物事/法阵.md（三阶下品护山大阵，水土）' },
   { sub: 'armor', name: '广开道德金光大阵', type: 'equip', count: 1, extra: { skill: 'mingguang', attr: 'daode' }, desc: '护身：你每次受到的伤害 -1（最低 1 点）', src: 'docs/md/技能/广开道德金光大阵.md（一阶上品，黑河峰）' },
 
-  /* 载具 10（取代 ±1 马；进 = -1 距离，守 = +1 距离） */
+  /* 载具 9 种 11 张（取代 ±1 马；进 = -1 距离，守 = +1 距离） */
   { sub: 'horse-', name: '乙木御风梭', type: 'equip', count: 2, extra: { dist: 1 }, desc: '载具·进：你计算与其他角色的距离 -1', src: 'docs/md/技能/乙木御风梭.md（三阶极品，可搭载多人）' },
   { sub: 'horse-', name: '幻木灵梭', type: 'equip', count: 1, extra: { dist: 1 }, desc: '载具·进：你计算与其他角色的距离 -1', src: 'docs/md/物事/法器.md（一阶飞行法器）' },
   { sub: 'horse-', name: '灵竹纸鸢', type: 'equip', count: 1, extra: { dist: 1 }, desc: '载具·进：你计算与其他角色的距离 -1', src: 'docs/md/物事/法器.md（一阶飞行法器）' },

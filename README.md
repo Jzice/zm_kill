@@ -46,6 +46,10 @@ npm run build      # 构建两种模式到 dist/
 | `npm run smoke:net` | 联机冒烟（建房 / 加入 / 座位同步 / 中途接管） |
 | `npm run smoke:skills` | 角色 / 技能定义完整性 + 无头 AI 对局自检 |
 | `npm run smoke:cards` | 牌堆构成与牌库扩展包回归 |
+| `npm run smoke:gameplay` | 全量玩法运行时验证（229 张牌堆 / 21 个锦囊逐一结算 / 响应窗口 / 装备附加效果 / 判定阶段，29 项） |
+| `npm run audit:parity` | 静态「规格 ↔ 实现」对照审计（卡名 / sub / 装备 skill / 天赋 id / 效果原语 / 手册一致性，30 项） |
+| `npm run smoke:query` | 引擎查询层验证（免疫 / 花色 / 距离陷阱 / 装备失效 / 马政 / 转移，11 项） |
+| `npm run smoke:net:loadout` | 双端局前配装同步回归（12 项） |
 | `npm run verify:dist` | 校验产物是否为自包含单文件 + 双模式差异 |
 | `npm run clean` | 清空 `dist/` |
 

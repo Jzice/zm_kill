@@ -1,10 +1,10 @@
 /* ==================== 出牌 ==================== */
-import type { Attr, Card, ChoiceOption, DamageType, EquipSlot, Player } from '../core/types';
+import type { Attr, Card, ChoiceOption, DamageType, EquipSlot, Player, Talent } from '../core/types';
 import { G } from './state';
 import { FX, aoeFx, drawFx, floatTextFx, trickCast } from '../core/fxBus';
 import { Sound } from '../core/sound';
 import { FACTIONS } from '../data/factions';
-import { C, SHA_SUBS } from '../data/cards';
+import { C, SHA_SUBS, ZML_SINGLE_TARGET_SUBS } from '../data/cards';
 import { trickDefOf, allTrickDefs } from '../data/knowledgeTricks';
 import { COUNTERABLE_EXTRA_TRICKS, DELAY_TRICK_SUBS, ONE_TARGET_TRICKS } from '../data/cardCatalog';
 import { addLog, addPlayLog } from './log';
@@ -19,6 +19,7 @@ import {
   sameFaction,
   usableHand,
   hasFabaoSkill,
+  wuxingBlocks,
 } from './rules';
 import {
   canBeTarget,
@@ -46,7 +47,8 @@ import { showPlayCard } from '../ui/playzone';
 import { showPlayHint, TRICK_DESC } from '../ui/hint';
 import { trickName } from '../data/zml/terms';
 import { aiSpeak } from './ai';
-import { aiQuizRate, aiShouldCounter } from './aibrain';
+import { aiQuizRate, aiShouldCounter, noteGrudge } from './aibrain';
+import { defOf } from '../data/talentdefs';
 import { AIPOLICY } from './aipolicy';
 import { shouldConvertToShan } from './aieval';
 import { llmChooseAction, llmShouldCounter } from '../llm/agent';
@@ -459,6 +461,81 @@ export async function useJiu(idx: number, cardName = '增益'): Promise<void> {
   FX.skillWave(idx);
 }
 
+/**
+ * 响应类结算：要求 idx 角色打出一张【攻击】(kind='sha') 或【防御】(kind='shan')。
+ * 旧实现直接 usableHand()[0] 自动弃第一张，导致真人被【魔灾泛起 / 决斗 / 万剑钻心】
+ * 指定时完全没有出牌窗口（"无法出牌"）。现改为：真人通过 waitChoice 选择具体牌或放弃，
+ * AI 仍按原逻辑自动处理。返回被打出的牌；放弃或无牌可出时返回 null。
+ *
+ * 真人与 AI 共用 `usableHand`（统一过滤【银月枪】花色封锁等「不可打出」状态），
+ * 避免新开的响应窗口绕过原有规则。
+ */
+export async function respondToTrick(idx: number, kind: 'sha' | 'shan'): Promise<Card | null> {
+  const p = G.players[idx];
+  if (!p || !p.alive) return null;
+  const subs = kind === 'sha' ? SHA_SUBS : ['shan'];
+  const cards = usableHand(p, (c) => subs.includes(c.sub));
+  const label = kind === 'sha' ? '攻击' : '防御';
+  if (p.isAI) {
+    const c = cards[0] || null;
+    if (c) {
+      discardCard(p, c);
+      addLog(`${p.name} 打出【${c.name}】`);
+    } else {
+      addLog(`${p.name} 无【${label}】可出`);
+    }
+    return c;
+  }
+  if (!cards.length) {
+    addLog(`${p.name} 无【${label}】可出`, 'sys');
+    return null;
+  }
+  const opts: ChoiceOption[] = cards.map((c) => ({ label: `打出【${c.name}】`, value: `card_${c.id}` }));
+  opts.push({ label: '放弃', value: 'pass' });
+  const v = await waitChoice(idx, opts, 'response');
+  if (String(v) === 'pass') {
+    addLog(`${p.name} 放弃出牌`, 'sys');
+    return null;
+  }
+  const id = typeof v === 'number' ? v : Number(String(v).replace('card_', ''));
+  const card = cards.find((c) => c.id === id) || null;
+  if (!card) return null;
+  discardCard(p, card);
+  addLog(`${p.name} 打出【${card.name}】`);
+  return card;
+}
+
+/** 从目标身上挑一个可复制的天赋（【诡代之法】排除限定技 / 觉醒技） */
+async function pickCopyTalent(srcIdx: number, targetIdx: number, excludeLimited: boolean): Promise<Talent | null> {
+  const a = G.players[srcIdx];
+  const t = G.players[targetIdx];
+  const pool = (t.talents || []).filter((s) => {
+    if (s.copied || a.talents.some((x) => x.id === s.id)) return false;
+    const kind = s.kind || defOf(s.id)?.kind;
+    return !(excludeLimited && (kind === 'limit' || kind === 'awaken' || s.timing === 'awaken'));
+  });
+  if (!pool.length) return null;
+  if (a.isAI) return pool[0];
+  const ch = await waitChoice(
+    srcIdx,
+    pool.map((s) => ({ label: `复制【${s.name}】`, value: s.id })),
+    'list',
+  );
+  return pool.find((s) => s.id === ch) || null;
+}
+
+/** 支付「弃 n 张手牌」的发动费用；牌不足时记日志并返回 false */
+async function payHandCost(idx: number, n: number): Promise<boolean> {
+  const p = G.players[idx];
+  if (p.hand.length < n) {
+    addLog(`${p.name} 手牌不足，无法支付 ${n} 张手牌的代价`, 'dmg');
+    return false;
+  }
+  const paid = await chooseSelfDiscard(p, n, { aiPick: tailPick });
+  for (const c of paid) discardCard(p, c);
+  return paid.length === n;
+}
+
 export async function useSkill(
   attackerIdx: number,
   card: Card,
@@ -527,10 +604,11 @@ export async function useSkill(
     }
   }
 
-  // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色
+  // 墨子【兼爱】：单体锦囊结算前，目标可将其转移给另一名角色。
+  // 名单与 turn.ts 的出牌目标选择共用 ZML_SINGLE_TARGET_SUBS，避免掌门路原生卡漏项。
   const SINGLE_TARGET_TRICKS = [
-    'guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'tiesuo',
-    // 扩展包单体锦囊 + 延时类（【哼哈真言】）
+    'tiesuo',
+    ...ZML_SINGLE_TARGET_SUBS,
     ...ONE_TARGET_TRICKS,
     ...DELAY_TRICK_SUBS,
   ];
@@ -553,31 +631,32 @@ export async function useSkill(
       break;
     }
     case 'guohe': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '破阵符', card.suit)) {
-        await discardTargetCard(targetIdx, attackerIdx, '弃置');
+      if (targetIdx != null && !wuxingBlocks(G.players[targetIdx], card.sub) && canBeTarget(targetIdx, 'skill', '破阵符', card.suit)) {
+        await discardTargetCard(targetIdx, attackerIdx, '弃置', card);
+      } else if (targetIdx != null && wuxingBlocks(G.players[targetIdx], card.sub)) {
+        addLog(`【无形】${G.players[targetIdx].name} 不可被【${card.name}】指定`, 'hl');
       }
       break;
     }
     case 'shunshou': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '敛息诀', card.suit)) {
-        await discardTargetCard(targetIdx, attackerIdx, '获得');
+      if (targetIdx != null && !wuxingBlocks(G.players[targetIdx], card.sub) && canBeTarget(targetIdx, 'skill', '敛息诀', card.suit)) {
+        await discardTargetCard(targetIdx, attackerIdx, '获得', card);
+      } else if (targetIdx != null && wuxingBlocks(G.players[targetIdx], card.sub)) {
+        addLog(`【无形】${G.players[targetIdx].name} 不可被【${card.name}】指定`, 'hl');
       }
       break;
     }
     case 'juedou': {
       if (targetIdx == null || !canBeTarget(targetIdx, 'juedou', '决斗', card.suit)) break;
-      let def: Player = G.players[targetIdx],
-        ai = attackerIdx,
+      let ai = attackerIdx,
         di = targetIdx;
       while (true) {
-        const sha = usableHand(def, (c) => SHA_SUBS.includes(c.sub))[0];
+        const def = G.players[di];
+        const sha = await respondToTrick(di, 'sha');
         if (sha) {
-          discardCard(def, sha);
-          addLog(`${def.name} 打出【${sha.name}】`);
           FX.attackLunge(di);
           await FX.flyCard(di, ai, sha.name, 'basic', 420);
           [ai, di] = [di, ai];
-          def = G.players[di];
         } else {
           await dealDamage(ai, di, 1);
           break;
@@ -592,6 +671,10 @@ export async function useSkill(
         if (!canBeTarget(i, 'skill', '魔灾泛起', card.suit)) continue;
         targets.push(i);
       }
+      if (!targets.length) {
+        addLog(`【${trickName('nanman')}】无合法目标，未生效`, 'sys');
+        break;
+      }
       await aoeFx(attackerIdx, targets, '#c79bff');
       for (const i of targets) {
         const t = G.players[i];
@@ -601,11 +684,8 @@ export async function useSkill(
           addLog(`${t.name} 的【${t.equip.armor?.name || '护身法阵'}】令【${trickName('nanman')}】无效`, 'hl');
           continue;
         }
-        const sha = usableHand(t, (c) => SHA_SUBS.includes(c.sub))[0];
-        if (sha) {
-          discardCard(t, sha);
-          addLog(`${t.name} 出攻击抵挡`);
-        } else await dealDamage(attackerIdx, i, 1);
+        const sha = await respondToTrick(i, 'sha');
+        if (!sha) await dealDamage(attackerIdx, i, 1);
       }
       break;
     }
@@ -614,7 +694,13 @@ export async function useSkill(
       for (let i = 0; i < G.players.length; i++) {
         if (i === attackerIdx || !G.players[i].alive) continue;
         if (!canBeTarget(i, 'skill', '万剑钻心', card.suit)) continue;
+        // 【银背驮鳐】：【万剑钻心】对该载具持有者无效
+        if (card.name === '万剑钻心' && G.players[i].equip.horsePlus?.name === '银背驮鳐') continue;
         targets.push(i);
+      }
+      if (!targets.length) {
+        addLog(`【${trickName('wanjian')}】无合法目标，未生效`, 'sys');
+        break;
       }
       await aoeFx(attackerIdx, targets, '#ffcf7a');
       for (const i of targets) {
@@ -625,12 +711,9 @@ export async function useSkill(
           addLog(`${t.name} 的【${t.equip.armor?.name || '护身法阵'}】令【${trickName('wanjian')}】无效`, 'hl');
           continue;
         }
-        const shan = usableHand(t, (c) => c.sub === 'shan')[0];
-        if (shan) {
-          discardCard(t, shan);
-          addLog(`${t.name} 出防御抵挡`);
-          await FX.shield(i);
-        } else await dealDamage(attackerIdx, i, 1);
+        const shan = await respondToTrick(i, 'shan');
+        if (shan) await FX.shield(i);
+        else await dealDamage(attackerIdx, i, 1);
       }
       break;
     }
@@ -970,27 +1053,27 @@ export async function useSkill(
     }
     /* ---- 掌门路原著机制卡 ---- */
     case 'guidai': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '诡代之法', card.suit)) {
-        const t = G.players[targetIdx];
-        const sk = t.talents.find((s) => s.type === 'active');
-        if (sk && !a.talents.some((x) => x.id === sk.id)) {
-          a.talents.push({ ...sk });
-          addLog(`【诡代之法】${a.name} 以假代真，暂得【${sk.name}】`, 'hl');
-        } else {
-          addLog(`【诡代之法】${t.name} 无可复制的天赋`, 'dmg');
-        }
+      if (targetIdx == null || !canBeTarget(targetIdx, 'skill', '诡代之法', card.suit)) break;
+      const sk = await pickCopyTalent(attackerIdx, targetIdx, true);
+      if (!sk) {
+        addLog(`【诡代之法】${G.players[targetIdx].name} 无可复制的非限定天赋`, 'dmg');
+        break;
       }
+      if (!(await payHandCost(attackerIdx, 1))) break;
+      a.talents.push({ id: sk.id, name: sk.name, type: sk.type, desc: sk.desc, copied: true, copiedUntil: 'nextTurn' });
+      addLog(`【诡代之法】${a.name} 弃 1 张手牌，以假代真暂得【${sk.name}】（至其下个回合开始）`, 'hl');
       break;
     }
     case 'daizheng': {
-      if (targetIdx != null && canBeTarget(targetIdx, 'skill', '本命代征', card.suit)) {
-        const t = G.players[targetIdx];
-        const sk = t.talents[0];
-        if (sk && !a.talents.some((x) => x.id === sk.id)) {
-          a.talents.push({ ...sk });
-          addLog(`【本命代征】${a.name} 去象显真，暂得【${sk.name}】`, 'hl');
-        }
+      if (targetIdx == null || !canBeTarget(targetIdx, 'skill', '本命代征', card.suit)) break;
+      const sk = await pickCopyTalent(attackerIdx, targetIdx, false);
+      if (!sk) {
+        addLog(`【本命代征】${G.players[targetIdx].name} 无可复制的天赋`, 'dmg');
+        break;
       }
+      if (!(await payHandCost(attackerIdx, 2))) break;
+      a.talents.push({ id: sk.id, name: sk.name, type: sk.type, desc: sk.desc, copied: true, copiedUntil: 'turn' });
+      addLog(`【本命代征】${a.name} 弃 2 张手牌，本回合暂得【${sk.name}】`, 'hl');
       break;
     }
     case 'mingyan': {
@@ -1035,18 +1118,33 @@ export async function useSkill(
       break;
     }
     case 'guanding': {
-      // 「观顶」旧效（原 mingyan）：观看牌堆顶 3 张，取 1 张入手，其余按原顺序放回
+      // 观顶：亮出牌堆顶 3 张，取其中 1 张入手，其余按原顺序放回牌堆顶
       const top: Card[] = [];
       for (let i = 0; i < 3 && G.deck.length; i++) {
         const c = G.deck.pop();
         if (c) top.push(c);
       }
-      if (top.length) {
-        const pick = top[0];
-        a.hand.push(pick);
-        for (let i = top.length - 1; i >= 1; i--) G.deck.push(top[i]);
-        addLog(`【命演术·观顶】${a.name} 推演天机，将【${pick.name}】纳入手中`, 'hl');
+      if (!top.length) {
+        addLog(`【${card.name}】牌堆已空，观顶未生效`, 'dmg');
+        break;
       }
+      let pick = top[0];
+      if (!a.isAI) {
+        const ch = await waitChoice(
+          attackerIdx,
+          top.map((c, i) => ({ label: `取【${c.name}】${c.suit}${c.num}`, value: `top_${i}` })),
+          'list',
+        );
+        const n = Number(String(ch).replace('top_', ''));
+        if (Number.isInteger(n) && n >= 0 && n < top.length) pick = top[n];
+      } else {
+        const rank = (c: Card): number =>
+          c.sub === 'tao' ? 5 : SHA_SUBS.includes(c.sub) ? 4 : c.sub === 'shan' ? 3 : c.type === 'equip' ? 2 : c.sub === 'wuxie' ? 1 : 0;
+        pick = top.reduce((best, c) => (rank(c) > rank(best) ? c : best), top[0]);
+      }
+      a.hand.push(pick);
+      for (let i = top.length - 1; i >= 0; i--) if (top[i] !== pick) G.deck.push(top[i]);
+      addLog(`【${card.name}】${a.name} 观顶 ${top.length} 张，取【${pick.name}】入手，其余按原序放回`, 'hl');
       break;
     }
     case 'tongshi': {
@@ -1056,14 +1154,15 @@ export async function useSkill(
       break;
     }
     case 'quanzhi': {
-      if (targetIdx != null) {
-        const t = G.players[targetIdx];
-        if (t.cult) t.cult.benmingShown = true;
-        addLog(
-          `【全知天眼】${a.name} 窥破 ${t.name} 的本命：${t.cult?.benming?.join('、') || '未载'}（探听本命即结怨）`,
-          'hl',
-        );
-      }
+      if (targetIdx == null || !canBeTarget(targetIdx, 'skill', '全知天眼', card.suit)) break;
+      const t = G.players[targetIdx];
+      const hand = t.hand.map((c) => `【${c.name}】${c.suit}${c.num}`).join('、') || '（无手牌）';
+      addLog(`【全知天眼】${a.name} 窥见 ${t.name} 的手牌：${hand}`, 'hl');
+      if (t.cult) t.cult.benmingShown = true;
+      addLog(`【全知天眼】${t.name} 的本命公开：${t.cult?.benming?.join('、') || '未载'}`, 'hl');
+      // 「探听本命即结怨」：目标对使用者记 1 次仇，AI 目标评分同源读取该敌意
+      noteGrudge(targetIdx, attackerIdx);
+      addLog(`【全知天眼】${t.name} 对 ${a.name} 结怨（敌意 +1）`, 'hl');
       break;
     }
     default: {
@@ -1166,10 +1265,10 @@ function trickLabel(sub: string): string {
   return trickName(sub);
 }
 
-export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string): Promise<void> {
+export async function discardTargetCard(targetIdx: number, srcIdx: number, mode: string, trick?: Card): Promise<void> {
   const t = G.players[targetIdx];
-  // 焚书（锦囊免疫）：不能被【破阵符】/【敛息诀】指定
-  if (!canBeTarget(targetIdx, 'skill')) return;
+  // 焚书（锦囊免疫）/【无形】兵器：不能被【破阵符】/【敛息诀】指定
+  if (!canBeTarget(targetIdx, 'skill') || (trick && wuxingBlocks(t, trick.sub))) return;
   const opts: { label: string; value: string }[] = [];
   if (t.hand.length > 0) opts.push({ label: `手牌（${t.hand.length}张）`, value: 'hand' });
   // 凯库勒【结构式】：装备不能被破阵符 / 敛息诀指定
@@ -1177,7 +1276,9 @@ export async function discardTargetCard(targetIdx: number, srcIdx: number, mode:
     if (t.equip.weapon) opts.push({ label: `武器：${t.equip.weapon.name}`, value: 'weapon' });
     if (t.equip.armor) opts.push({ label: `防具：${t.equip.armor.name}`, value: 'armor' });
     if (t.equip.horsePlus) opts.push({ label: '+1载具', value: 'horsePlus' });
-    if (t.equip.horseMinus) opts.push({ label: '-1载具', value: 'horseMinus' });
+    // 【无形鹤】：不可被【破阵符】弃置（其余拆牌手段不受影响）
+    if (t.equip.horseMinus && !(trick?.sub === 'guohe' && t.equip.horseMinus.name === '无形鹤'))
+      opts.push({ label: '-1载具', value: 'horseMinus' });
   }
   if (!opts.length) return;
   const src = G.players[srcIdx];

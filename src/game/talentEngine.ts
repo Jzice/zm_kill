@@ -1376,13 +1376,13 @@ export function markBonusOf(src: Player, tgt: Player): number {
   }
   return sum;
 }
-/** 清理本回合到期的「诡代复制」天赋（由 turn.ts 回合结束调用） */
-export function cleanupCopiedTalents(idx: number): void {
+/** 清理到期的「诡代复制」天赋：回合结束清 'turn'，回合开始清 'nextTurn'（均由 turn.ts 调用） */
+export function cleanupCopiedTalents(idx: number, until: 'turn' | 'nextTurn' = 'turn'): void {
   const p = G.players[idx];
   if (!p?.talents?.length) return;
-  const removed = p.talents.filter((s) => s.copied && s.copiedUntil === 'turn');
+  const removed = p.talents.filter((s) => s.copied && s.copiedUntil === until);
   if (!removed.length) return;
-  p.talents = p.talents.filter((s) => !(s.copied && s.copiedUntil === 'turn'));
+  p.talents = p.talents.filter((s) => !(s.copied && s.copiedUntil === until));
   for (const s of removed) addLog(`${p.name} 的诡代【${s.name}】失效`, 'hl');
 }
 /** 攻击范围加成 */

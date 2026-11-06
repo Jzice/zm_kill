@@ -6,7 +6,7 @@ import './style.css';
 
 import { G } from './game/state';
 import { dealDamage, checkWin } from './game/damage';
-import { useSkill } from './game/actions';
+import { useSkill, useSha, useTao, useJiu, requestShan, respondToTrick, discardTargetCard } from './game/actions';
 
 import type { Element, FactionId, GameMode, Taoism } from './core/types';
 import { ELEMENT_KE, TAOISM_KE, attrRelation, taoismRelation } from './data/zml/attr';
@@ -15,8 +15,8 @@ import { CHARACTERS } from './data/characters';
 import { renderRuleModePicker, setRuleMode } from './ui/lobby';
 import { FACTIONS } from './data/factions';
 import { defOf, TALENT_DEFS } from './data/talentdefs';
-import { buildDeck } from './data/cards';
-import { ZML_ALL } from './data/zml/cards.zml';
+import { C, SHA_SUBS, ZML_SINGLE_TARGET_SUBS, buildDeck } from './data/cards';
+import { ZML_ALL, ZML_DECK_TOTAL } from './data/zml/cards.zml';
 import { ZML_UPGRADE_TALENT_LIST, unlockableUpgrades } from './data/zml/upgradeTalents.zml';
 import { normalizeCardPacks, withCore } from './data/cardPacks';
 import { initPacks } from './data/packRegistry';
@@ -28,7 +28,11 @@ import {
   horseDistOf,
   shaRedirectOf,
   skillRedirectOf,
+  cleanupCopiedTalents,
+  resetTurnState,
 } from './game/talentEngine';
+import { canUseCard, usableHand, attackRange, distBetween, handLimit, wuxingBlocks } from './game/rules';
+import { judgePhase } from './game/turn';
 import { toggleSound, loadSoundPref, refreshSoundSwitch, updateSoundButtons } from './core/sound';
 import { FX as FxFacade, equipFx, getFxDebug, getFxLevel, initFxStage, setFxLevel, setFxTransport, trickCast } from './core/fxBus';
 import { getFxStageStats } from './core/fxStage';
@@ -36,7 +40,7 @@ import { NET } from './net/network';
 
 import { exitGame, hostStartGame, startSingle } from './game/setup';
 import { activeLoopCount } from './game/loop';
-import { aiTurnsOf } from './game/aibrain';
+import { aiTurnsOf, grudgeOf } from './game/aibrain';
 import { getPolicy, resetPolicy, setPolicy } from './game/aipolicy';
 import type { AiPolicy } from './game/aipolicy';
 import { clickHandCard, clickTargetSeat } from './ui/hand';
@@ -619,6 +623,15 @@ if (new URLSearchParams(location.search).has('debug')) {
     dealDamage,
     checkWin,
     useSkill,
+  };
+  // 玩法全量校验探针：暴露纯函数与状态，供 scripts/smoke-gameplay.mjs 驱动确定性场景
+  (window as unknown as { __audit: unknown }).__audit = {
+    C, SHA_SUBS, ZML_SINGLE_TARGET_SUBS, ZML_ALL, ZML_DECK_TOTAL, buildDeck,
+    defOf, TALENT_DEFS,
+    useSkill, useSha, useTao, useJiu, requestShan, respondToTrick, discardTargetCard,
+    canBeTarget, cardImmuneTo, canUseCard, usableHand, attackRange, distBetween, handLimit, wuxingBlocks,
+    cleanupCopiedTalents, resetTurnState, judgePhase, grudgeOf,
+    resolveChoice, defaultChoiceFor,
   };
   (window as unknown as { __fxDebug: unknown }).__fxDebug = {
     stats: getFxDebug,

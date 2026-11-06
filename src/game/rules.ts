@@ -39,12 +39,29 @@ export function seatDist(a: number, b: number): number {
   return Math.min(Math.abs(ai - bi), n - Math.abs(ai - bi));
 }
 
+/** 【飞蟹载客】：是否存在相邻的、同门派的【飞蟹】持有者（按存活座次相邻计算） */
+function feixieEscortOf(to: Player): boolean {
+  const ti = G.players.indexOf(to);
+  if (ti < 0 || !to.alive) return false;
+  return G.players.some(
+    (p, i) =>
+      i !== ti &&
+      p.alive &&
+      p.equip.horsePlus?.name === '飞蟹' &&
+      sameFaction(p, to) &&
+      seatDist(i, ti) === 1,
+  );
+}
+
 export function distBetween(fi: number, ti: number): number {
   let d = seatDist(fi, ti);
   const from = G.players[fi],
     to = G.players[ti];
   // 徐霞客【探险】无视他人 +1 马；墨子【非攻】令他人 +1 马对你无效
   if (to.equip.horsePlus && !ignoreHorsePlus(from) && !enemyEquipVoidOf(to, 'horsePlus')) d += 1;
+  // 【飞蟹载客】：自己没有 +1 载具时，相邻且同门派的飞蟹持有者仍让你「同样视为 +1」。
+  // 只在自身无载具时计一次，避免与自身 horsePlus 叠加。
+  else if (!ignoreHorsePlus(from) && !enemyEquipVoidOf(to, 'horsePlus') && feixieEscortOf(to)) d += 1;
   // 墨子【非攻】令他人 -1 马对你无效
   if (from.equip.horseMinus && !enemyEquipVoidOf(to, 'horseMinus')) d -= 1;
   // 郑和【航海图】马政：装备区每有一张马，距离额外 -1
@@ -85,7 +102,17 @@ export function canUseCard(p: Player, c: Card): boolean {
   if (b && c.suit === b) return false;
   // 【命演术】：每局限一次，且自损 1 点体力 → 已用过或体力不足 2 点时不可使用（手牌置灰）
   if (c.sub === 'mingyan' && (p.skillGame?.['mingyan'] || p.hp <= 1)) return false;
+  // 【诡代之法】弃 1 张 / 【本命代征】弃 2 张为发动费用；牌数不足时不可使用，避免白白消耗锦囊。
+  // 此处 p.hand 仍含该锦囊本身，故要求 ≥ 2 / ≥ 3 张。
+  if (c.sub === 'guidai' && p.hand.length < 2) return false;
+  if (c.sub === 'daizheng' && p.hand.length < 3) return false;
   return true;
+}
+
+/** 【无形】兵器：持有者不可被【破阵符】/【敛息诀】（含复用同一 sub 的异名牌）指定 */
+export function wuxingBlocks(p: Player, sub: string): boolean {
+  if (sub !== 'guohe' && sub !== 'shunshou') return false;
+  return p.equip.weapon?.wuxing === true;
 }
 
 /** 手牌中「可使用」且满足谓词的牌（统一过滤花色封锁，供出杀 / 出闪 / 响应 AOE 复用） */

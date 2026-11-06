@@ -85,8 +85,10 @@ check('客人加入房间', true);
 await host.waitForFunction(() => document.querySelectorAll('#hostMemberList .rm-item').length === 2, { timeout: 10000 });
 check('双方成员列表同步（2人）', (await guest.locator('#guestMemberList .rm-item').count()) === 2);
 
-// 房主开局
+// 房主开局（随机模式先亮将确认，与 smoke-net.mjs 保持一致）
 await host.click('#hostStartBtn');
+await host.waitForSelector('#revealModal.show', { timeout: 5000 });
+await host.click('#revealBody button[onclick="revealConfirm()"]');
 await host.waitForSelector('#screenGame.active', { timeout: 10000 });
 await guest.waitForSelector('#screenGame.active', { timeout: 10000 });
 check('双方进入游戏界面', true);

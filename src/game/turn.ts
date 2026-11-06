@@ -3,7 +3,7 @@ import type { Card, ChoiceOption, DamageType, PendingType } from '../core/types'
 import { G } from './state';
 import { FX } from '../core/fxBus';
 import { FACTIONS } from '../data/factions';
-import { C, SHA_SUBS } from '../data/cards';
+import { C, SHA_SUBS, ZML_SINGLE_TARGET_SUBS } from '../data/cards';
 import { trickDefOf } from '../data/knowledgeTricks';
 import { DELAY_TRICK_SUBS, ONE_TARGET_TRICKS, RESPONSE_ONLY_SKILLS } from '../data/cardCatalog';
 import { trickName } from '../data/zml/terms';
@@ -16,6 +16,7 @@ import {
   inRange,
   handLimit,
   fabaoSkillOf,
+  wuxingBlocks,
 } from './rules';
 import { Sound } from '../core/sound';
 import { equipFx } from '../core/fxBus';
@@ -106,6 +107,8 @@ export async function runTurn(idx: number): Promise<void> {
   p.flags.blockSuit = null;
   // 声明式技能：清空每回合使用计数 / 花色收集 / 出牌统计
   resetTurnState(p);
+  // 【诡代之法】复制的天赋「直到你的下个回合开始」，在本回合开始时统一失效
+  cleanupCopiedTalents(idx, 'nextTurn');
   G.current = idx;
   addLog(`—— ${p.name}（${FACTIONS[p.faction].name}）的回合 ——`, 'hl');
   Sound.play('turn');
@@ -509,7 +512,7 @@ export async function playPhase(idx: number): Promise<void> {
         tgt = tgts[0];
         second = tgts[1] ?? null;
       } else if (
-        ['guohe', 'shunshou', 'juedou', 'lebu', 'huogong', 'mingyan', 'guidai', 'daizheng', 'quanzhi'].includes(card.sub) ||
+        ZML_SINGLE_TARGET_SUBS.includes(card.sub) ||
         ONE_TARGET_TRICKS.includes(card.sub) ||
         DELAY_TRICK_SUBS.includes(card.sub) ||
         trickDefOf(card.sub)?.target === 'one'
@@ -519,8 +522,12 @@ export async function playPhase(idx: number): Promise<void> {
           if (i === idx || !G.players[i].alive) continue;
           // 郑和【航海图】：使用【敛息诀】无距离限制
           if (card.sub === 'shunshou' && !shunshouNoDist(p) && distBetween(idx, i) > 1) continue;
-          // 焚书（锦囊免疫）/ 空城（杀与决斗免疫）
-          if (!canBeTarget(i, card.sub === 'juedou' ? 'juedou' : 'skill')) continue;
+          // 【无形】兵器：不可被【破阵符】/【敛息诀】指定
+          if (wuxingBlocks(G.players[i], card.sub)) continue;
+          // 锦囊免疫 / 空城（杀与决斗免疫）/ 指定牌名·花色免疫：与 useSkill 的判定保持一致，
+          // 让无合法目标时直接“无合法目标”而不消耗手牌（避免选中免疫目标后静默失效）。
+          const scope = card.sub === 'juedou' ? 'juedou' : 'skill';
+          if (!canBeTarget(i, scope, card.name, card.suit)) continue;
           targets.push({ label: G.players[i].name, value: i });
         }
         if (!targets.length) {

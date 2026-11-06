@@ -1,8 +1,10 @@
-// v2.1 创意机制专项冒烟：免疫指定牌 / 花色免疫 / 距离陷阱 / 装备失效 / 马政 / 效果转移
+// 引擎查询层专项冒烟（原 v2.1 创意机制）：免疫指定牌 / 花色免疫 / 距离陷阱 /
+// 装备失效 / 马政 / 效果转移 / 空城。
 // 用法：node scripts/smoke-v21.mjs [html文件名]
 //
-// 思路：先跑一局无头 AI 对战拿到「活着的 G 状态」，再对 window.xtsV21（引擎查询层）断言。
-// 这些查询正是 actions.ts / rules.ts / turn.ts 实际消费的接线点，故断言它们即验证机制生效。
+// 旧版靠随机开局「开到墨子 / 法拉第 / 徐霞客…」这些经典模式角色，Phase 1 移除经典角色池后
+// 会一直空转。现改为从真实 TALENT_DEFS 中按效果原语找出技能定义，注入到确定性对局状态，
+// 再断言 window.xtsV21（actions.ts / rules.ts / turn.ts 实际消费的查询层）——覆盖同一批机制且可复现。
 import { chromium } from 'playwright-core';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -14,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const file = process.argv[2] || '掌门杀.html';
 const PORT = 8905;
-const url = `http://127.0.0.1:${PORT}/${encodeURIComponent(file)}`;
+const url = `http://127.0.0.1:${PORT}/${encodeURIComponent(file)}?debug=1`;
 
 const server = spawn(process.execPath, [path.join(dirname, 'serve-dist.mjs'), String(PORT)], {
   cwd: path.resolve(dirname, '..'),
@@ -29,10 +31,7 @@ async function waitServer(timeoutMs = 8000) {
         resolve(true);
       });
       req.on('error', () => resolve(false));
-      req.on('timeout', () => {
-        req.destroy();
-        resolve(false);
-      });
+      req.on('timeout', () => { req.destroy(); resolve(false); });
       req.end();
     });
     if (ok) return true;
@@ -65,138 +64,199 @@ if (!(await waitServer())) {
 }
 const browser = await chromium.launch(findHeadlessShell() ? { executablePath: findHeadlessShell() } : {});
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message));
 page.on('dialog', (d) => d.accept().catch(() => {}));
 
 await page.goto(url, { waitUntil: 'networkidle' });
+await page.click('#modePicker .mode-card[data-mode="single"]');
+await page.waitForSelector('#screenSetup.active', { timeout: 3000 });
+await page.click('#startBtn');
+await page.waitForSelector('#revealModal.show', { timeout: 3000 });
+await page.click('#revealBody button[onclick="revealConfirm()"]');
+await page.waitForSelector('#screenGame.active', { timeout: 5000 });
+await page.waitForFunction(() => window.__game?.G.players.length >= 3, { timeout: 8000 });
+await page.evaluate(() => {
+  window.__game.G.gameOver = true;
+  window.__game.G.players.forEach((p) => { p.hand = []; });
+  window.setFxLevel('off');
+});
+await page.waitForTimeout(1200);
 
-// 反复开局的辅助函数：随机开直到出现包含目标角色的一局，返回 {seats, chars}
-async function findRoster(wantIds, maxTries = 60) {
-  for (let i = 0; i < maxTries; i++) {
-    const r = await page.evaluate(() => {
-      const seats = [];
-      for (let k = 0; k < 5; k++) seats.push(window.xtsV21.charOf(k));
-      return seats;
-    });
-    if (wantIds.every((id) => r.includes(id))) return r;
-    await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);
-  }
-  return null;
-}
+const out = await page.evaluate(() => {
+  const A = window.__audit;
+  const G = window.__game.G;
+  const V = window.xtsV21;
+  const defs = Object.values(A.TALENT_DEFS);
+  const byEffect = (kind, pred = () => true) => {
+    for (const d of defs) {
+      const e = (d.effects || []).find((x) => x.kind === kind && pred(x));
+      if (e) return { id: d.id, e };
+    }
+    return null;
+  };
+  const setTalents = (idx, ids, hand = []) => {
+    const p = G.players[idx];
+    p.alive = true;
+    p.hp = 4; p.maxHp = 4;
+    p.talents = ids.filter(Boolean).map((id) => ({ id, name: A.defOf(id)?.name || id, type: 'active', desc: '' }));
+    p.skillUse = {};
+    p.skillGame = {};
+    p.hand = hand;
+    p.equip = { weapon: null, armor: null, horsePlus: null, horseMinus: null };
+    return p;
+  };
+  const probe = (idx) => ({
+    immuneName: (n) => V.cardImmune(idx, n),
+    target: (scope, name, suit) => V.canBeTarget(idx, scope, name, suit),
+    void: (slot) => V.equipVoid(idx, slot),
+    distTrap: () => V.distTrap(idx),
+    horseDist: () => V.horseDist(idx),
+    shaRedirect: () => V.shaRedirect(idx),
+    skillRedirect: () => V.skillRedirect(idx),
+  });
+  const R = { found: {}, errors: [] };
+  const run = (key, fn) => { try { R[key] = fn(); } catch (e) { R.errors.push(`${key}: ${e.message}`); } };
 
-// 先开一局，让 G 进入可用状态
-await page.evaluate((seats) => window.xtsAutoRun(1, seats), 5);
+  // 1. 指定牌名免疫（含「单体锦囊仍可指定」的反例）
+  run('cardImmune', () => {
+    const hit = byEffect('cardImmune', (e) => (e.names || []).length > 0);
+    if (!hit) return null;
+    R.found.cardImmune = hit.id;
+    setTalents(1, [hit.id]);
+    const name = hit.e.names[0];
+    return {
+      id: hit.id,
+      hit: probe(1).immuneName(name),
+      blocked: !probe(1).target('skill', name),
+      other: probe(1).target('skill', '破阵符'),
+    };
+  });
 
-// ---- 1. 墨子【非攻】：免疫万剑钻心 / 魔灾泛起 + 敌人武器防具失效 ----
-let roster = await findRoster(['mozi']);
-check('开到含墨子的一局', !!roster, roster ? roster.join(',') : '未开到');
-if (roster) {
-  const moziIdx = roster.indexOf('mozi');
-  const r = await page.evaluate(
-    (i) => ({
-      wanjian: window.xtsV21.cardImmune(i, '万剑钻心'),
-      nanman: window.xtsV21.cardImmune(i, '魔灾泛起'),
-      lebu: window.xtsV21.cardImmune(i, '七星定身阵'),
-      trickAsWanjian: window.xtsV21.canBeTarget(i, 'trick', '万剑钻心'),
-      weaponVoid: window.xtsV21.equipVoid(i, 'weapon'),
-      armorVoid: window.xtsV21.equipVoid(i, 'armor'),
-      horseVoid: window.xtsV21.equipVoid(i, 'horsePlus'),
-      trickStillTargetable: window.xtsV21.canBeTarget(i, 'trick', '破阵符'),
-      trickRedirect: window.xtsV21.trickRedirect(i),
-    }),
-    moziIdx,
-  );
-  check('墨子免疫【万剑钻心】', r.wanjian && !r.trickAsWanjian);
-  check('墨子免疫【魔灾泛起】', r.nanman);
-  check('墨子不免疫【七星定身阵】（仅群体 AOE）', !r.lebu);
-  check('墨子免疫仅限 AOE，单体锦囊仍可指定', r.trickStillTargetable);
-  check('墨子令敌人武器失效', r.weaponVoid);
-  check('墨子令敌人防具失效', r.armorVoid);
-  check('墨子不令敌人 +1 马失效（避免距离体系崩坏）', !r.horseVoid);
-  check('墨子【兼爱】可转移锦囊', r.trickRedirect);
-}
+  // 2. 花色免疫
+  run('suitImmune', () => {
+    const hit = byEffect('suitImmune', (e) => (e.suits || []).length > 0);
+    if (!hit) return null;
+    R.found.suitImmune = hit.id;
+    setTalents(1, [hit.id]);
+    const suit = hit.e.suits[0];
+    const otherSuit = ['♠', '♥', '♦', '♣'].find((s) => !hit.e.suits.includes(s));
+    return { id: hit.id, blocked: !probe(1).target('skill', '破阵符', suit), allowed: otherSuit ? probe(1).target('skill', '破阵符', otherSuit) : true };
+  });
 
-// ---- 2. 法拉第【避雷针】：免疫【天劫】 ----
-roster = await findRoster(['faraday']);
-check('开到含法拉第的一局', !!roster, roster ? roster.join(',') : '未开到');
-if (roster) {
-  const i = roster.indexOf('faraday');
-  const r = await page.evaluate((i) => ({
-    shandian: window.xtsV21.cardImmune(i, '天劫'),
-    wanjian: window.xtsV21.cardImmune(i, '万剑钻心'),
-    trickAsShandian: window.xtsV21.canBeTarget(i, 'trick', '天劫'),
-  }), i);
-  check('法拉第免疫【天劫】', r.shandian && !r.trickAsShandian);
-  check('法拉第不免疫【万剑钻心】', !r.wanjian);
-}
+  // 3. 锦囊免疫 / 杀与决斗免疫的作用域
+  // 登记表里缺失的 scope 用测试定义补齐（TALENT_DEFS 是普通 Record，defOf 会即时读取），
+  // 目的是覆盖 canBeTarget 的作用域分支而不是依赖某一届角色池。
+  const ensureImmune = (scope) => {
+    const hit = byEffect('immune', (e) => e.scope === scope);
+    if (hit) return hit.id;
+    const id = `__parity_immune_${scope}`;
+    A.TALENT_DEFS[id] = {
+      id, name: '测试免疫', kind: 'passive', timing: 'passive', desc: '',
+      effects: [{ kind: 'immune', scope }],
+    };
+    return id;
+  };
+  run('immuneScope', () => {
+    const all = ensureImmune('skill');
+    const sd = ensureImmune('shaAndJuedou');
+    R.found.immune = [all, sd];
+    setTalents(1, [all]);
+    const skillOnly = { skill: !probe(1).target('skill'), sha: probe(1).target('sha'), juedou: probe(1).target('juedou') };
+    setTalents(1, [sd]);
+    return { skillOnly, sd: { sha: !probe(1).target('sha'), juedou: !probe(1).target('juedou'), skill: probe(1).target('skill') } };
+  });
 
-// ---- 3. 徐霞客【探险】：距离陷阱 ----
-roster = await findRoster(['xuxiake']);
-check('开到含徐霞客的一局', !!roster);
-if (roster) {
-  const i = roster.indexOf('xuxiake');
-  const r = await page.evaluate((i) => window.xtsV21.distTrap(i), i);
-  check('徐霞客距离陷阱阈值 = 1', r === 1, `min=${r}`);
-}
+  // 4. 空城（无手牌才免疫杀 / 决斗）
+  run('noHandImmune', () => {
+    const hit = byEffect('noHandImmune');
+    if (!hit) return null;
+    R.found.noHandImmune = hit.id;
+    setTalents(1, [hit.id], []);
+    const empty = !probe(1).target('sha');
+    setTalents(1, [hit.id], [{ id: 999001, name: '手牌', type: 'basic', sub: 'none', suit: '♠', num: 1 }]);
+    return { empty, withCard: probe(1).target('sha') };
+  });
 
-// ---- 4. 郑和【航海图】：马政 ----
-roster = await findRoster(['zhenghe']);
-check('开到含郑和的一局', !!roster);
-if (roster) {
-  const i = roster.indexOf('zhenghe');
-  const before = await page.evaluate((i) => window.xtsV21.horseDist(i), i);
-  const after = await page.evaluate((i) => {
-    const p = window.xtsV21.players()[i];
-    p.equip.horsePlus = { id: 900001, name: '+1马', type: 'equip', sub: 'horsePlus', suit: '♠', num: '1', skill: 'horsePlus' };
-    p.equip.horseMinus = { id: 900002, name: '-1马', type: 'equip', sub: 'horseMinus', suit: '♠', num: '1', skill: 'horseMinus' };
-    return window.xtsV21.horseDist(i);
-  }, i);
-  check('郑和装备双马后马政减免增量 = 2', after - before === 2, `before=${before} after=${after}`);
-}
+  // 5. 敌人装备区失效
+  run('enemyEquipVoid', () => {
+    const hit = byEffect('enemyEquipVoid', (e) => (e.slots || []).length > 0);
+    if (!hit) return null;
+    R.found.enemyEquipVoid = hit.id;
+    setTalents(1, [hit.id]);
+    const slots = hit.e.slots;
+    return {
+      id: hit.id,
+      hit: slots.every((s) => probe(1).void(s)),
+      notListed: ['weapon', 'armor', 'horsePlus', 'horseMinus'].filter((s) => !slots.includes(s)).every((s) => !probe(1).void(s)),
+    };
+  });
 
-// ---- 5. 卢瑟福【散射实验】：可转移【杀】 ----
-roster = await findRoster(['luosefu']);
-check('开到含卢瑟福的一局', !!roster);
-if (roster) {
-  const i = roster.indexOf('luosefu');
-  const r = await page.evaluate((i) => ({
-    sha: window.xtsV21.shaRedirect(i),
-    trick: window.xtsV21.trickRedirect(i),
-  }), i);
-  check('卢瑟福可转移【杀】', r.sha);
-  check('卢瑟福不可转移锦囊（仅墨子）', !r.trick);
-}
+  // 6. 距离陷阱
+  run('distTrap', () => {
+    const hit = byEffect('distTrap');
+    if (!hit) return null;
+    R.found.distTrap = hit.id;
+    setTalents(1, [hit.id]);
+    return { id: hit.id, value: probe(1).distTrap(), expected: hit.e.min };
+  });
 
-// ---- 6. 巴斯德【免疫】：♦ 方片无效 ----
-roster = await findRoster(['baside']);
-check('开到含巴斯德的一局', !!roster);
-if (roster) {
-  const i = roster.indexOf('baside');
-  const r = await page.evaluate((i) => ({
-    d: window.xtsV21.canBeTarget(i, 'trick', '破阵符', '♦'),
-    spade: window.xtsV21.canBeTarget(i, 'trick', '破阵符', '♠'),
-  }), i);
-  check('巴斯德免疫 ♦方片牌', !r.d);
-  check('巴斯德不免疫 ♠黑桃牌', r.spade);
-}
+  // 7. 马政：双马叠加减免
+  run('horseDist', () => {
+    const hit = byEffect('horseDist');
+    if (!hit) return null;
+    R.found.horseDist = hit.id;
+    const p = setTalents(1, [hit.id]);
+    const before = probe(1).horseDist();
+    p.equip.horsePlus = { id: 999101, name: '+1载具', type: 'equip', sub: 'horse+', suit: '♠', num: 1 };
+    p.equip.horseMinus = { id: 999102, name: '-1载具', type: 'equip', sub: 'horse-', suit: '♠', num: 1 };
+    return { before, after: probe(1).horseDist(), expected: hit.e.n * 2 };
+  });
 
-// ---- 汇总 ----
-const failed = results.filter((r) => !r.ok);
-console.log(`\n${'='.repeat(40)}\n通过 ${results.length - failed.length}/${results.length}`);
-if (failed.length) {
-  console.log('❌ 失败项:');
-  for (const f of failed) console.log(`   - ${f.name}${f.extra ? ' (' + f.extra + ')' : ''}`);
-}
-if (errors.length) {
-  console.log(`❌ 控制台错误 ${errors.length} 条:`);
-  for (const e of errors.slice(0, 20)) console.log('   ' + e);
-} else {
-  console.log('✅ 无 console error / pageerror');
-}
+  // 8. 目标转移（杀 / 锦囊互不影响）
+  run('redirect', () => {
+    const sr = byEffect('skillRedirect');
+    const hr = byEffect('shaRedirect');
+    if (!sr || !hr) return null;
+    R.found.redirect = [sr.id, hr.id];
+    setTalents(1, [sr.id]);
+    const skillOnly = { skill: probe(1).skillRedirect(), sha: probe(1).shaRedirect() };
+    setTalents(1, [hr.id]);
+    return { skillOnly, shaOnly: { sha: probe(1).shaRedirect(), skill: probe(1).skillRedirect() } };
+  });
+
+  // 9. 探针基础面
+  run('surface', () => ({ players: V.players().length, charOf: typeof V.charOf(0) === 'string' }));
+  return R;
+});
+
+const v = (k) => out[k];
+check('查询层验证无内部异常', out.errors.length === 0, out.errors.join(' ; '));
+const ci = v('cardImmune');
+check('指定牌名免疫接线正确且不影响其它牌', ci && ci.hit === true && ci.blocked === true && ci.other === true, JSON.stringify(ci));
+const si = v('suitImmune');
+check('指定花色免疫仅对该花色生效', si && si.blocked === true && si.allowed === true, JSON.stringify(si));
+const is = v('immuneScope');
+check('免疫作用域：锦囊免疫 / 杀与决斗免疫互不串扰', is && is.skillOnly.skill === true && is.skillOnly.sha === true && is.skillOnly.juedou === true && is.sd.sha === true && is.sd.juedou === true && is.sd.skill === true, JSON.stringify(is));
+const nh = v('noHandImmune');
+check('空城：无手牌免疫【攻击】、有手牌即失效', nh && nh.empty === true && nh.withCard === true, JSON.stringify(nh));
+const ev = v('enemyEquipVoid');
+check('装备失效只对声明的槽位生效', ev && ev.hit === true && ev.notListed === true, JSON.stringify(ev));
+const dt = v('distTrap');
+check('距离陷阱阈值来自技能定义', dt && dt.value === dt.expected, JSON.stringify(dt));
+const hd = v('horseDist');
+check('马政：双马时减免 = 技能系数 × 2', hd && hd.before === 0 && hd.after === hd.expected, JSON.stringify(hd));
+const rd = v('redirect');
+check('转移技：【兼爱】只转锦囊、【散射】只转【攻击】', rd && rd.skillOnly.skill === true && rd.skillOnly.sha === false && rd.shaOnly.sha === true && rd.shaOnly.skill === false, JSON.stringify(rd));
+const sf = v('surface');
+check('查询面可读取玩家数组与座位角色 id', sf && sf.players >= 3 && sf.charOf === true, JSON.stringify(sf));
+check('控制台零错误', errors.length === 0, errors.slice(0, 3).join(' ; '));
 
 await browser.close();
 server.kill();
-process.exit(failed.length || errors.length ? 1 : 0);
+const failed = results.filter((r) => !r.ok);
+console.log(`\n===== 引擎查询层验证 ${results.length - failed.length}/${results.length} 通过 =====`);
+if (failed.length) {
+  console.log('失败项:', failed.map((f) => f.name).join(' | '));
+  process.exit(1);
+}

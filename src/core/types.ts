@@ -19,7 +19,7 @@ export type FactionId =
   | 'tianli'         // 天理门
   | 'manhuang';      // 蛮荒（醒狮谷 / 蛮牛荒原等化神古兽领地，非人类宗门）
 export type SkillType = 'active' | 'trigger';
-export type PendingType = 'list' | 'play' | 'discard' | 'rescue' | 'shan' | 'target';
+export type PendingType = 'list' | 'play' | 'discard' | 'rescue' | 'shan' | 'target' | 'response';
 export type LogAction =
   | 'log'
   | 'use'
@@ -189,8 +189,8 @@ export interface Talent {
    * 仅用于条件失效时精确移除，与 copied 互不影响。
    */
   grantedBy?: string;
-  /** 复制来的天赋持续时间：'turn' 持到本回合结束，'game' 持到本局结束 */
-  copiedUntil?: 'turn' | 'game';
+  /** 复制来的天赋持续时间：'turn' 持到本回合结束，'nextTurn' 持到下个回合开始，'game' 持到本局结束 */
+  copiedUntil?: 'turn' | 'nextTurn' | 'game';
   /** 该技能的伤害属性（掌门路；随 talentOf 从 TalentDef 透传） */
   attr?: Attr;
   /** 灵兽标签（随 talentOf 透传） */
@@ -568,6 +568,8 @@ export interface Card {
   lingshou?: boolean;
   /** 道统标签（防具 / 法宝 / 锦囊可携带，供雷属性对魔 / 鬼判定）；经典模式为空 */
   taoism?: Taoism;
+  /** 【无形】兵器：持有者不能成为【破阵符】/【敛息诀】（含同名异牌）的目标 */
+  wuxing?: boolean;
 }
 
 /** 出牌区展示用的轻量卡牌视图（允许 num 为 '?' 等占位） */

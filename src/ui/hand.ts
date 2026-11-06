@@ -17,7 +17,8 @@ export function isCardClickable(card: Card): boolean {
         o.value === `equip_${card.id}`,
     );
   if (type === 'discard') return G.pendingOptions.some((o) => o.value === card.id || String(o.value) === String(card.id));
-  if (type === 'rescue' || type === 'shan') return G.pendingOptions.some((o) => o.value === `card_${card.id}`);
+  if (type === 'rescue' || type === 'shan' || type === 'response')
+    return G.pendingOptions.some((o) => o.value === `card_${card.id}`);
   return false;
 }
 
@@ -26,7 +27,7 @@ export function cardClickHint(card: Card): string {
   const type = G.pendingType;
   if (type === 'discard' && isCardClickable(card)) return 'card-discard-hint';
   if (type === 'rescue' && isCardClickable(card)) return 'card-rescue-hint';
-  if (type === 'shan' && isCardClickable(card)) return 'card-shan-hint';
+  if ((type === 'shan' || type === 'response') && isCardClickable(card)) return 'card-shan-hint';
   return '';
 }
 
@@ -39,7 +40,7 @@ export function clickHandCard(cardId: number): void {
     matched = G.pendingOptions.find((o) => vals.includes(String(o.value)))?.value ?? null;
   } else if (type === 'discard') {
     matched = G.pendingOptions.find((o) => o.value === cardId || String(o.value) === String(cardId))?.value ?? null;
-  } else if (type === 'rescue' || type === 'shan') {
+  } else if (type === 'rescue' || type === 'shan' || type === 'response') {
     matched = G.pendingOptions.find((o) => o.value === `card_${cardId}`)?.value ?? null;
   }
   if (matched !== null) {

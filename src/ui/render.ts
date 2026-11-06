@@ -276,6 +276,11 @@ export function render(): void {
       hintClass = 'hint-urgent';
       const others = G.pendingOptions.filter((o) => !String(o.value).startsWith('card_'));
       btnHtml = others.map((o) => `<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
+    } else if (type === 'response') {
+      hintText = '⚔️ 响应：点击手牌打出一张【攻击】或【防御】抵消，或点“放弃”承受伤害';
+      hintClass = 'hint-urgent';
+      const others = G.pendingOptions.filter((o) => !String(o.value).startsWith('card_'));
+      btnHtml = others.map((o) => `<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
     } else if (type === 'target') {
       hintText = '🎯 点击座位卡选择目标';
       hintClass = 'hint-target';

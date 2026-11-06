@@ -106,7 +106,16 @@ export function waitChoice(
 export function resolveChoice(v: string | number): void {
   Sound.play('click');
   clearChoiceTimer();
-  if (!G.pendingResolve) return;
+  if (!G.pendingResolve) {
+    // 防御：陈旧决策（如联机 state_sync 残留的 pendingOptions）不应让手牌保持“假可点”状态。
+    // 此时没有任何等待中的 Promise，清理残留选项并重绘，避免出现“点了没反应”的观感。
+    if (G.pendingOptions) {
+      G.pendingOptions = null;
+      G.pendingPlayer = null;
+      render();
+    }
+    return;
+  }
   const r = G.pendingResolve;
   G.pendingResolve = null;
   G.pendingOptions = null;
